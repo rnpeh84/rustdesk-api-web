@@ -1,14 +1,17 @@
 <template>
-  <el-tag v-for="(t, i) in tags"
-          :key="t.name"
-          class="tag"
-          :closable="t.closeable"
-          @close="close(t)"
-          @click="toTag(t)"
-          :type="t.active?'primary':'info'"
-          :effect="t.active?'dark':'plain'">
-    {{ T(t.title) }}
-  </el-tag>
+  <div class="tags-container">
+    <el-tag v-for="(t, i) in tags"
+            :key="t.name"
+            class="tag"
+            :class="{ active: t.active }"
+            :closable="t.closeable"
+            @close="close(t)"
+            @click="toTag(t)"
+            :type="t.active?'primary':'info'"
+            :effect="t.active?'dark':'plain'">
+      {{ T(t.title) }}
+    </el-tag>
+  </div>
 </template>
 
 <script>
@@ -72,12 +75,36 @@
 </script>
 
 <style lang="scss" scoped>
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0;
+}
 
 .tag {
-  border-radius: 0;
+  border-radius: 6px;
+  height: 28px;
+  line-height: 28px;
+  border: 1px solid var(--el-border-color-light);
+  padding: 0 12px;
+  font-size: 12px;
+  margin-left: 5px;
+  margin-top: 6px;
+  margin-bottom: 6px;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
 
+  /* 활성화된 탭 스타일 */
   &.active {
+    background: linear-gradient(90deg, #409eff, #66b1ff) !important; /* 그라데이션 적용 */
+    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4); /* 활성 메뉴 그림자 */
+  }
+
+  /* 마우스 호버 시 */
+  &:not(.active):hover {
+    color: #409eff;
+    background-color: rgba(64, 158, 255, 0.1); /* 부드러운 하이라이트 */
   }
 }
 </style>

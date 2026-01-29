@@ -30,9 +30,6 @@
         </el-form-item>
       </el-form>
     </el-card>
-    <el-card shadow="hover" style="margin-top: 20px">
-      <div v-html="html"></div>
-    </el-card>
     <changePwdDialog v-model:visible="changePwdVisible"></changePwdDialog>
   </div>
 </template>

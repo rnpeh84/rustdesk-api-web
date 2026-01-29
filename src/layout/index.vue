@@ -54,7 +54,7 @@
 
 .header-tags {
   height: auto;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--el-border-color-light);
   display: flex;
   padding: 0;
 }

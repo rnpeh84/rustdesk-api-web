@@ -1,3 +1,8 @@
+<!--
+#####################################################
+# 화면정보 : 시스템 > 로그인 로그                   #
+#####################################################
+-->
 <template>
   <div>
     <el-card class="list-query" shadow="hover">
@@ -39,7 +44,7 @@
         <el-table-column prop="type" label="type" align="center" width="100"/>
         <el-table-column prop="platform" label="Platform/UA" align="center" width="120" show-overflow-tooltip/>
         <el-table-column prop="created_at" :label="T('CreatedAt')" align="center"/>
-        <el-table-column :label="T('Actions')" align="center" width="400">
+        <el-table-column :label="T('Actions')" align="center" width="200">
           <template #default="{row}">
             <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
           </template>

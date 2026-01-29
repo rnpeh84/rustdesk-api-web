@@ -1,3 +1,8 @@
+<!--
+#####################################################
+# 화면정보 : 시스템 > 장치 관리                     #
+#####################################################
+-->
 <template>
   <div>
     <el-card class="list-query" shadow="hover">
@@ -5,10 +10,10 @@
         <el-form-item label="ID">
           <el-input v-model="listQuery.id" clearable/>
         </el-form-item>
-        <el-form-item :label="T('Hostname')">
+        <el-form-item :label="T('Hostname')" label-width="70px">
           <el-input v-model="listQuery.hostname" clearable/>
         </el-form-item>
-        <el-form-item :label="T('LastOnlineTime')" label-width="100px">
+        <el-form-item :label="T('LastOnlineTime')" label-width="130px">
           <el-select v-model="listQuery.time_ago" clearable>
             <el-option
                 v-for="item in timeFilters"
@@ -19,7 +24,7 @@
             ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item :label="T('Username')">
+        <el-form-item :label="T('Username')" label-width="80px">
           <el-input v-model="listQuery.username" clearable/>
         </el-form-item>
         <el-form-item label="IP">

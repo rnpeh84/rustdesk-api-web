@@ -1,5 +1,5 @@
 # RustDesk API Web
-# 基于 Vue3 + Element Plus 的后台, 适用于 [RustDesk API](https://github.com/lejianwen/rustdesk-api)
+# Vue3 + Element Plus 기반의 관리자 패널, [RustDesk API](https://github.com/lejianwen/rustdesk-api)용
 
 <a href="https://github.com/vuejs/vue-next">
     <img src="https://img.shields.io/badge/vue-^3.2.16-brightgreen.svg" alt="vue3">
@@ -11,17 +11,17 @@
     <img src="https://img.shields.io/github/license/mashape/apistatus.svg" alt="license">
   </a>
 
-# 安装步骤
+# 설치 방법
 
 ```shell
 git clone https://github.com/lejianwen/rustdesk-api-web
 cd rustdesk-api-web   
 npm install
 
-// 本地开发
+// 로컬 개발
 npm run dev
 
-// 打包
+// 빌드
 npm run build
 
 ```

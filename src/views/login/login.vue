@@ -173,29 +173,52 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #2d3a4b;
-  padding: 20px;
+  min-height: 100vh;
+  padding: 24px;
   box-sizing: border-box;
+  background: radial-gradient( circle at 10% 20%, rgba(64,158,255,0.08), transparent 10% ),
+              linear-gradient(135deg, #0f1724 0%, #1f2937 50%, #111827 100%);
 }
 
 .login-card {
-  width: 360px;
-  background-color: #283342;
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 36px 32px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
   text-align: center;
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(2,6,23,0.65);
+}
+
+.login-logo {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 18px;
+  display: block;
+  border-radius: 50%;
+  padding: 8px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  box-shadow: 0 6px 18px rgba(2,6,23,0.5);
 }
 
 h1 {
-  margin-bottom: 20px;
-  font-size: 24px;
-  font-weight: bold;
+  margin: 8px 0 18px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #e6eef9;
 }
 
 .login-form {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .login-input {
@@ -203,45 +226,84 @@ h1 {
   .captcha{
     cursor: pointer;
     width: 150px;
+    border-radius: 6px;
   }
 }
+
 .captcha-input{
   :deep(.el-input-group__append) {
-    border-radius: 5px;
+    border-radius: 6px;
     padding: 0;
     overflow: hidden;
   }
 }
 
+.el-form-item {
+  margin-bottom: 14px;
+
+  ::v-deep(.el-form-item__label) {
+    color: #cfe6ff;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+    display: inline-block;
+    text-align: left;
+  }
+
+  .el-input {
+    ::v-deep(.el-input__wrapper) {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    ::v-deep(input) {
+      color: #eaf4ff;
+    }
+
+    ::v-deep(.el-input__inner:focus) {
+      outline: none;
+      box-shadow: 0 4px 18px rgba(64,158,255,0.12);
+      border-color: rgba(64,158,255,0.9);
+    }
+  }
+}
+
 .login-button {
   width: 100%;
-  height: 40px;
-  margin-bottom: 20px;
+  height: 44px;
+  margin-bottom: 12px;
   margin-left: 0;
+  border-radius: 10px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #409eff, #66b1ff);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 22px rgba(64,158,255,0.14);
+}
+
+.login-button:hover {
+  transform: translateY(-1px);
 }
 
 .divider {
   display: flex;
   align-items: center;
-  margin: 20px 0;
-  font-size: 14px;
-  color: #888;
+  margin: 18px 0;
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
 
   &::before,
   &::after {
     content: '';
     flex: 1;
     height: 1px;
-    background-color: #ddd;
+    background-color: rgba(255,255,255,0.06);
   }
 
-  &::before {
-    margin-right: 10px;
-  }
-
-  &::after {
-    margin-left: 10px;
-  }
+  &::before { margin-right: 10px; }
+  &::after { margin-left: 10px; }
 }
 
 .oidc-options {
@@ -253,45 +315,30 @@ h1 {
 .oidc-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 12px;
   width: 100%;
-  height: 50px;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  color: black;
+  height: 46px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 10px;
+  color: #e6eef9;
+  padding: 0 12px;
   font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .oidc-icon {
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border-radius: 6px;
+  background: #fff;
+  padding: 3px;
 }
 
-.login-logo {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 20px;
-  display: block;
-}
-
-.el-form-item {
-  ::v-deep(.el-form-item__label) {
-    color: #fff;
-  }
-
-  .el-input {
-    ::v-deep(.el-input__wrapper) {
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: transparent;
-    }
-
-    ::v-deep(input) {
-      color: #fff;
-    }
-  }
+@media (max-width: 480px) {
+  .login-card { padding: 20px; border-radius: 10px; }
+  .login-logo { width: 72px; height: 72px; }
+  .login-button { height: 42px; }
 }
 </style>

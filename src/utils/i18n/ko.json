@@ -69,7 +69,7 @@
     "One": "추가"
   },
   "Hostname": {
-    "One": "호스트 이름"
+    "One": "호스트명"
   },
   "Alias": {
     "One": "별명"
@@ -195,7 +195,7 @@
     "One": "영어로 변경"
   },
   "My": {
-    "One": "내"
+    "One": "사용자"
   },
   "Info": {
     "One": "정보"
@@ -214,6 +214,9 @@
   },
   "GroupManage": {
     "One": "그룹 관리"
+  },
+  "DeviceGroupManage": {
+    "One": "장치 그룹 관리"
   },
   "UserManage": {
     "One": "사용자 관리"

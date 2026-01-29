@@ -3,9 +3,9 @@
           class="menus"
           :collapse="isCollapse"
           :default-active="activeIndex"
-          background-color="#2d3a4b"
-          text-color="#fff"
-          active-text-color="#409eff"
+          background-color="#1e222d"
+          text-color="#b1b3b8"
+          active-text-color="#ffffff"
           router
   >
     <menu-item v-for="(route,index) in routes" :key="route.name" :route="route"></menu-item>
@@ -46,10 +46,24 @@
   .menus {
     min-height: 100vh;
     border-right: none;
-    &:not(.el-menu--collapse) {
-      width: var(--sideBarWidth);
+    transition: width 0.3s;
+        
+    /* 메뉴 아이템 공통 스타일 */
+    :deep(.el-menu-item) {
+      height: 50px;
+      line-height: 50px;
+      margin: 4px 10px;      /* 아이템 사이 간격 추가 */
+      border-radius: 8px;    /* 모서리를 둥글게 */
+      
+      &:hover {
+        background-color: rgba(64, 158, 255, 0.1) !important; /* 부드러운 하이라이트 */
+      }
+      
+      &.is-active {
+        background: linear-gradient(90deg, #409eff, #66b1ff) !important; /* 그라데이션 적용 */
+        box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4); /* 활성 메뉴 그림자 */
+      }
     }
-
   }
 </style>
 <style>
