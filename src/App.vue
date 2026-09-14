@@ -1,19 +1,12 @@
 <template>
-  <router-view/>
+  <el-config-provider :locale="appStore.setting.locale.value">
+    <router-view/>
+  </el-config-provider>
 </template>
-<script>
-  import { defineComponent, ref, onMounted } from 'vue'
+<script setup>
+  import { useAppStore } from '@/store/app'
 
-  export default defineComponent({
-    props: {},
-    setup (props) {
-    },
-    created () {
-
-    },
-  })
-
-
+  const appStore = useAppStore()
 </script>
 <style>
 </style>

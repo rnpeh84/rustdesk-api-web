@@ -4,23 +4,23 @@
       <el-form inline label-width="80px">
         <el-form-item>
           <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="danger" @click="toAdd">{{ T('Add') }}</el-button>
+          <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
     <el-card class="list-body" shadow="hover">
       <el-tag type="danger" effect="light" style="margin-bottom: 10px">{{ T('MyAddressBookTips') }}</el-tag>
-      <el-table :data="list" v-loading="listRes.loading" border>
+      <el-table :data="list" v-loading="listRes.loading" border stripe scrollbar-always-on>
         <!--        <el-table-column prop="id" label="ID" align="center"/>-->
-        <el-table-column prop="name" :label="T('Name')" align="center"/>
-        <el-table-column prop="created_at" :label="T('CreatedAt')" align="center"/>
+        <el-table-column prop="name" :label="T('Name')" sortable/>
+        <el-table-column prop="created_at" :label="T('CreatedAt')" align="center" sortable/>
         <!--        <el-table-column prop="updated_at" label="更新时间" align="center"/>-->
-        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="600" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="152" fixed="right">
           <template #default="{row}">
             <template v-if="row.id>0">
-              <el-button type="primary" @click="showRules(row)">{{ T('ShareRules') }}</el-button>
-              <el-button @click="toEdit(row)">{{ T('Edit') }}</el-button>
-              <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
+              <el-tooltip :content="T('ShareRules')"><el-button circle size="small" type="primary" plain :aria-label="T('ShareRules')" @click="showRules(row)"><el-icon><Share/></el-icon></el-button></el-tooltip>
+              <el-tooltip :content="T('Edit')"><el-button circle size="small" :aria-label="T('Edit')" @click="toEdit(row)"><el-icon><Edit/></el-icon></el-button></el-tooltip>
+              <el-tooltip :content="T('Delete')"><el-button circle size="small" type="danger" plain :aria-label="T('Delete')" @click="del(row)"><el-icon><Delete/></el-icon></el-button></el-tooltip>
             </template>
           </template>
         </el-table-column>
@@ -35,7 +35,7 @@
                      :total="listRes.total">
       </el-pagination>
     </el-card>
-    <el-dialog v-model="formVisible" width="800" :title="!formData.id?T('Create') :T('Update') ">
+    <el-dialog v-model="formVisible" width="640" :title="`${formData.id ? T('Edit') : T('Add')} · ${T('AddressBookName')}`">
       <el-form class="dialog-form" ref="form" :model="formData" label-width="120px">
         <el-form-item :label="T('Name')" prop="name" required>
           <el-input v-model="formData.name"></el-input>
@@ -59,6 +59,7 @@
   import { useRepositories } from '@/views/address_book/collection'
   import { onActivated, onMounted, watch } from 'vue'
   import Rule from '@/views/address_book/rule.vue'
+  import { Delete, Edit, Share } from '@element-plus/icons-vue'
 
   const {
     listRes,

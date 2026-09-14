@@ -19,15 +19,15 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="danger" @click="toAdd">{{ T('Add') }}</el-button>
+          <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
           <el-button type="primary" @click="showBatchEditTags">{{ T('BatchEditTags') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
     <el-card class="list-body" shadow="hover">
-      <el-table :data="listRes.list" v-loading="listRes.loading" border @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="50" align="center"></el-table-column>
-        <el-table-column prop="id" label="ID" align="center" width="200">
+      <el-table :data="listRes.list" v-loading="listRes.loading" border stripe scrollbar-always-on @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="50" align="center" fixed="left"></el-table-column>
+        <el-table-column prop="id" label="ID" align="center" width="200" fixed="left" sortable>
           <template #default="{row}">
             <div>
               <PlatformIcons :name="platformList.find(p=>p.label===row.platform)?.icon" style="width: 20px;height: 20px;display: inline-block" color="var(--basicBlack)"/>
@@ -38,28 +38,33 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="collection_id" :label="T('AddressBookName')" align="center" width="150">
+        <el-table-column prop="collection_id" :label="T('AddressBookName')" width="180" sortable>
           <template #default="{row}">
             <span v-if="row.collection_id === 0">{{ T('MyAddressBook') }}</span>
             <span v-else>{{ collectionListRes.list.find(c => c.id === row.collection_id)?.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="username" :label="T('Username')" align="center" width="150"/>
-        <el-table-column prop="hostname" :label="T('Hostname')" align="center" width="150"/>
+        <el-table-column prop="username" :label="T('Username')" width="150" sortable/>
+        <el-table-column prop="hostname" :label="T('Hostname')" width="150" sortable/>
         <!--        <el-table-column prop="platform" :label="T('Platform')" align="center" width="120"/>-->
-        <el-table-column prop="tags" :label="T('Tags')" align="center"/>
+        <el-table-column prop="tags" :label="T('Tags')" sortable/>
         <!--        <el-table-column prop="created_at" label="创建时间" align="center"/>-->
         <!--        <el-table-column prop="updated_at" label="更新时间" align="center"/>-->
-        <el-table-column prop="alias" :label="T('Alias')" align="center" width="150"/>
-        <el-table-column prop="peer.version" :label="T('Version')" align="center" width="100"/>
+        <el-table-column prop="alias" :label="T('Alias')" width="150" sortable/>
+        <el-table-column prop="peer.version" :label="T('Version')" align="center" width="100" sortable/>
         <el-table-column prop="hash" :label="T('Hash')" align="center" width="150" show-overflow-tooltip/>
-        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="600" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="142" fixed="right">
           <template #default="{row}">
-            <el-button type="success" @click="connectByClient(row.id)">{{ T('Link') }}</el-button>
-            <el-button v-if="appStore.setting.appConfig.web_client" type="success" @click="toWebClientLink(row)">Web Client</el-button>
-            <el-button v-if="appStore.setting.appConfig.web_client" type="primary" @click="toShowShare(row)">{{ T('ShareByWebClient') }}</el-button>
-            <el-button @click="toEdit(row)">{{ T('Edit') }}</el-button>
-            <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
+            <el-tooltip :content="T('Link')"><el-button circle size="small" type="primary" plain :aria-label="T('Link')" @click="connectByClient(row.id)"><el-icon><Connection/></el-icon></el-button></el-tooltip>
+            <el-tooltip v-if="appStore.setting.appConfig.web_client" content="Web Client"><el-button circle size="small" type="primary" plain aria-label="Web Client" @click="toWebClientLink(row)"><el-icon><Monitor/></el-icon></el-button></el-tooltip>
+            <el-dropdown trigger="click">
+              <el-button circle size="small" :aria-label="T('More')"><el-icon><MoreFilled/></el-icon></el-button>
+              <template #dropdown><el-dropdown-menu>
+                <el-dropdown-item v-if="appStore.setting.appConfig.web_client" :icon="Share" @click="toShowShare(row)">{{ T('ShareByWebClient') }}</el-dropdown-item>
+                <el-dropdown-item :icon="Edit" @click="toEdit(row)">{{ T('Edit') }}</el-dropdown-item>
+                <el-dropdown-item :icon="Delete" class="dropdown-danger" @click="del(row)">{{ T('Delete') }}</el-dropdown-item>
+              </el-dropdown-menu></template>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
@@ -184,6 +189,7 @@
   import { handleClipboard } from '@/utils/clipboard'
   import { CopyDocument } from '@element-plus/icons'
   import PlatformIcons from '@/components/icons/platform.vue'
+  import { Connection, Delete, Edit, Monitor, MoreFilled, Share } from '@element-plus/icons-vue'
 
   const appStore = useAppStore()
   const {

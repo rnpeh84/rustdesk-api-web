@@ -1,18 +1,22 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { lastRoutes, asyncRoutes, router } from '@/router'
 
-function filterRoute (routes, enableNames) {
+function filterRoute (routes, enableNames, inheritAccess = false) {
   return routes.filter(route => {
+    if (route.meta?.inheritAccess) {
+      return inheritAccess
+    }
     if (route.children && route.children.length) {
-      return enableNames.includes(route.name) || route.children.some(r => enableNames.includes(r.name))
+      return enableNames.includes(route.name) || route.children.some(r => !r.meta?.inheritAccess && enableNames.includes(r.name))
     } else {
       return enableNames.includes(route.name)
     }
   }).map(route => {
     if (route.children && route.children.length) {
+      const groupAccess = enableNames.includes(route.name) || route.children.some(r => !r.meta?.inheritAccess && enableNames.includes(r.name))
       return {
         ...route,
-        children: filterRoute(route.children, enableNames),
+        children: filterRoute(route.children, enableNames, groupAccess),
       }
     } else {
       return { ...route }

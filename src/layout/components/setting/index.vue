@@ -18,13 +18,8 @@
       </el-switch>
     </div>
     <el-dropdown class="menu-item">
-      <div class="title">
-        <i class="el-icon el-tooltip__trigger" style="font-size: 24px;">
-          <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24" width="1.2em" height="1.2em">
-            <path fill="currentColor"
-                  d="m18.5 10l4.4 11h-2.155l-1.201-3h-4.09l-1.199 3h-2.154L16.5 10h2zM10 2v2h6v2h-1.968a18.222 18.222 0 0 1-3.62 6.301a14.864 14.864 0 0 0 2.336 1.707l-.751 1.878A17.015 17.015 0 0 1 9 13.725a16.676 16.676 0 0 1-6.201 3.548l-.536-1.929a14.7 14.7 0 0 0 5.327-3.042A18.078 18.078 0 0 1 4.767 8h2.24A16.032 16.032 0 0 0 9 10.877a16.165 16.165 0 0 0 2.91-4.876L2 6V4h6V2h2zm7.5 10.885L16.253 16h2.492L17.5 12.885z"></path>
-          </svg>
-        </i>
+      <div class="title icon-title" :aria-label="T('Language')">
+        <el-icon :size="19"><ChatLineSquare/></el-icon>
       </div>
       <template #dropdown>
         <el-dropdown-menu>
@@ -34,7 +29,7 @@
     </el-dropdown>
     <el-dropdown class="menu-item">
       <div class="title">
-        <!--        <el-image class="avatar" :src="user.avatar"></el-image>-->
+        <span class="avatar" aria-hidden="true">{{ userInitial }}</span>
         <span class="nickname">{{ user.username }}</span>
         <el-icon>
           <el-icon-arrow-down/>
@@ -57,13 +52,14 @@
   import { useUserStore } from '@/store/user'
   import { useAppStore } from '@/store/app'
   import changePwdDialog from '@/components/changePwdDialog.vue'
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
   import { T } from '@/utils/i18n'
   import { useDark } from '@vueuse/core'
-  import { Sunny, Moon } from '@element-plus/icons'
+  import { ChatLineSquare, Sunny, Moon } from '@element-plus/icons'
 
   const userStore = useUserStore()
   const user = userStore
+  const userInitial = computed(() => (user.username || 'A').trim().charAt(0).toUpperCase())
   const appStore = useAppStore()
 
   const logout = () => {
@@ -87,26 +83,60 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  gap: 6px;
 
   .menu-item {
-    margin-left: 15px;
-
-    * {
-      outline: none;
-    }
+    margin-left: 0;
   }
 
   .title {
-    color: #fff;
+    min-height: 36px;
+    color: var(--console-text);
     display: flex;
     align-items: center;
-    justify-content: space-around;
+    justify-content: center;
+    border-radius: 5px;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--console-primary);
+      background: var(--console-primary-soft);
+    }
 
 
     .nickname {
-      padding: 0 10px;
+      max-width: 160px;
+      padding: 0 8px;
+      overflow: hidden;
+      font-size: 13px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
+  }
+
+  .icon-title {
+    width: 36px;
+  }
+
+  .avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: var(--console-muted);
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--console-canvas-strong);
+    border: 1px solid var(--console-border);
+    border-radius: 50%;
+  }
+}
+
+@media (max-width: 560px) {
+  .setting .nickname {
+    display: none;
   }
 }
 </style>

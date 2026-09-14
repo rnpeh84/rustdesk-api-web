@@ -18,18 +18,40 @@ const langs = {
   'es': { name: 'Español', value: es, sideBarWidth: '280px' },
   'zh-TW': { name: '中文繁体', value: zhTw, sideBarWidth: '210px' },
 }
-const defaultLang = localStorage.getItem('lang') || navigator.language || 'zh-CN'
+
+const resolveLang = (lang) => {
+  const normalized = (lang || '').replace('_', '-')
+  if (langs[normalized]) {
+    return normalized
+  }
+
+  const lowerLang = normalized.toLowerCase()
+  if (lowerLang.startsWith('ko')) {
+    return 'ko'
+  }
+  if (lowerLang.startsWith('zh-tw') || lowerLang.startsWith('zh-hk') || lowerLang.startsWith('zh-hant')) {
+    return 'zh-TW'
+  }
+  if (lowerLang.startsWith('zh')) {
+    return 'zh-CN'
+  }
+
+  const baseLang = lowerLang.split('-')[0]
+  return langs[baseLang] ? baseLang : 'ko'
+}
+
+const defaultLang = resolveLang(localStorage.getItem('lang') || navigator.language)
 export const useAppStore = defineStore({
   id: 'App',
   state: () => ({
     setting: {
-      title: 'Rustdesk API Admin',
+      title: 'RustDesk API 관리자',
       hello: '',
       sideIsCollapse: false,
       logo,
       langs: langs,
       lang: defaultLang,
-      locale: langs[defaultLang] ? langs[defaultLang] : langs['en'],
+      locale: langs[defaultLang],
       appConfig: {
         web_client: 1,
       },
@@ -47,10 +69,10 @@ export const useAppStore = defineStore({
       this.setting.sideIsCollapse = !this.setting.sideIsCollapse
     },
     setLang (lang) {
-      console.log('setLang', lang)
-      this.setting.lang = lang
-      this.setting.locale = langs[lang]
-      localStorage.setItem('lang', lang)
+      const resolvedLang = resolveLang(lang)
+      this.setting.lang = resolvedLang
+      this.setting.locale = langs[resolvedLang]
+      localStorage.setItem('lang', resolvedLang)
     },
     changeLang (v) {
       this.setLang(v)

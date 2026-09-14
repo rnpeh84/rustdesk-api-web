@@ -51,10 +51,17 @@ export const asyncRoutes = [
   {
     path: '/my',
     name: 'My',
-    redirect: '/',
+    redirect: '/my/dashboard',
     meta: { title: 'My', icon: 'UserFilled' },
     component: () => import('@/layout/index.vue'),
     children: [
+      {
+        path: 'dashboard',
+        name: 'MyDashboard',
+        meta: { title: 'UserDashboard', icon: 'DataBoard', inheritAccess: true },
+        component: () => import('@/views/dashboard/index.vue'),
+        props: { scope: 'user' },
+      },
       {
         path: '/',
         name: 'MyInfo',
@@ -70,7 +77,7 @@ export const asyncRoutes = [
       {
         path: 'address_book_collection',
         name: 'MyAddressBookCollection',
-        meta: { title: 'AddressBookName', icon: 'Collection' /*keepAlive: true*/ },
+        meta: { title: 'AddressBookName', icon: 'FolderOpened' /*keepAlive: true*/ },
         component: () => import('@/views/my/address_book/collection.vue'),
       },
       {
@@ -82,7 +89,7 @@ export const asyncRoutes = [
       {
         path: 'tag',
         name: 'MyTagList',
-        meta: { title: 'Tags', icon: 'CollectionTag' /*keepAlive: true*/ },
+        meta: { title: 'Tags', icon: 'PriceTag' /*keepAlive: true*/ },
         component: () => import('@/views/my/tag/index.vue'),
       },
       {
@@ -94,7 +101,7 @@ export const asyncRoutes = [
       {
         path: 'loginLog',
         name: 'MyLoginLog',
-        meta: { title: 'LoginLog', icon: 'List' /*keepAlive: true*/ },
+        meta: { title: 'LoginLog', icon: 'Clock' /*keepAlive: true*/ },
         component: () => import('@/views/my/login_log/index.vue'),
       },
     ],
@@ -102,10 +109,17 @@ export const asyncRoutes = [
   {
     path: '/user',
     name: 'User',
-    redirect: '/user/index',
+    redirect: '/user/dashboard',
     meta: { title: 'System', icon: 'Setting' },
     component: () => import('@/layout/index.vue'),
     children: [
+      {
+        path: 'dashboard',
+        name: 'SystemDashboard',
+        meta: { title: 'SystemDashboard', icon: 'DataAnalysis', inheritAccess: true },
+        component: () => import('@/views/dashboard/index.vue'),
+        props: { scope: 'system' },
+      },
       {
         path: 'peer',
         name: 'Peer',
@@ -115,13 +129,13 @@ export const asyncRoutes = [
       {
         path: 'group',
         name: 'UserGroup',
-        meta: { title: 'GroupManage', icon: 'ChatRound' /*keepAlive: true*/ },
+        meta: { title: 'GroupManage', icon: 'UserFilled' /*keepAlive: true*/ },
         component: () => import('@/views/group/index.vue'),
       },
       {
         path: 'deviceGroup',
         name: 'DeviceGroup',
-        meta: { title: 'DeviceGroupManage', icon: 'ChatRound' /*keepAlive: true*/ },
+        meta: { title: 'DeviceGroupManage', icon: 'SetUp' /*keepAlive: true*/ },
         component: () => import('@/views/group/deviceGroupList.vue'),
       },
       {
@@ -145,7 +159,7 @@ export const asyncRoutes = [
       {
         path: 'addressBookName',
         name: 'UserAddressBookName',
-        meta: { title: 'AddressBookNameManage', icon: 'Collection' /*keepAlive: true*/ },
+        meta: { title: 'AddressBookNameManage', icon: 'FolderOpened' /*keepAlive: true*/ },
         component: () => import('@/views/address_book/collection.vue'),
       },
       {
@@ -157,7 +171,7 @@ export const asyncRoutes = [
       {
         path: 'tag',
         name: 'UserTag',
-        meta: { title: 'TagsManage', icon: 'CollectionTag' /*keepAlive: true*/ },
+        meta: { title: 'TagsManage', icon: 'PriceTag' /*keepAlive: true*/ },
         component: () => import('@/views/tag/index.vue'),
       },
       {
@@ -169,25 +183,25 @@ export const asyncRoutes = [
       {
         path: '/userToken',
         name: 'UserToken',
-        meta: { title: 'UserToken', icon: 'Ticket' /*keepAlive: true*/ },
+        meta: { title: 'UserToken', icon: 'Key' /*keepAlive: true*/ },
         component: () => import('@/views/user/token.vue'),
       },
       {
         path: '/loginLog',
         name: 'LoginLog',
-        meta: { title: 'LoginLog', icon: 'List' /*keepAlive: true*/ },
+        meta: { title: 'LoginLog', icon: 'Clock' /*keepAlive: true*/ },
         component: () => import('@/views/login/log.vue'),
       },
       {
         path: '/auditConn',
         name: 'AuditConn',
-        meta: { title: 'AuditConnLog', icon: 'Tickets' /*keepAlive: true*/ },
+        meta: { title: 'AuditConnLog', icon: 'Connection' /*keepAlive: true*/ },
         component: () => import('@/views/audit/connList.vue'),
       },
       {
         path: '/auditFile',
         name: 'AuditFile',
-        meta: { title: 'AuditFileLog', icon: 'Files' /*keepAlive: true*/ },
+        meta: { title: 'AuditFileLog', icon: 'FolderOpened' /*keepAlive: true*/ },
         component: () => import('@/views/audit/fileList.vue'),
       },
       {
@@ -213,4 +227,3 @@ export const router = createRouter({
   history: createWebHashHistory(),
   routes: constantRoutes,
 })
-

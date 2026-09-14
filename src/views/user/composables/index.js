@@ -97,7 +97,7 @@ export function useDel () {
       return false
     }
 
-    const res = remove({ id }).catch(_ => false)
+    const res = await remove({ id }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))
     }

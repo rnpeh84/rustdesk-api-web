@@ -25,7 +25,7 @@
               <el-icon class="default-icon">
                 <plus/>
               </el-icon>
-              <div class="drag-tips">点击上传<span v-if="drag">或直接拖入文件</span></div>
+              <div class="drag-tips">{{ T('ClickToUpload') }}<span v-if="drag">{{ T('OrDropFileHere') }}</span></div>
             </div>
           </slot>
         </div>
@@ -63,6 +63,7 @@
   import { useOss } from '@/components/form/upload/oss'
   import { ElMessage } from 'element-plus'
   import { useLocal } from '@/components/form/upload/local'
+  import { T } from '@/utils/i18n'
 
   export default defineComponent({
     name: 'imagesUpload',
@@ -173,7 +174,7 @@
       }
 
       function onExceed () {
-        ElMessage.error('超出数量限制')
+        ElMessage.error(T('UploadLimitExceeded'))
       }
 
       return {

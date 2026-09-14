@@ -1,72 +1,70 @@
 <template>
-  <el-icon class="ex-icon" @click="expandOrFoldSlider">
-    <el-icon-expand v-if="setting.sideIsCollapse"></el-icon-expand>
-    <el-icon-fold v-else></el-icon-fold>
-  </el-icon>
-  <div class="header-logo">
-    <img :src="setting.logo" alt="" class="logo">
-    <div class="title">{{setting.title}}</div>
+  <el-button
+      class="nav-toggle"
+      text
+      :aria-label="T('Menu')"
+      @click="toggleMenu"
+  >
+    <el-icon :size="20">
+      <Menu v-if="isMobile"/>
+      <Expand v-else-if="setting.sideIsCollapse"/>
+      <Fold v-else/>
+    </el-icon>
+  </el-button>
+  <div class="header-status">
+    <span class="status-dot" aria-hidden="true"></span>
+    <span>{{ setting.title }}</span>
   </div>
   <Setting></Setting>
 </template>
 
-<script>
-  import { defineComponent, computed } from 'vue'
-  import HeaderMenu from '@/layout/components/menu/index.vue'
+<script setup>
+  import { computed } from 'vue'
+  import { Expand, Fold, Menu } from '@element-plus/icons-vue'
   import Setting from '@/layout/components/setting/index.vue'
   import { useAppStore } from '@/store/app'
-  import GTags from '@/layout/components/tags/index.vue'
+  import { T } from '@/utils/i18n'
 
-  export default defineComponent({
-    name: 'LayerHeader',
-    created () {
+  defineProps({
+    isMobile: {
+      type: Boolean,
+      default: false,
     },
-    components: { HeaderMenu, Setting, GTags },
-    watch: {},
-    setup (props) {
-      const appStore = useAppStore()
-      const setting = computed(() => appStore.setting)
-      const expandOrFoldSlider = () => {
-        appStore.sideCollapse()
-      }
-      return {
-        setting,
-        expandOrFoldSlider,
-      }
-    },
-
   })
+  const emit = defineEmits(['toggle-menu'])
+  const appStore = useAppStore()
+  const setting = computed(() => appStore.setting)
+  const toggleMenu = () => emit('toggle-menu')
 </script>
 
 <style scoped lang="scss">
-  .ex-icon {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    margin-right: 10px;
-    font-size: 16px;
-    cursor: pointer;
-  }
+  .nav-toggle {
+    width: 36px;
+    height: 36px;
+    margin: auto 14px auto -8px;
+    color: var(--console-muted);
+    border-radius: 5px;
 
-  .header-logo {
-    display: flex;
-    height: 100%;
-    align-items: center;
-
-    .title {
-      display: block;
-      margin-left: 10px;
-    }
-
-    .logo {
-      display: block;
-      width: 30px;
-      height: 30px;
+    &:hover,
+    &:focus-visible {
+      color: var(--console-primary);
+      background: var(--console-primary-soft);
     }
   }
 
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--console-muted);
+    font-size: 13px;
+  }
 
-</style>
-<style lang="scss">
-
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--console-success);
+    box-shadow: 0 0 0 3px var(--console-success-soft);
+  }
 </style>

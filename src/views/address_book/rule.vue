@@ -4,7 +4,7 @@
       <el-form inline label-width="80px">
         <el-form-item>
           <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="danger" @click="toAdd">{{ T('Add') }}</el-button>
+          <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -36,7 +36,7 @@
         </el-table-column>
         <el-table-column prop="created_at" :label="T('CreatedAt')" align="center"/>
         <!--        <el-table-column prop="updated_at" label="更新时间" align="center"/>-->
-        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="300" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="220" fixed="right">
           <template #default="{row}">
             <el-button @click="toEdit(row)">{{ T('Edit') }}</el-button>
             <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>

@@ -53,6 +53,10 @@ export const useTagsStore = defineStore({
       }
       this.$patch({ tags })
     },
+    removeAllTags () {
+      this.tags.splice(0, this.tags.length)
+      this.cached.splice(0, this.cached.length)
+    },
     addCachedTag (name) {
       if (!this.cached.includes(name)) {
         this.cached.push(name)

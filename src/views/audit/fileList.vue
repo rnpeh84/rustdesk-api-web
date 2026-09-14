@@ -11,14 +11,14 @@
         <el-form-item>
           <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
           <el-button type="danger" @click="toBatchDelete">{{ T('BatchDelete') }}</el-button>
-          <el-button type="success" @click="toExport">{{ T('Export') }}</el-button>
+          <el-button type="info" plain @click="toExport">{{ T('Export') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border max-height="750" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" align="center" width="50"/>
-        <el-table-column prop="id" label="ID" align="center" width="100"/>
+        <el-table-column type="selection" align="center" width="50" fixed="left"/>
+        <el-table-column prop="id" label="ID" align="center" width="100" fixed="left"/>
         <el-table-column :label="T('Peer')" prop="peer_id" align="center" width="120"/>
         <el-table-column :label="T('FromPeer')" prop="from_peer" align="center" width="120"/>
         <el-table-column :label="T('FromName')" prop="from_name" align="center" width="120"/>
@@ -64,7 +64,7 @@
         <el-table-column prop="path" :label="T('Path')" align="center" width="150" show-overflow-tooltip/>
         <el-table-column prop="uuid" label="uuid" align="center" width="120" show-overflow-tooltip/>
         <el-table-column prop="created_at" :label="T('CreatedAt')" align="center" min-width="120"/>
-        <el-table-column :label="T('Actions')" align="center" width="150" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" width="120" class-name="table-actions" fixed="right">
           <template #default="{row}">
             <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
           </template>

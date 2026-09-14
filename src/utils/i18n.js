@@ -19,7 +19,7 @@ const trans = {
 export function T (key, params, num = 0) {
   const appStore = useAppStore()
   const lang = appStore.setting.lang
-  const tran = trans[lang]?.[key]
+  const tran = trans[lang]?.[key] || en[key] || ko[key]
   if (!tran) {
     return key
   }

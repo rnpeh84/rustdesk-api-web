@@ -4,24 +4,24 @@
       <el-form inline label-width="80px">
         <el-form-item>
           <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="danger" @click="toAdd">{{ T('Add') }}</el-button>
+          <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
     <el-card class="list-body" shadow="hover">
-      <el-table :data="listRes.list" v-loading="listRes.loading" border>
-        <el-table-column prop="id" label="ID" align="center"/>
-        <el-table-column prop="op" :label="T('IdP')" align="center"/>
-        <el-table-column prop="oauth_type" :label="T('Type')" align="center"/>
-        <el-table-column prop="auto_register" :label="T('AutoRegister')" align="center"/>
-        <el-table-column prop="pkce_enable" :label="T('PkceEnable')" align="center"/>
-        <el-table-column prop="pkce_method" :label="T('PkceMethod')" align="center"/>
-        <el-table-column prop="created_at" :label="T('CreatedAt')" align="center"/>
-        <el-table-column prop="updated_at" :label="T('UpdatedAt')" align="center"/>
-        <el-table-column :label="T('Actions')" align="center">
+      <el-table :data="listRes.list" v-loading="listRes.loading" border stripe scrollbar-always-on>
+        <el-table-column prop="id" label="ID" align="center" width="90" fixed="left" sortable/>
+        <el-table-column prop="op" :label="T('IdP')" sortable/>
+        <el-table-column prop="oauth_type" :label="T('Type')" align="center" sortable/>
+        <el-table-column prop="auto_register" :label="T('AutoRegister')" align="center" sortable/>
+        <el-table-column prop="pkce_enable" :label="T('PkceEnable')" align="center" sortable/>
+        <el-table-column prop="pkce_method" :label="T('PkceMethod')" align="center" sortable/>
+        <el-table-column prop="created_at" :label="T('CreatedAt')" align="center" sortable/>
+        <el-table-column prop="updated_at" :label="T('UpdatedAt')" align="center" sortable/>
+        <el-table-column :label="T('Actions')" align="center" width="112" class-name="table-actions" fixed="right">
           <template #default="{row}">
-            <el-button @click="toEdit(row)">{{ T('Edit') }}</el-button>
-            <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
+            <el-tooltip :content="T('Edit')"><el-button circle size="small" :aria-label="T('Edit')" @click="toEdit(row)"><el-icon><Edit/></el-icon></el-button></el-tooltip>
+            <el-tooltip :content="T('Delete')"><el-button circle size="small" type="danger" plain :aria-label="T('Delete')" @click="del(row)"><el-icon><Delete/></el-icon></el-button></el-tooltip>
           </template>
         </el-table-column>
       </el-table>
@@ -35,7 +35,7 @@
                      :total="listRes.total">
       </el-pagination>
     </el-card>
-    <el-dialog v-model="formVisible" :title="!formData.id?T('Create') :T('Update')" width="800">
+    <el-dialog v-model="formVisible" :title="`${formData.id ? T('Edit') : T('Add')} · ${T('OauthManage')}`" width="680">
       <el-form class="dialog-form" ref="form" :model="formData" :rules="rules" label-width="120px">
         <el-form-item label="Type" prop="oauth_type">
           <el-radio-group v-model="formData.oauth_type" :disabled="!!formData.id">
@@ -108,6 +108,7 @@
   import { handleClipboard } from '@/utils/clipboard'
   import { useAppStore } from '@/store/app'
   import { CopyDocument } from '@element-plus/icons'
+  import { Delete, Edit } from '@element-plus/icons-vue'
 
   const app = useAppStore()
 

@@ -20,14 +20,14 @@
         <el-form-item>
           <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
           <el-button type="danger" @click="toBatchDelete">{{ T('BatchDelete') }}</el-button>
-          <el-button type="success" @click="toExport">{{ T('Export') }}</el-button>
+          <el-button type="info" plain @click="toExport">{{ T('Export') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border @selection-change="handleSelectionChange">
-        <el-table-column type="selection" align="center" width="50"/>
-        <el-table-column prop="id" label="ID" align="center" width="100"/>
+        <el-table-column type="selection" align="center" width="50" fixed="left"/>
+        <el-table-column prop="id" label="ID" align="center" width="100" fixed="left"/>
         <el-table-column :label="T('Owner')" align="center" width="120">
           <template #default="{row}">
             <span v-if="row.user_id"> <el-tag>{{ allUsers?.find(u => u.id === row.user_id)?.username }}</el-tag> </span>
@@ -44,7 +44,7 @@
         <el-table-column prop="type" label="type" align="center" width="100"/>
         <el-table-column prop="platform" label="Platform/UA" align="center" width="120" show-overflow-tooltip/>
         <el-table-column prop="created_at" :label="T('CreatedAt')" align="center"/>
-        <el-table-column :label="T('Actions')" align="center" width="200">
+        <el-table-column :label="T('Actions')" align="center" width="120" class-name="table-actions" fixed="right">
           <template #default="{row}">
             <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
           </template>

@@ -2,6 +2,8 @@
   <div class="login-container">
     <div class="login-card">
       <img src="@/assets/logo.png" alt="logo" class="login-logo"/>
+      <h1>{{ appStore.setting.title }}</h1>
+      <p class="login-description">{{ T('Login') }}</p>
 
       <el-form v-if="!disablePwd" label-position="top" class="login-form">
         <el-form-item :label="T('Username')">
@@ -44,6 +46,7 @@
 <script setup>
   import { reactive, onMounted, ref } from 'vue'
   import { useUserStore } from '@/store/user'
+  import { useAppStore } from '@/store/app'
   import { ElMessage } from 'element-plus'
   import { T } from '@/utils/i18n'
   import { useRoute, useRouter } from 'vue-router'
@@ -52,6 +55,7 @@
 
   const oauthInfo = ref({})
   const userStore = useUserStore()
+  const appStore = useAppStore()
   const route = useRoute()
   const router = useRouter()
   const options = reactive([]) // 存储 OIDC 登录选项
@@ -176,45 +180,39 @@
   min-height: 100vh;
   padding: 24px;
   box-sizing: border-box;
-  background: radial-gradient( circle at 10% 20%, rgba(64,158,255,0.08), transparent 10% ),
-              linear-gradient(135deg, #0f1724 0%, #1f2937 50%, #111827 100%);
+  background: var(--console-canvas);
 }
 
 .login-card {
   width: 100%;
-  max-width: 420px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 36px 32px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  max-width: 400px;
+  padding: 36px 34px;
   text-align: center;
-  backdrop-filter: blur(8px) saturate(120%);
-  -webkit-backdrop-filter: blur(8px) saturate(120%);
-  transition: transform .18s ease, box-shadow .18s ease;
-}
-
-.login-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 40px rgba(2,6,23,0.65);
+  background: var(--console-surface);
+  border: 1px solid var(--console-border);
+  border-radius: 8px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 }
 
 .login-logo {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 18px;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
   display: block;
-  border-radius: 50%;
-  padding: 8px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-  box-shadow: 0 6px 18px rgba(2,6,23,0.5);
 }
 
 h1 {
-  margin: 8px 0 18px;
-  font-size: 20px;
+  margin: 0;
+  color: var(--console-heading);
+  font-size: 22px;
   font-weight: 700;
-  color: #e6eef9;
+  letter-spacing: -0.025em;
+}
+
+.login-description {
+  margin: 6px 0 24px;
+  color: var(--console-muted);
+  font-size: 13px;
 }
 
 .login-form {
@@ -242,7 +240,7 @@ h1 {
   margin-bottom: 14px;
 
   ::v-deep(.el-form-item__label) {
-    color: #cfe6ff;
+    color: var(--console-text);
     font-weight: 600;
     font-size: 13px;
     margin-bottom: 6px;
@@ -252,20 +250,17 @@ h1 {
 
   .el-input {
     ::v-deep(.el-input__wrapper) {
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.02);
-      border-radius: 8px;
-      padding: 4px;
+      min-height: 42px;
+      background: var(--console-surface);
+      border-radius: 5px;
     }
 
     ::v-deep(input) {
-      color: #eaf4ff;
+      color: var(--console-heading);
     }
 
     ::v-deep(.el-input__inner:focus) {
       outline: none;
-      box-shadow: 0 4px 18px rgba(64,158,255,0.12);
-      border-color: rgba(64,158,255,0.9);
     }
   }
 }
@@ -275,16 +270,11 @@ h1 {
   height: 44px;
   margin-bottom: 12px;
   margin-left: 0;
-  border-radius: 10px;
+  border-radius: 5px;
   font-weight: 600;
-  background: linear-gradient(90deg, #409eff, #66b1ff);
+  background: var(--console-primary);
   color: white;
-  border: none;
-  box-shadow: 0 8px 22px rgba(64,158,255,0.14);
-}
-
-.login-button:hover {
-  transform: translateY(-1px);
+  border-color: var(--console-primary);
 }
 
 .divider {
@@ -292,14 +282,14 @@ h1 {
   align-items: center;
   margin: 18px 0;
   font-size: 13px;
-  color: rgba(255,255,255,0.6);
+  color: var(--console-muted);
 
   &::before,
   &::after {
     content: '';
     flex: 1;
     height: 1px;
-    background-color: rgba(255,255,255,0.06);
+    background-color: var(--console-border);
   }
 
   &::before { margin-right: 10px; }
@@ -319,10 +309,10 @@ h1 {
   gap: 12px;
   width: 100%;
   height: 46px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.04);
-  border-radius: 10px;
-  color: #e6eef9;
+  background: var(--console-surface);
+  border: 1px solid var(--console-border);
+  border-radius: 5px;
+  color: var(--console-text);
   padding: 0 12px;
   font-size: 14px;
 }
@@ -337,8 +327,9 @@ h1 {
 }
 
 @media (max-width: 480px) {
-  .login-card { padding: 20px; border-radius: 10px; }
-  .login-logo { width: 72px; height: 72px; }
+  .login-container { padding: 16px; }
+  .login-card { padding: 28px 20px; }
+  .login-logo { width: 56px; height: 56px; }
   .login-button { height: 42px; }
 }
 </style>

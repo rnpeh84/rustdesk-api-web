@@ -4,20 +4,12 @@
 </template>
 
 <script>
-  import { defineComponent, ref, onMounted } from 'vue'
+  import { defineComponent } from 'vue'
 
   export default defineComponent({
     name: 'Home',
     setup () {
-      const todoList = ref([
-        {title:'修复bug'},
-        {title:'修复bug'},
-        {title:'修复bug'},
-        {title:'增加新功能'},
-      ])
-      return {
-        todoList
-      }
+      return {}
     },
   })
 </script>

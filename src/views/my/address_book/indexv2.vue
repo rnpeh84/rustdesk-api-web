@@ -6,7 +6,7 @@
         <el-option v-for="c in collectionListRes.list" :key="c.id" :label="c.name" :value="c.id"></el-option>
       </el-select>
       <div class="aside-tags">
-        <div class="top" style="width: 100%">标签</div>
+        <div class="top" style="width: 100%">{{ T('Tags') }}</div>
         <div v-for="t in tagListRes.list"
              :key="t.id" class="tag"
              :class="{checked: checkedTags.includes(t.name)}"
@@ -39,14 +39,14 @@
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-            <el-button type="danger" @click="toAdd">{{ T('Add') }}</el-button>
+            <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
           </el-form-item>
         </el-form>
       </el-card>
       <el-card class="list-body" shadow="hover">
         <!--      <el-tag type="danger" style="margin-bottom: 10px">不建议在此操作地址簿，可能会造成数据不同步</el-tag>-->
         <el-table :data="listRes.list" v-loading="listRes.loading" border>
-          <el-table-column prop="id" label="ID" align="center" width="200">
+          <el-table-column prop="id" label="ID" align="center" width="200" fixed="left">
             <template #default="{row}">
               <span>{{ row.id }} <el-icon @click="handleClipboard(row.id, $event)"><CopyDocument/></el-icon></span>
             </template>
@@ -65,10 +65,10 @@
           <!--        <el-table-column prop="updated_at" label="更新时间" align="center"/>-->
           <el-table-column prop="alias" :label="T('Alias')" align="center" width="150"/>
           <el-table-column prop="hash" :label="T('Hash')" align="center" width="150" show-overflow-tooltip/>
-          <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="600" fixed="right">
+          <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="460" fixed="right">
             <template #default="{row}">
-              <el-button type="success" @click="connectByClient(row.id)">{{ T('Link') }}</el-button>
-              <el-button v-if="appStore.setting.appConfig.web_client" type="success" @click="toWebClientLink(row)">Web Client</el-button>
+              <el-button type="primary" plain @click="connectByClient(row.id)">{{ T('Link') }}</el-button>
+              <el-button v-if="appStore.setting.appConfig.web_client" type="primary" plain @click="toWebClientLink(row)">Web Client</el-button>
               <el-button v-if="appStore.setting.appConfig.web_client" type="primary" @click="toShowShare(row)">{{ T('ShareByWebClient') }}</el-button>
               <el-button @click="toEdit(row)">{{ T('Edit') }}</el-button>
               <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>

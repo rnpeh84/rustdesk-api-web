@@ -1,7 +1,7 @@
 <template>
   <div>
     <el-card class="list-query" shadow="hover">
-      <el-form inline label-width="150px">
+      <el-form inline label-width="150px" @keyup.enter="handlerQuery">
         <el-form-item label="ID">
           <el-input v-model="listQuery.id" clearable/>
         </el-form-item>
@@ -21,45 +21,64 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="success" @click="toExport">{{ T('Export') }}</el-button>
+          <el-button plain @click="resetQuery">{{ T('Reset') }}</el-button>
+          <el-button type="info" plain @click="toExport">{{ T('Export') }}</el-button>
           <!--          <el-button type="danger" @click="toBatchDelete">{{ T('BatchDelete') }}</el-button>-->
-          <el-button type="primary" @click="toBatchAddToAB">{{ T('BatchAddToAB') }}</el-button>
+          <el-button type="primary" plain :disabled="!multipleSelection.length" @click="toBatchAddToAB">{{ T('BatchAddToAB') }}</el-button>
 
         </el-form-item>
       </el-form>
     </el-card>
     <el-card class="list-body" shadow="hover">
-      <el-table :data="listRes.list" v-loading="listRes.loading" border size="small" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center"/>
-        <el-table-column prop="id" label="ID" align="center" width="150">
+      <div class="list-table-toolbar">
+        <div class="list-table-summary" aria-live="polite">
+          <strong>{{ T('ResultsCount', { param: listRes.total }) }}</strong>
+          <span v-if="multipleSelection.length" class="list-table-selection">
+            {{ T('SelectedCount', { param: multipleSelection.length }) }}
+          </span>
+        </div>
+      </div>
+      <el-table :data="listRes.list" v-loading="listRes.loading" border stripe size="small" scrollbar-always-on @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" align="center" fixed="left"/>
+        <el-table-column prop="id" label="ID" align="center" width="180" fixed="left" sortable>
           <template #default="{row}">
-            <span>{{ row.id }} <el-icon @click="handleClipboard(row.id, $event)"><CopyDocument/></el-icon></span>
+            <span class="peer-id-cell"><PeerOs :os="row.os"/><span>{{ row.id }}</span></span>
+            <el-button class="table-copy-button" link :aria-label="T('CopyId')" @click="handleClipboard(row.id, $event)">
+              <el-icon aria-hidden="true"><CopyDocument/></el-icon>
+            </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="cpu" label="CPU" align="center" width="100" show-overflow-tooltip/>
-        <el-table-column prop="hostname" :label="T('Hostname')" align="center" width="120"/>
-        <el-table-column prop="memory" :label="T('Memory')" align="center" width="120"/>
-        <el-table-column prop="os" :label="T('Os')" align="center" width="120" show-overflow-tooltip/>
-        <el-table-column prop="last_online_time" :label="T('LastOnlineTime')" align="center" min-width="120">
+        <el-table-column prop="cpu" label="CPU" align="center" width="100" sortable show-overflow-tooltip/>
+        <el-table-column prop="hostname" :label="T('Hostname')" align="center" width="120" sortable/>
+        <el-table-column prop="memory" :label="T('Memory')" align="center" width="120" sortable/>
+        <el-table-column prop="os" :label="T('Os')" align="center" width="120" sortable show-overflow-tooltip/>
+        <el-table-column prop="last_online_time" :label="T('LastOnlineTime')" align="center" width="160" sortable>
           <template #default="{row}">
             <div class="last_oline_time">
               <span> {{ row.last_online_time ? timeAgo(row.last_online_time * 1000) : '-' }}</span> <span class="dot" :class="{red: timeDis(row.last_online_time) >= 60, green: timeDis(row.last_online_time)< 60}"></span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="last_online_ip" :label="T('LastOnlineIp')" align="center" min-width="120"/>
-        <el-table-column prop="username" :label="T('Username')" align="center" width="120"/>
-        <el-table-column prop="uuid" :label="T('Uuid')" align="center" width="120" show-overflow-tooltip/>
-        <el-table-column prop="version" :label="T('Version')" align="center" width="80"/>
-        <el-table-column prop="alias" :label="T('Alias')" align="center" width="80"/>
-        <el-table-column prop="created_at" :label="T('CreatedAt')" align="center" width="150"/>
-        <el-table-column prop="updated_at" :label="T('UpdatedAt')" align="center" width="150"/>
-        <el-table-column :label="T('Actions')" align="center" width="500" class-name="table-actions" fixed="right">
+        <el-table-column prop="last_online_ip" :label="T('LastOnlineIp')" align="center" width="150" sortable/>
+        <el-table-column prop="username" :label="T('Username')" align="center" width="130" sortable/>
+        <el-table-column prop="uuid" :label="T('Uuid')" align="center" width="120" sortable show-overflow-tooltip/>
+        <el-table-column prop="version" :label="T('Version')" align="center" width="80" sortable/>
+        <el-table-column prop="alias" :label="T('Alias')" align="center" width="80" sortable/>
+        <el-table-column prop="created_at" :label="T('CreatedAt')" align="center" width="150" sortable/>
+        <el-table-column prop="updated_at" :label="T('UpdatedAt')" align="center" width="150" sortable/>
+        <el-table-column :label="T('Actions')" align="center" width="142" class-name="table-actions" fixed="right">
           <template #default="{row}">
-            <el-button type="success" @click="connectByClient(row.id)">{{ T('Link') }}</el-button>
-            <el-button v-if="appStore.setting.appConfig.web_client" type="success" @click="toWebClientLink(row)">Web Client</el-button>
-            <el-button type="primary" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-button>
-            <el-button @click="toView(row)">{{ T('View') }}</el-button>
+            <el-tooltip :content="T('Link')"><el-button circle type="primary" plain :icon="Connection" :aria-label="T('Link')" @click="connectByClient(row.id)"/></el-tooltip>
+            <el-tooltip v-if="appStore.setting.appConfig.web_client" content="Web Client"><el-button circle type="primary" plain :icon="Monitor" aria-label="Web Client" @click="toWebClientLink(row)"/></el-tooltip>
+            <el-dropdown trigger="click">
+              <el-button circle :icon="MoreFilled" :aria-label="T('More')"/>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
+                  <el-dropdown-item @click="toView(row)">{{ T('View') }}</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
             <!--            <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>-->
           </template>
         </el-table-column>
@@ -190,8 +209,10 @@
   import { useAppStore } from '@/store/app'
   import { connectByClient } from '@/utils/peer'
   import { CopyDocument } from '@element-plus/icons'
+  import { Connection, Monitor, MoreFilled } from '@element-plus/icons-vue'
   import { handleClipboard } from '@/utils/clipboard'
   import { batchCreateFromPeers } from '@/api/my/address_book'
+  import PeerOs from '@/components/icons/peerOs.vue'
 
   const appStore = useAppStore()
   const listRes = reactive({
@@ -220,6 +241,12 @@
     } else {
       listQuery.page = 1
     }
+  }
+  const resetQuery = () => {
+    listQuery.time_ago = null
+    listQuery.id = ''
+    listQuery.hostname = ''
+    handlerQuery()
   }
 
   /*const del = async (row) => {
@@ -386,6 +413,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.peer-id-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .dot {
