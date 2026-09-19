@@ -36,6 +36,11 @@
             <el-tooltip :content="T('Delete')"><el-button circle size="small" type="danger" plain :aria-label="T('Delete')" @click="del(row)"><el-icon><Delete/></el-icon></el-button></el-tooltip>
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty :description="T('NoAddressBooks')">
+            <el-button type="primary" @click="toAdd">{{ T('CreateAddressBook') }}</el-button>
+          </el-empty>
+        </template>
       </el-table>
     </el-card>
     <el-card class="list-page" shadow="hover">

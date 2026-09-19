@@ -21,9 +21,14 @@
             </template>
           </el-input>
         </el-form-item>
+		<el-form-item v-if="mfaRequired" :label="T('VerificationCode')">
+		  <el-input v-model="form.mfa_code" maxlength="16" autocomplete="one-time-code" @keyup.enter="login"/>
+		  <small class="mfa-help">{{ T('MFAChallengeGuide') }}</small>
+		</el-form-item>
         <el-form-item>
           <el-button @click="login" type="primary" class="login-button">{{ T('Login') }}</el-button>
           <el-button v-if="allowRegister" @click="register" class="login-button">{{ T('Register') }}</el-button>
+		  <el-button text class="forgot-button" @click="router.push('/password-reset-request')">{{ T('ForgotPassword') }}</el-button>
         </el-form-item>
       </el-form>
 
@@ -82,8 +87,10 @@
     password: '',
     platform: platform,
     captcha: '',
-    captcha_id: ''
+	captcha_id: '',
+	mfa_code: ''
   })
+	const mfaRequired = ref(false)
 
   const captchaCode = ref('')
   const redirect = route.query?.redirect
@@ -98,6 +105,9 @@
       // need captcha
       loadCaptcha()
     }
+	if (res.code === 1201) {
+	  mfaRequired.value = true
+	}
   }
 
   const loadCaptcha = async () => {
@@ -227,6 +237,7 @@ h1 {
     border-radius: 6px;
   }
 }
+.mfa-help{display:block;margin-top:6px;color:var(--console-muted);font-size:12px;text-align:left}
 
 .captcha-input{
   :deep(.el-input-group__append) {
@@ -276,6 +287,7 @@ h1 {
   color: white;
   border-color: var(--console-primary);
 }
+.forgot-button{width:100%;margin:0;color:var(--console-primary)}
 
 .divider {
   display: flex;

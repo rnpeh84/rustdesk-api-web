@@ -24,6 +24,11 @@
             </template>
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty :description="T('NoAddressBooks')">
+            <el-button type="primary" @click="toAdd">{{ T('CreateAddressBook') }}</el-button>
+          </el-empty>
+        </template>
       </el-table>
     </el-card>
     <el-card class="list-page" shadow="hover">

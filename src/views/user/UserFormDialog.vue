@@ -32,14 +32,15 @@
           <el-option v-for="item in groupsList" :key="item.id" :label="displayGroupName(item)" :value="item.id" />
         </el-select>
       </el-form-item>
+      <el-form-item :label="T('Role')" prop="role">
+        <el-select v-model="form.role" :placeholder="T('PleaseSelect')">
+          <el-option v-for="role in roles" :key="role.value" :label="T(role.label)" :value="role.value" />
+        </el-select>
+      </el-form-item>
       <el-form-item class="dialog-form__wide" :label="T('Remark')" prop="remark">
         <el-input v-model="form.remark" name="remark" autocomplete="off" />
       </el-form-item>
       <div class="dialog-switches dialog-form__wide">
-        <div class="dialog-switch-row">
-          <span><strong>{{ T('IsAdmin') }}</strong><small>{{ T('AdministratorDescription') }}</small></span>
-          <el-switch v-model="form.is_admin" :aria-label="T('IsAdmin')" />
-        </div>
         <div class="dialog-switch-row">
           <span><strong>{{ T('Status') }}</strong><small>{{ T('UserStatusDescription') }}</small></span>
           <el-switch v-model="form.status" :active-value="ENABLE_STATUS" :inactive-value="DISABLE_STATUS" :aria-label="T('Status')" />
@@ -63,6 +64,7 @@ import { list as groups } from '@/api/group'
 import { DISABLE_STATUS, ENABLE_STATUS } from '@/utils/common_options'
 import { T } from '@/utils/i18n'
 import { displayGroupName } from '@/utils/group'
+import { useUserStore } from '@/store/user'
 
 const props = defineProps({ visible: Boolean, userId: { type: Number, default: 0 } })
 const emit = defineEmits(['update:visible', 'saved'])
@@ -72,7 +74,17 @@ const loading = ref(false)
 const submitting = ref(false)
 const isEdit = computed(() => props.userId > 0)
 const dialogVisible = computed({ get: () => props.visible, set: value => emit('update:visible', value) })
-const emptyForm = () => ({ id: 0, username: '', email: '', nickname: '', group_id: null, is_admin: false, status: ENABLE_STATUS, remark: '' })
+const userStore = useUserStore()
+const allRoles = [
+  { value: 'system_admin', label: 'SystemAdminRole' },
+  { value: 'device_admin', label: 'DeviceAdminRole' },
+  { value: 'user_admin', label: 'UserAdminRole' },
+  { value: 'address_book_admin', label: 'AddressBookAdminRole' },
+  { value: 'auditor', label: 'AuditorRole' },
+  { value: 'user', label: 'UserRole' },
+]
+const roles = computed(() => userStore.permissions?.includes('*') ? allRoles : allRoles.filter(role => role.value === 'user'))
+const emptyForm = () => ({ id: 0, username: '', email: '', nickname: '', group_id: null, is_admin: false, role: 'user', status: ENABLE_STATUS, remark: '' })
 const form = reactive(emptyForm())
 const rules = computed(() => ({
   username: [{ required: true, message: T('ParamRequired', { param: T('Username') }), trigger: 'blur' }],
@@ -105,7 +117,8 @@ const submit = async () => {
   if (!valid) return
   submitting.value = true
   const request = isEdit.value ? update : create
-  const res = await request({ ...form }).catch(() => false)
+  const payload = { ...form, is_admin: form.role === 'system_admin' }
+  const res = await request(payload).catch(() => false)
   submitting.value = false
   if (!res) return
   ElMessage.success(T('OperationSuccess'))

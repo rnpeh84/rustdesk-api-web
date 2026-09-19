@@ -13,6 +13,9 @@ const constantRoutes = [
     meta: { title: 'Register' },
     component: () => import('@/views/register/index.vue'),
   },
+	{ path: '/password-reset-request', name: 'PasswordResetRequest', component: () => import('@/views/account_action/index.vue'), hidden: true },
+	{ path: '/password-reset', name: 'PasswordReset', component: () => import('@/views/account_action/index.vue'), hidden: true },
+	{ path: '/invite', name: 'InviteAccept', component: () => import('@/views/account_action/index.vue'), hidden: true },
   {
     path: '/404',
     component: () => import('@/views/error-page/404.vue'),
@@ -216,6 +219,36 @@ export const asyncRoutes = [
         meta: { title: 'ServerCmd', icon: 'Tools' /*keepAlive: true*/ },
         component: () => import('@/views/rustdesk/control.vue'),
       },
+      {
+        path: '/policy',
+        name: 'Policy',
+        meta: { title: 'PolicyManage', icon: 'DocumentChecked' },
+        component: () => import('@/views/policy/index.vue'),
+      },
+      {
+        path: '/adminAudit',
+        name: 'AdminAudit',
+        meta: { title: 'AdminAuditLog', icon: 'Tickets' },
+        component: () => import('@/views/audit/adminList.vue'),
+      },
+	  {
+		path: '/operations',
+		name: 'Operations',
+		meta: { title: 'OperationsCenter', icon: 'Odometer' },
+		component: () => import('@/views/operations/index.vue'),
+	  },
+	  {
+		path: '/fleet',
+		name: 'Fleet',
+		meta: { title: 'FleetManagement', icon: 'Promotion' },
+		component: () => import('@/views/fleet/index.vue'),
+	  },
+	  {
+		path: '/externalAuth',
+		name: 'ExternalAuth',
+		meta: { title: 'ExternalAuthOperations', icon: 'Lock' },
+		component: () => import('@/views/external_auth/index.vue'),
+	  },
     ],
   },
 ]

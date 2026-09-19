@@ -84,6 +84,11 @@
             </el-dropdown>
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty :description="T('NoAddressBookEntries')">
+            <el-button type="primary" @click="toAdd">{{ T('AddAddressBookEntry') }}</el-button>
+          </el-empty>
+        </template>
       </el-table>
     </el-card>
     <el-card class="list-page" shadow="hover">

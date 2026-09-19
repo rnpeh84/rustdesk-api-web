@@ -1,0 +1,22 @@
+<template>
+  <section class="fleet-page" v-loading="loading">
+    <el-card shadow="never">
+      <template #header><div class="head"><div><strong>{{ T('RegistrationTokens') }}</strong><small>{{ T('RegistrationTokensDescription') }}</small></div><el-button type="primary" @click="tokenDialog=true">{{ T('CreateToken') }}</el-button></div></template>
+      <el-table :data="rows" stripe><el-table-column prop="name" :label="T('Name')" min-width="150"/><el-table-column prop="token_prefix" :label="T('TokenPrefix')" width="150"/><el-table-column :label="T('Usage')" width="110"><template #default="{row}">{{ row.uses }} / {{ row.max_uses }}</template></el-table-column><el-table-column prop="expires_at" :label="T('ExpiresAt')" width="180"><template #default="{row}">{{ new Date(row.expires_at*1000).toLocaleString() }}</template></el-table-column><el-table-column :label="T('Action')" width="100"><template #default="{row}"><el-button text type="danger" :disabled="Boolean(row.revoked_at)" @click="revoke(row)">{{ T('Revoke') }}</el-button></template></el-table-column></el-table>
+    </el-card>
+    <el-card shadow="never"><template #header><div class="head"><div><strong>{{ T('CSVDeviceImport') }}</strong><small>{{ T('CSVDeviceImportDescription') }}</small></div><div><el-button @click="runImport(true)">{{ T('Validate') }}</el-button><el-button type="primary" @click="runImport(false)">{{ T('Import') }}</el-button></div></div></template><el-input v-model="csv" type="textarea" :rows="6" placeholder="device_id,uuid,group_id"/><el-table v-if="importRows.length" :data="importRows" class="results"><el-table-column prop="row" :label="T('Row')" width="80"/><el-table-column prop="device_id" label="Device ID"/><el-table-column :label="T('Result')"><template #default="{row}"><el-tag :type="row.success?'success':'danger'">{{ row.success ? T('Success') : row.error }}</el-tag></template></el-table-column></el-table></el-card>
+    <el-dialog v-model="tokenDialog" :title="T('CreateToken')" width="520px"><el-form label-position="top"><el-form-item :label="T('Name')"><el-input v-model="form.name"/></el-form-item><el-form-item :label="T('ExpiresAt')"><el-date-picker v-model="expires" type="datetime"/></el-form-item><el-form-item :label="T('MaxUses')"><el-input-number v-model="form.max_uses" :min="1"/></el-form-item><el-form-item :label="T('DeviceGroup')"><el-input-number v-model="form.group_id" :min="0"/></el-form-item><el-form-item :label="T('PolicyManage')"><el-input-number v-model="form.policy_id" :min="0"/></el-form-item></el-form><template #footer><el-button @click="tokenDialog=false">{{ T('Cancel') }}</el-button><el-button type="primary" @click="create">{{ T('Create') }}</el-button></template></el-dialog>
+    <el-dialog v-model="showRaw" :title="T('TokenCreated')" width="560px"><el-alert type="warning" :closable="false" :title="T('TokenShownOnce')"/><el-input class="raw-token" :model-value="rawToken" readonly/></el-dialog>
+  </section>
+</template>
+<script setup>
+import { onMounted, reactive, ref } from 'vue'; import { ElMessageBox } from 'element-plus'; import { createToken, importDevices, revokeToken, tokens } from '@/api/fleet'; import { T } from '@/utils/i18n'
+const loading=ref(false),rows=ref([]),csv=ref('device_id,uuid,group_id\n'),importRows=ref([]),tokenDialog=ref(false),showRaw=ref(false),rawToken=ref(''),expires=ref(new Date(Date.now()+86400000)); const form=reactive({name:'',max_uses:1,group_id:0,policy_id:0})
+const load=async()=>{loading.value=true;const res=await tokens({page:1,page_size:100}).catch(()=>false);rows.value=res?.data?.list||[];loading.value=false}
+const create=async()=>{const res=await createToken({...form,expires_at:Math.floor(new Date(expires.value).getTime()/1000)}).catch(()=>false);if(res){rawToken.value=res.data.token;tokenDialog.value=false;showRaw.value=true;load()}}
+const revoke=async row=>{if(!await ElMessageBox.confirm(T('RevokeTokenConfirm')).catch(()=>false))return;if(await revokeToken({id:row.id}).catch(()=>false))load()}
+const runImport=async dry_run=>{const res=await importDevices({csv:csv.value,dry_run}).catch(()=>false);importRows.value=res?.data?.list||[]}
+onMounted(load)
+</script>
+<style scoped lang="scss">.fleet-page{display:grid;gap:14px}.head{display:flex;justify-content:space-between;align-items:center;gap:16px}.head strong,.head small{display:block}.head small{margin-top:3px;color:var(--console-muted)}.results{margin-top:14px}.raw-token{margin-top:14px}</style>
+

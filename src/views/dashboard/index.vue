@@ -34,6 +34,17 @@
     </div>
 
     <template v-if="isSystem">
+	  <div class="service-strip">
+		<button v-for="serviceItem in serviceHealth" :key="serviceItem.name" type="button" @click="goTo('/operations')">
+		  <i :class="`is-${serviceItem.status}`"></i><span><strong>{{ serviceItem.name }}</strong><small>{{ serviceItem.status }} · {{ serviceItem.detail }}</small></span>
+		</button>
+	  </div>
+	  <div class="ops-facts" aria-label="운영 지표">
+		<span><small>{{ T('Uptime') }}</small><strong>{{ Math.floor((operations.uptime_seconds || 0) / 3600) }}h</strong></span>
+		<span><small>{{ T('ConnectionSuccessRate') }}</small><strong>{{ Math.round(operations.connection_success_rate || 0) }}%</strong></span>
+		<span><small>{{ T('DirectConnectionRate') }}</small><strong>{{ Math.round(operations.direct_rate || 0) }}%</strong></span>
+		<span><small>{{ T('AuditCollectionLag') }}</small><strong>{{ operations.audit_lag_seconds || 0 }}s</strong></span>
+	  </div>
       <div class="dashboard-grid dashboard-grid--system">
         <el-card class="dashboard-panel dashboard-panel--status" shadow="never">
           <template #header>
@@ -244,6 +255,7 @@ import { list as listMyShares } from '@/api/my/share_record'
 import { useUserStore } from '@/store/user'
 import { T } from '@/utils/i18n'
 import { timeAgo } from '@/utils/time'
+import { status as operationsStatus } from '@/api/operations'
 
 const PanelHeading = defineComponent({
   props: { title: String, description: String },
@@ -272,6 +284,7 @@ const totals = ref({ devices: 0, users: 0, logins: 0, connections: 0, files: 0, 
 const deviceRows = ref([])
 const loginRows = ref([])
 const connectionRows = ref([])
+const operations = ref({})
 const isSystem = computed(() => props.scope === 'system')
 let requestVersion = 0
 let lastLoadedAt = 0
@@ -287,6 +300,7 @@ const attentionDevices = computed(() => deviceRows.value.filter(device => !devic
 const onlineRate = computed(() => totals.value.devices ? Math.round((onlineDevices.value / totals.value.devices) * 100) : 0)
 const deviceSampleLimited = computed(() => totals.value.devices > deviceRows.value.length)
 const userInitial = computed(() => (userStore.nickname || userStore.username || 'U').trim().slice(0, 1).toUpperCase())
+const serviceHealth = computed(() => ['api', 'database', 'hbbs', 'hbbr'].map(key => { const item = operations.value[key] || { status: 'unknown' }; return { name: key.toUpperCase(), status: item.status, detail: item.reason || `${item.latency_ms || 0}ms` } }))
 
 const metrics = computed(() => isSystem.value ? [
   { label: T('ManagedDevices'), detail: T('AllRegisteredResources'), value: totals.value.devices, icon: markRaw(Monitor), tone: 'blue' },
@@ -353,13 +367,14 @@ const loadDashboard = async () => {
   partialFailure.value = false
   const query = { page: 1, page_size: isSystem.value ? 500 : 20 }
   const requests = isSystem.value
-    ? [listPeers(query), listUsers(query), listLoginLogs(query), listConnections(query), listFiles(query), listShares(query)]
+	? [listPeers(query), listUsers(query), listLoginLogs(query), listConnections(query), listFiles(query), listShares(query), operationsStatus()]
     : [listMyPeers(query), listMyLoginLogs(query), listMyShares(query)]
   const results = (await Promise.allSettled(requests)).map(resultValue)
   if (currentVersion !== requestVersion) return
   partialFailure.value = results.some(result => !result)
   if (isSystem.value) {
-    const [devices, users, logins, connections, files, shares] = results.map(normalize)
+	const [devices, users, logins, connections, files, shares] = results.slice(0, 6).map(normalize)
+	operations.value = results[6]?.data || {}
     totals.value = { devices: devices.total || 0, users: users.total || 0, logins: logins.total || 0, connections: connections.total || 0, files: files.total || 0, shares: shares.total || 0 }
     deviceRows.value = devices.list || []
     loginRows.value = logins.list || []
@@ -479,6 +494,8 @@ onActivated(() => {
 .dashboard-actions button { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; padding: 11px; color: var(--console-text); text-align: left; background: var(--console-canvas); border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
 .dashboard-actions button:hover, .dashboard-actions button:focus-visible { background: var(--console-primary-soft); border-color: var(--console-primary-border); }
 .dashboard-actions strong, .dashboard-actions small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.service-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.service-strip button{display:grid;grid-template-columns:10px 1fr;align-items:center;gap:9px;padding:10px 12px;text-align:left;background:var(--console-surface);border:1px solid var(--console-border);border-radius:6px;cursor:pointer}.service-strip i{width:9px;height:9px;border-radius:50%;background:#98a2b3}.service-strip i.is-ok{background:var(--console-success)}.service-strip i.is-error{background:var(--console-danger)}.service-strip strong,.service-strip small{display:block}.service-strip small{margin-top:2px;color:var(--console-muted);font-size:11px}
+.ops-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;overflow:hidden;background:var(--console-border);border:1px solid var(--console-border);border-radius:6px}.ops-facts span{padding:10px 14px;background:var(--console-surface)}.ops-facts small,.ops-facts strong{display:block}.ops-facts small{color:var(--console-muted);font-size:11px}.ops-facts strong{margin-top:3px;color:var(--console-heading);font-variant-numeric:tabular-nums}
 .dashboard-actions small { margin-top: 2px; color: var(--console-muted); font-size: 11px; }
 @media (max-width: 1100px) {
   .dashboard-metrics, .dashboard-grid--system, .dashboard-grid--system-lower, .dashboard-grid--user { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -498,5 +515,6 @@ onActivated(() => {
   .dashboard-status, .signin-list > div > .el-tag { grid-column: 2; justify-self: start; }
   .account-readiness { grid-template-columns: 44px minmax(0, 1fr); }
   .account-readiness .el-tag { grid-column: 2; justify-self: start; }
+	.service-strip,.ops-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 </style>

@@ -54,6 +54,10 @@
         </template>
         <p>{{ T('PasswordSecurityGuide') }}</p>
         <el-button type="warning" plain :icon="Lock" @click="showChangePwd">{{ T('ChangePassword') }}</el-button>
+		<div class="security-divider"></div>
+		<div class="security-state"><div><strong>{{ T('TwoFactorAuthentication') }}</strong><small>{{ T('RecoveryCodesRemaining', { param: security.unused_recovery_codes || 0 }) }}</small></div><el-tag :type="security.totp_enabled ? 'success' : 'info'">{{ T(security.totp_enabled ? 'Enabled' : 'Disabled') }}</el-tag></div>
+		<el-button v-if="!security.totp_enabled" type="primary" plain :icon="Key" @click="startTOTP">{{ T('SetupTOTP') }}</el-button>
+		<el-button v-else type="danger" plain @click="turnOffTOTP">{{ T('DisableTOTP') }}</el-button>
       </el-card>
     </div>
 
@@ -94,24 +98,37 @@
       </div>
     </el-card>
 
+	<el-card class="profile-panel" shadow="never">
+	  <template #header><div class="profile-panel__heading"><span class="profile-panel__icon"><el-icon><Monitor/></el-icon></span><div><h2>{{ T('ActiveSessions') }}</h2><p>{{ T('ActiveSessionsDescription') }}</p></div></div></template>
+	  <el-table :data="sessionRows"><el-table-column prop="device_id" :label="T('Device')"/><el-table-column prop="device_uuid" label="UUID"/><el-table-column prop="expired_at" :label="T('ExpiresAt')"><template #default="{row}">{{ new Date(row.expired_at*1000).toLocaleString() }}</template></el-table-column><el-table-column :label="T('Action')" width="100"><template #default="{row}"><el-button text type="danger" @click="endSession(row)">{{ T('Revoke') }}</el-button></template></el-table-column></el-table>
+	</el-card>
+
+	<el-dialog v-model="totpDialog" :title="T('SetupTOTP')" width="560px"><p>{{ T('TOTPSetupGuide') }}</p><el-input :model-value="setup.secret" readonly/><p class="totp-uri">{{ setup.otpauth_uri }}</p><strong>{{ T('RecoveryCodes') }}</strong><div class="recovery-codes"><code v-for="code in setup.recovery_codes" :key="code">{{ code }}</code></div><el-form-item :label="T('VerificationCode')"><el-input v-model="verifyCode" maxlength="6"/></el-form-item><template #footer><el-button @click="totpDialog=false">{{ T('Cancel') }}</el-button><el-button type="primary" @click="confirmTOTP">{{ T('Enable') }}</el-button></template></el-dialog>
+
     <change-pwd-dialog v-model:visible="changePwdVisible"/>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Link, Lock, User, UserFilled } from '@element-plus/icons'
+import { Key, Link, Lock, Monitor, User, UserFilled } from '@element-plus/icons'
 import { ElMessageBox } from 'element-plus'
 import ChangePwdDialog from '@/components/changePwdDialog.vue'
 import { useUserStore } from '@/store/user'
 import { bind, unbind } from '@/api/oauth'
 import { myOauth } from '@/api/user'
 import { T } from '@/utils/i18n'
+import { disableTOTP, enableTOTP, revokeSession, securityStatus, sessions, setupTOTP } from '@/api/accountSecurity'
 
 const userStore = useUserStore()
 const changePwdVisible = ref(false)
 const oidcData = ref([])
 const oauthLoading = ref(false)
+const security = ref({ totp_enabled: false, unused_recovery_codes: 0 })
+const sessionRows = ref([])
+const totpDialog = ref(false)
+const setup = ref({ recovery_codes: [] })
+const verifyCode = ref('')
 
 const isAdmin = computed(() => userStore.route_names?.includes('*'))
 const displayName = computed(() => userStore.nickname || userStore.username)
@@ -138,7 +155,17 @@ const toUnBind = async row => {
   if (res) getMyOauth()
 }
 
-onMounted(getMyOauth)
+const loadSecurity = async () => {
+  const [state, sessionResult] = await Promise.all([securityStatus().catch(() => false), sessions().catch(() => false)])
+  security.value = state?.data || security.value
+  sessionRows.value = sessionResult?.data || []
+}
+const startTOTP = async () => { const res = await setupTOTP().catch(() => false); if (res) { setup.value = res.data; verifyCode.value = ''; totpDialog.value = true } }
+const confirmTOTP = async () => { if (await enableTOTP({ code: verifyCode.value }).catch(() => false)) { totpDialog.value = false; loadSecurity() } }
+const turnOffTOTP = async () => { if (await ElMessageBox.confirm(T('DisableTOTPConfirm')).catch(() => false) && await disableTOTP().catch(() => false)) loadSecurity() }
+const endSession = async row => { if (await revokeSession({ id: row.id }).catch(() => false)) loadSecurity() }
+
+onMounted(() => { getMyOauth(); loadSecurity() })
 </script>
 
 <style scoped lang="scss">
@@ -166,6 +193,7 @@ onMounted(getMyOauth)
 .profile-security { min-height: 100%; }
 .profile-security p { margin: 0 0 20px; color: var(--console-text); line-height: 1.7; }
 .profile-security .el-button { width: 100%; }
+.security-divider{height:1px;margin:18px 0;background:var(--console-border)}.security-state{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.security-state strong,.security-state small{display:block}.security-state small{margin-top:3px;color:var(--console-muted)}.totp-uri{overflow-wrap:anywhere;color:var(--console-muted);font-size:12px}.recovery-codes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:10px 0 18px}.recovery-codes code{padding:8px;background:var(--console-canvas);border-radius:4px;text-align:center}
 .provider-list { display: grid; }
 .provider-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; min-height: 64px; padding: 8px 2px; border-bottom: 1px solid var(--console-border); }
 .provider-item:last-child { border-bottom: 0; }

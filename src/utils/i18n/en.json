@@ -201,7 +201,7 @@
     "One": "Info"
   },
   "AddressBooks": {
-    "One": "Address Books"
+    "One": "Address book entries"
   },
   "System": {
     "One": "System"
@@ -210,7 +210,7 @@
     "One": "Peers"
   },
   "AddressBookManage": {
-    "One": "Address Books"
+    "One": "Address book entries"
   },
   "GroupManage": {
     "One": "Groups"
@@ -401,7 +401,7 @@
     "One": "To Local"
   },
   "AddressBookName": {
-    "One": "Address Book Name"
+    "One": "Address book management"
   },
   "AddRule": {
     "One": "Add Rule"
@@ -431,7 +431,7 @@
     "One": "Address Book"
   },
   "AddressBookNameManage": {
-    "One": "Address Book Names"
+    "One": "Address book management"
   },
   "MyAddressBookTips": {
     "One": "\"My Address Book\" is the default of the system, cannot be modified or deleted"
@@ -703,5 +703,108 @@
   "SystemIdentityMenu": { "One": "Users and access" },
   "SystemAddressBookMenu": { "One": "Address books and tags" },
   "SystemAuditMenu": { "One": "Audit and activity" },
-  "SystemOperationMenu": { "One": "Server operations" }
+  "SystemOperationMenu": { "One": "Server operations" },
+  "Cpu": { "One": "CPU" },
+  "SearchDeviceId": { "One": "Search device ID" },
+  "SearchHostname": { "One": "Search hostname" },
+  "AdvancedFilters": { "One": "More filters" },
+  "SearchUsername": { "One": "Search username" },
+  "SearchIp": { "One": "Search IP address" },
+  "ActiveFilterCount": { "One": "{param} filters applied" },
+  "SavedView": { "One": "Saved view" },
+  "DefaultView": { "One": "Default view" },
+  "MySavedView": { "One": "My saved view" },
+  "SaveCurrentView": { "One": "Save current view" },
+  "RowDensity": { "One": "Row density" },
+  "Comfortable": { "One": "Comfortable" },
+  "Compact": { "One": "Compact" },
+  "ViewSaved": { "One": "Current view saved." },
+  "AddDevice": { "One": "Add device" },
+  "Online": { "One": "Online" },
+  "Offline": { "One": "Offline" },
+  "DeviceIdAndOs": { "One": "Device ID / OS" },
+  "UserAndGroup": { "One": "User / group" },
+  "QuickConnect": { "One": "Quick connect" },
+  "Connect": { "One": "Connect" },
+  "DeviceActions": { "One": "Actions for device {param}" },
+  "ViewDetails": { "One": "View details" },
+  "NoDevicesFound": { "One": "No devices match these filters." },
+  "ResetFilters": { "One": "Reset filters" },
+  "DeviceDetails": { "One": "Device details" },
+  "ConnectNow": { "One": "Connect now" },
+  "DeviceIdentity": { "One": "Device identity" },
+  "Assignment": { "One": "User and policy" },
+  "AppliedPolicy": { "One": "Applied policy" },
+  "DeviceNote": { "One": "Device note" },
+  "NotCollected": { "One": "Not collected" },
+  "SystemInformation": { "One": "System information" },
+  "PublicKeyFingerprint": { "One": "Public key fingerprint" },
+  "RecentActivity": { "One": "Recent activity" },
+  "ActivityLoadFailed": { "One": "Recent activity could not be loaded. Try again shortly." },
+  "ActivityUnavailable": { "One": "Connection activity is not available for this account." },
+  "NoAddressBooks": { "One": "No address books yet. Create one to organize devices." },
+  "CreateAddressBook": { "One": "Create address book" },
+  "NoAddressBookEntries": { "One": "No address book entries yet. Add a device to connect." },
+  "AddAddressBookEntry": { "One": "Add address book entry" },
+  "Role": { "One": "Role" },
+  "SystemAdminRole": { "One": "System administrator" },
+  "DeviceAdminRole": { "One": "Device administrator" },
+  "UserAdminRole": { "One": "User administrator" },
+  "AddressBookAdminRole": { "One": "Address book administrator" },
+  "AuditorRole": { "One": "Auditor" },
+  "UserRole": { "One": "User" },
+  "PolicyManage": { "One": "Policy management" },
+  "PolicyDescription": { "One": "Version and deploy settings by device and user scope." },
+  "AddPolicy": { "One": "Add policy" },
+  "EditPolicy": { "One": "Edit policy" },
+  "PolicyName": { "One": "Policy name" },
+  "PolicyConfigJson": { "One": "Policy settings JSON" },
+  "ChangeSummary": { "One": "Change summary" },
+  "Published": { "One": "Published" },
+  "Draft": { "One": "Draft" },
+  "Validated": { "One": "Validated" },
+  "ValidatePolicy": { "One": "Validate policy" },
+  "PolicyValidated": { "One": "Policy settings validated." },
+  "Version": { "One": "Version" },
+  "AssignPolicy": { "One": "Assign policy" },
+  "AssignmentScope": { "One": "Assignment scope" },
+  "TargetId": { "One": "Target ID" },
+  "Priority": { "One": "Priority" },
+  "Assign": { "One": "Assign" },
+  "Preview": { "One": "Preview" },
+  "History": { "One": "History" },
+  "Publish": { "One": "Publish" },
+  "PublishConfirm": { "One": "Publish the validated current draft?" },
+  "PolicyPreview": { "One": "Policy impact preview" },
+  "PolicyHistory": { "One": "Policy version history" },
+  "AffectedDevices": { "One": "Affected devices" },
+  "ChangedFields": { "One": "Changed fields" },
+  "Validation": { "One": "Validation" },
+  "Valid": { "One": "Valid" },
+  "Invalid": { "One": "Invalid" },
+  "InvalidJson": { "One": "Policy settings must be a valid JSON object." },
+  "UserGroupScope": { "One": "User group" },
+  "UserScope": { "One": "User" },
+  "DeviceGroupScope": { "One": "Device group" },
+  "DeviceScope": { "One": "Device" },
+  "PublishedAt": { "One": "Published at" },
+  "AdminAuditLog": { "One": "Administrative audit" },
+  "Resource": { "One": "Resource" },
+  "Result": { "One": "Result" },
+  "Success": { "One": "Success" },
+  "Failure": { "One": "Failure" },
+  "Denied": { "One": "Denied" },
+  "Actor": { "One": "Actor" },
+  "Action": { "One": "Action" },
+  "Target": { "One": "Target" },
+  "RequestId": { "One": "Request ID" },
+	"Summary": { "One": "Request summary" },
+	"OperationsCenter": { "One": "Operations center" }, "OperationsAlarmCenter": { "One": "Operations and security alarms" }, "OperationsAlarmDescription": { "One": "Review and handle service failures and security signals." },
+	"Severity": { "One": "Severity" }, "Title": { "One": "Title" }, "Description": { "One": "Description" }, "Occurrences": { "One": "Occurrences" }, "Assignee": { "One": "Assignee" }, "NoOperationsAlarms": { "One": "No active operations alarms." },
+	"FleetManagement": { "One": "Device enrollment" }, "RegistrationTokens": { "One": "Device registration tokens" }, "RegistrationTokensDescription": { "One": "Manage expiring and usage-limited enrollment paths." }, "CreateToken": { "One": "Create token" }, "TokenPrefix": { "One": "Token identifier" }, "Usage": { "One": "Usage" }, "ExpiresAt": { "One": "Expires at" }, "Revoke": { "One": "Revoke" },
+	"CSVDeviceImport": { "One": "CSV pre-enrollment" }, "CSVDeviceImportDescription": { "One": "Validate row errors before import and identify retry targets." }, "Validate": { "One": "Validate" }, "Import": { "One": "Import" }, "Row": { "One": "Row" }, "MaxUses": { "One": "Maximum uses" }, "DeviceGroup": { "One": "Device group ID" }, "TokenCreated": { "One": "Registration token created" }, "TokenShownOnce": { "One": "This token is shown once. Store it securely." }, "RevokeTokenConfirm": { "One": "Revoke this registration token now?" },
+	"TwoFactorAuthentication": { "One": "Two-factor authentication" }, "RecoveryCodesRemaining": { "One": "{param} recovery codes remaining" }, "Enabled": { "One": "Enabled" }, "Disabled": { "One": "Disabled" }, "SetupTOTP": { "One": "Set up authenticator" }, "DisableTOTP": { "One": "Disable two-factor authentication" }, "DisableTOTPConfirm": { "One": "Disable two-factor authentication and all recovery codes?" }, "ActiveSessions": { "One": "Active sessions" }, "ActiveSessionsDescription": { "One": "Review tokens and revoke sessions on lost devices." }, "Device": { "One": "Device" }, "TOTPSetupGuide": { "One": "Add the secret or URI to an authenticator and enter its 6-digit code. Recovery codes are shown once." }, "RecoveryCodes": { "One": "Recovery codes" }, "VerificationCode": { "One": "Verification or recovery code" }, "MFAChallengeGuide": { "One": "Enter a 6-digit authenticator code or an unused recovery code." },
+	"ExternalAuthOperations": { "One": "External authentication and email" }, "SMTPSettings": { "One": "SMTP settings" }, "SMTPSettingsDescription": { "One": "Manage delivery for invitations and password recovery." }, "Configured": { "One": "Configured" }, "NotConfigured": { "One": "Not configured" }, "StoredSecretPlaceholder": { "One": "Keep stored secret" }, "TestRecipient": { "One": "Test recipient" }, "SendTest": { "One": "Send test" }, "Saved": { "One": "Saved." }, "TestMailSent": { "One": "Test email sent." }, "OIDCConnectionTest": { "One": "OIDC connection test" }, "TestConnection": { "One": "Test discovery" }, "LDAPDryRun": { "One": "LDAP mapping dry-run" }, "PreviewMapping": { "One": "Preview mapping" }, "InviteUser": { "One": "Invite user" }, "SendInvite": { "One": "Send invitation" }, "InviteSent": { "One": "Invitation sent." },
+	"Uptime": { "One": "Uptime" }, "ConnectionSuccessRate": { "One": "Connection completion" }, "DirectConnectionRate": { "One": "Direct connection rate" }, "AuditCollectionLag": { "One": "Audit collection lag" },
+	"ForgotPassword": { "One": "Forgot password?" }, "RequestPasswordReset": { "One": "Password recovery" }, "RequestPasswordResetDescription": { "One": "Send a reset link to your registered email." }, "SendResetLink": { "One": "Send reset link" }, "AcceptInvitation": { "One": "Accept invitation" }, "AcceptInvitationDescription": { "One": "Set a secure password for your new account." }, "ResetPassword": { "One": "Set a new password" }, "ResetPasswordDescription": { "One": "Enter a new password with at least 8 characters." }, "NewPassword": { "One": "New password" }, "ConfirmPassword": { "One": "Confirm password" }, "BackToLogin": { "One": "Back to login" }, "PasswordValidationGuide": { "One": "Enter a matching password with at least 8 characters." }, "ResetRequestAccepted": { "One": "If the account exists, a reset email will be sent." }, "Completed": { "One": "Completed." }, "CreateAccount": { "One": "Create account" }
 }

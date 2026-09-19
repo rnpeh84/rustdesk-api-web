@@ -1,35 +1,20 @@
 <template>
-  <div>
-    <el-card class="list-query" shadow="hover">
-      <el-form inline label-width="150px" @keyup.enter="handlerQuery">
-        <el-form-item label="ID">
-          <el-input v-model="listQuery.id" clearable/>
-        </el-form-item>
-        <el-form-item :label="T('Hostname')">
-          <el-input v-model="listQuery.hostname" clearable/>
-        </el-form-item>
-        <el-form-item :label="T('LastOnlineTime')">
-          <el-select v-model="listQuery.time_ago" clearable>
-            <el-option
-                v-for="item in timeFilters"
-                :key="item.value"
-                :label="item.text"
-                :value="item.value"
-                :disabled="item.value === 0"
-            ></el-option>
+  <div class="peer-management">
+    <el-card class="device-filter-card" shadow="never">
+      <form class="device-filter-toolbar" role="search" @submit.prevent="handlerQuery">
+        <div class="device-filter-primary">
+          <el-input v-model="listQuery.id" clearable :placeholder="T('SearchDeviceId')" :aria-label="T('SearchDeviceId')"/>
+          <el-input v-model="listQuery.hostname" clearable :placeholder="T('SearchHostname')" :aria-label="T('SearchHostname')"/>
+          <el-select v-model="listQuery.time_ago" clearable :placeholder="T('LastOnlineTime')" :aria-label="T('LastOnlineTime')">
+            <el-option v-for="item in timeFilters" :key="item.value" :label="item.text" :value="item.value" :disabled="item.value === 0"/>
           </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button plain @click="resetQuery">{{ T('Reset') }}</el-button>
-          <el-button type="info" plain @click="toExport">{{ T('Export') }}</el-button>
-          <!--          <el-button type="danger" @click="toBatchDelete">{{ T('BatchDelete') }}</el-button>-->
-          <el-button type="primary" plain :disabled="!multipleSelection.length" @click="toBatchAddToAB">{{ T('BatchAddToAB') }}</el-button>
-
-        </el-form-item>
-      </el-form>
+          <el-button native-type="submit" type="primary" :icon="Search">{{ T('Filter') }}</el-button>
+          <el-button :icon="RefreshLeft" @click="resetQuery">{{ T('Reset') }}</el-button>
+        </div>
+        <el-button :icon="Download" @click="toExport">{{ T('Export') }}</el-button>
+      </form>
     </el-card>
-    <el-card class="list-body" shadow="hover">
+    <el-card class="list-body device-list-card" shadow="never">
       <div class="list-table-toolbar">
         <div class="list-table-summary" aria-live="polite">
           <strong>{{ T('ResultsCount', { param: listRes.total }) }}</strong>
@@ -38,53 +23,53 @@
           </span>
         </div>
       </div>
-      <el-table :data="listRes.list" v-loading="listRes.loading" border stripe size="small" scrollbar-always-on @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" fixed="left"/>
-        <el-table-column prop="id" label="ID" align="center" width="180" fixed="left" sortable>
+      <div v-if="multipleSelection.length" class="batch-action-bar" aria-live="polite">
+        <strong>{{ T('SelectedCount', { param: multipleSelection.length }) }}</strong>
+        <el-button type="primary" plain :icon="Notebook" @click="toBatchAddToAB">{{ T('BatchAddToAB') }}</el-button>
+      </div>
+      <el-table class="device-table" :data="listRes.list" v-loading="listRes.loading" row-key="row_id" border stripe scrollbar-always-on @selection-change="handleSelectionChange" @row-click="openDetails">
+        <el-table-column type="selection" width="48" align="center" fixed="left"/>
+        <el-table-column prop="last_online_time" :label="T('Status')" width="106" fixed="left" sortable>
           <template #default="{row}">
-            <span class="peer-id-cell"><PeerOs :os="row.os"/><span>{{ row.id }}</span></span>
-            <el-button class="table-copy-button" link :aria-label="T('CopyId')" @click="handleClipboard(row.id, $event)">
-              <el-icon aria-hidden="true"><CopyDocument/></el-icon>
-            </el-button>
+            <span class="device-status" :class="isPeerOnline(row) ? 'is-online' : 'is-offline'">
+              <el-icon aria-hidden="true"><CircleCheck v-if="isPeerOnline(row)"/><Warning v-else/></el-icon>
+              {{ isPeerOnline(row) ? T('Online') : T('Offline') }}
+            </span>
           </template>
         </el-table-column>
-        <el-table-column prop="cpu" label="CPU" align="center" width="100" sortable show-overflow-tooltip/>
-        <el-table-column prop="hostname" :label="T('Hostname')" align="center" width="120" sortable/>
-        <el-table-column prop="memory" :label="T('Memory')" align="center" width="120" sortable/>
-        <el-table-column prop="os" :label="T('Os')" align="center" width="120" sortable show-overflow-tooltip/>
-        <el-table-column prop="last_online_time" :label="T('LastOnlineTime')" align="center" width="160" sortable>
+        <el-table-column prop="id" :label="T('DeviceIdAndOs')" min-width="190" fixed="left" sortable show-overflow-tooltip>
           <template #default="{row}">
-            <div class="last_oline_time">
-              <span> {{ row.last_online_time ? timeAgo(row.last_online_time * 1000) : '-' }}</span> <span class="dot" :class="{red: timeDis(row.last_online_time) >= 60, green: timeDis(row.last_online_time)< 60}"></span>
+            <div class="peer-id-column">
+              <PeerOs :os="row.os"/><span>{{ row.id }}</span>
+              <el-button class="table-copy-button" link :aria-label="T('CopyId')" @click.stop="handleClipboard(row.id, $event)"><el-icon aria-hidden="true"><CopyDocument/></el-icon></el-button>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="last_online_ip" :label="T('LastOnlineIp')" align="center" width="150" sortable/>
-        <el-table-column prop="username" :label="T('Username')" align="center" width="130" sortable/>
-        <el-table-column prop="uuid" :label="T('Uuid')" align="center" width="120" sortable show-overflow-tooltip/>
-        <el-table-column prop="version" :label="T('Version')" align="center" width="80" sortable/>
-        <el-table-column prop="alias" :label="T('Alias')" align="center" width="80" sortable/>
-        <el-table-column prop="created_at" :label="T('CreatedAt')" align="center" width="150" sortable/>
-        <el-table-column prop="updated_at" :label="T('UpdatedAt')" align="center" width="150" sortable/>
-        <el-table-column :label="T('Actions')" align="center" width="142" class-name="table-actions" fixed="right">
+        <el-table-column prop="hostname" :label="T('Hostname')" min-width="160" sortable show-overflow-tooltip/>
+        <el-table-column prop="last_online_time" :label="T('LastOnlineTime')" min-width="150" sortable>
+          <template #default="{row}">{{ row.last_online_time ? timeAgo(row.last_online_time * 1000) : T('NeverConnected') }}</template>
+        </el-table-column>
+        <el-table-column :label="T('QuickConnect')" align="center" width="112">
+          <template #default="{row}"><el-button type="primary" link :icon="Connection" @click.stop="connectByClient(row.id)">{{ T('Connect') }}</el-button></template>
+        </el-table-column>
+        <el-table-column :label="T('Actions')" align="center" width="64" class-name="table-actions" fixed="right">
           <template #default="{row}">
-            <el-tooltip :content="T('Link')"><el-button circle type="primary" plain :icon="Connection" :aria-label="T('Link')" @click="connectByClient(row.id)"/></el-tooltip>
-            <el-tooltip v-if="appStore.setting.appConfig.web_client" content="Web Client"><el-button circle type="primary" plain :icon="Monitor" aria-label="Web Client" @click="toWebClientLink(row)"/></el-tooltip>
-            <el-dropdown trigger="click">
-              <el-button circle :icon="MoreFilled" :aria-label="T('More')"/>
+            <el-dropdown trigger="click" @click.stop>
+              <el-button circle :icon="MoreFilled" :aria-label="T('DeviceActions', { param: row.id })" @click.stop/>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
-                  <el-dropdown-item @click="toView(row)">{{ T('View') }}</el-dropdown-item>
+                  <el-dropdown-item :icon="View" @click="openDetails(row)">{{ T('ViewDetails') }}</el-dropdown-item>
+                  <el-dropdown-item v-if="appStore.setting.appConfig.web_client" :icon="Monitor" @click="toWebClientLink(row)">Web Client</el-dropdown-item>
+                  <el-dropdown-item :icon="Notebook" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-            <!--            <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>-->
           </template>
         </el-table-column>
+        <template #empty><el-empty :description="T('NoDevicesFound')"><el-button v-if="activeFilterCount" @click="resetQuery">{{ T('ResetFilters') }}</el-button></el-empty></template>
       </el-table>
     </el-card>
-    <el-card class="list-page" shadow="hover">
+    <el-card v-if="listRes.total > 0" class="list-page" shadow="hover">
       <el-pagination background
                      layout="prev, pager, next, sizes, jumper"
                      :page-sizes="[10,20,50,100]"
@@ -93,34 +78,7 @@
                      :total="listRes.total">
       </el-pagination>
     </el-card>
-    <el-dialog v-model="formVisible" :title="T('Information')" width="800" :style="{ textAlign: 'center' }">
-      <el-form class="dialog-form" ref="form" :model="formData" label-width="120px">
-        <el-form-item label="ID" prop="id">
-          <el-input v-model="formData.id" disabled></el-input>
-        </el-form-item>
-        <el-form-item :label="T('Username')" prop="username">
-          <el-input v-model="formData.username" disabled></el-input>
-        </el-form-item>
-        <el-form-item :label="T('Hostname')" prop="hostname">
-          <el-input v-model="formData.hostname" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="CPU" prop="cpu">
-          <el-input v-model="formData.cpu" disabled></el-input>
-        </el-form-item>
-        <el-form-item :label="T('Memory')" prop="memory">
-          <el-input v-model="formData.memory" disabled></el-input>
-        </el-form-item>
-        <el-form-item :label="T('Os')" prop="os">
-          <el-input v-model="formData.os" disabled></el-input>
-        </el-form-item>
-        <el-form-item :label="T('Uuid')" prop="uuid">
-          <el-input v-model="formData.uuid" disabled></el-input>
-        </el-form-item>
-        <el-form-item :label="T('Version')" prop="version">
-          <el-input v-model="formData.version" disabled></el-input>
-        </el-form-item>
-      </el-form>
-    </el-dialog>
+    <DeviceDetailDrawer v-model="detailVisible" :peer="selectedPeer" @connect="connectByClient"/>
 
     <el-dialog v-model="ABFormVisible" width="800" :title="T('Create')">
       <el-form class="dialog-form" ref="form" :model="ABFormData" label-width="120px">
@@ -200,7 +158,7 @@
 <script setup>
   import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
   import { list } from '@/api/my/peer'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import { toWebClientLink } from '@/utils/webclient'
   import { T } from '@/utils/i18n'
   import { timeAgo } from '@/utils/time'
@@ -208,11 +166,11 @@
   import { useRepositories as useABRepositories } from '@/views/address_book/index'
   import { useAppStore } from '@/store/app'
   import { connectByClient } from '@/utils/peer'
-  import { CopyDocument } from '@element-plus/icons'
-  import { Connection, Monitor, MoreFilled } from '@element-plus/icons-vue'
+  import { CircleCheck, Connection, CopyDocument, Download, Monitor, MoreFilled, Notebook, RefreshLeft, Search, View, Warning } from '@element-plus/icons-vue'
   import { handleClipboard } from '@/utils/clipboard'
   import { batchCreateFromPeers } from '@/api/my/address_book'
   import PeerOs from '@/components/icons/peerOs.vue'
+  import DeviceDetailDrawer from '@/components/device/DeviceDetailDrawer.vue'
 
   const appStore = useAppStore()
   const listRes = reactive({
@@ -225,6 +183,9 @@
     id: '',
     hostname: '',
   })
+  const detailVisible = ref(false)
+  const selectedPeer = ref(null)
+  const activeFilterCount = computed(() => ['id', 'hostname', 'time_ago'].filter(key => listQuery[key]).length)
 
   const getList = async () => {
     listRes.loading = true
@@ -272,25 +233,10 @@
 
   watch(() => listQuery.page_size, handlerQuery)
 
-  const formVisible = ref(false)
-  const formData = reactive({
-    row_id: 0,
-    cpu: '',
-    hostname: '',
-    id: '',
-    memory: '',
-    os: '',
-    username: '',
-    uuid: '',
-    version: '',
-  })
-
-  const toView = (row) => {
-    formVisible.value = true
-    //将row中的数据赋值给formData
-    Object.keys(formData).forEach(key => {
-      formData[key] = row[key]
-    })
+  const openDetails = (row, column) => {
+    if (column?.type === 'selection') return
+    selectedPeer.value = row
+    detailVisible.value = true
   }
 
   const timeDis = (time) => {
@@ -298,6 +244,7 @@
     let after = new Date(time * 1000).getTime()
     return (now - after) / 1000
   }
+  const isPeerOnline = (peer) => peer?.last_online_time && timeDis(peer.last_online_time) < 60
 
   const timeFilters = computed(() => [
     { text: T('MinutesLess', { param: 1 }, 1), value: -60 },
@@ -405,36 +352,71 @@
 </script>
 
 <style scoped lang="scss">
-.list-query .el-select {
-  --el-select-width: 180px;
-}
-
-.last_oline_time {
+.device-filter-card :deep(.el-card__body) { padding: 14px 16px; }
+.device-filter-toolbar,
+.device-filter-primary,
+.batch-action-bar {
   display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.peer-id-cell {
-  display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
 }
 
-.dot {
-  width: 6px;
-  height: 6px;
-  display: block;
-  border-radius: 50%;
-  margin-left: 10px;
+.device-filter-toolbar { justify-content: space-between; }
+.device-filter-primary { flex: 1 1 auto; min-width: 0; }
+.device-filter-primary .el-input { width: min(220px, 23vw); }
+.device-filter-primary .el-select { width: min(210px, 22vw); }
+.device-list-card { margin-top: 12px; }
+.batch-action-bar {
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 7px 10px 7px 14px;
+  margin-bottom: 10px;
+  color: var(--console-primary);
+  background: var(--console-primary-soft);
+  border: 1px solid var(--console-primary-border);
+  border-radius: 6px;
+}
+.device-table :deep(.el-table__row) { cursor: pointer; }
+.device-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.device-status.is-online { color: var(--console-success); }
+.device-status.is-offline { color: var(--console-muted); }
+.peer-id-column {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+.peer-id-column > span:nth-child(2) {
+  overflow: hidden;
+  min-width: 0;
+  color: var(--console-heading);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  &.red {
-    background-color: red;
+@media (max-width: 900px) {
+  .device-filter-toolbar { align-items: stretch; flex-direction: column; }
+  .device-filter-primary { flex-wrap: wrap; }
+  .device-filter-toolbar > .el-button { align-self: flex-end; }
+}
+
+@media (max-width: 620px) {
+  .device-filter-primary .el-input,
+  .device-filter-primary .el-select {
+    width: 100%;
   }
-
-  &.green {
-    background-color: green;
+  .device-filter-primary .el-button { flex: 1 1 auto; }
+  .batch-action-bar {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 </style>

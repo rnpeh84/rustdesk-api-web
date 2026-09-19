@@ -63,11 +63,13 @@ service.interceptors.response.use(
 
     // if the custom code is not 20000, it is judged as an error.
     if (res.code !== 0) {
-      ElMessage({
-        message: res.message || 'error',
-        type: 'error',
-        duration: 5 * 1000,
-      })
+	  if (res.code !== 1201) {
+		ElMessage({
+		  message: res.message || 'error',
+		  type: 'error',
+		  duration: 5 * 1000,
+		})
+	  }
 
       if (res.code === 403) {
         removeToken()

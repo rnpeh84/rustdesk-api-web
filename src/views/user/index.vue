@@ -31,6 +31,9 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <el-table-column prop="role" :label="T('Role')" min-width="150" sortable>
+          <template #default="{ row }"><el-tag effect="plain">{{ T(roleLabels[row.role] || 'UserRole') }}</el-tag></template>
+        </el-table-column>
         <el-table-column prop="status" :label="T('Status')" align="center" width="96" sortable>
           <template #default="{row}">
             <el-switch
@@ -103,6 +106,7 @@ const userDialogVisible = ref(false)
 const passwordDialogVisible = ref(false)
 const selectedUserId = ref(0)
 const selectedUser = ref(null)
+const roleLabels = { system_admin: 'SystemAdminRole', device_admin: 'DeviceAdminRole', user_admin: 'UserAdminRole', address_book_admin: 'AddressBookAdminRole', auditor: 'AuditorRole', user: 'UserRole' }
 
 onMounted(getGroups)
 onMounted(getList)
