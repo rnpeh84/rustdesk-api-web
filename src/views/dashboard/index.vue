@@ -20,6 +20,21 @@
       :title="T('DashboardPartialLoad')"
     />
 
+    <button
+      v-if="isSystem && auditLagLevel !== 'healthy'"
+      type="button"
+      class="dashboard-attention"
+      :class="`is-${auditLagLevel}`"
+      @click="goTo('/operations')"
+    >
+      <span class="dashboard-attention__icon"><el-icon><WarningFilled/></el-icon></span>
+      <span class="dashboard-attention__content">
+        <strong>{{ T('AuditSignalNeedsReview') }}</strong>
+        <small>{{ T('AuditSignalDescription', { param: formatDuration(operations.audit_lag_seconds) }) }}</small>
+      </span>
+      <span class="dashboard-attention__action">{{ T('OpenOperationsCenter') }} <el-icon><ArrowRight/></el-icon></span>
+    </button>
+
     <div class="dashboard-metrics">
       <article v-for="metric in metrics" :key="metric.label" class="dashboard-metric">
         <div class="dashboard-metric__topline">
@@ -34,17 +49,20 @@
     </div>
 
     <template v-if="isSystem">
-	  <div class="service-strip">
-		<button v-for="serviceItem in serviceHealth" :key="serviceItem.name" type="button" @click="goTo('/operations')">
-		  <i :class="`is-${serviceItem.status}`"></i><span><strong>{{ serviceItem.name }}</strong><small>{{ serviceItem.status }} · {{ serviceItem.detail }}</small></span>
-		</button>
-	  </div>
-	  <div class="ops-facts" aria-label="운영 지표">
-		<span><small>{{ T('Uptime') }}</small><strong>{{ Math.floor((operations.uptime_seconds || 0) / 3600) }}h</strong></span>
-		<span><small>{{ T('ConnectionSuccessRate') }}</small><strong>{{ Math.round(operations.connection_success_rate || 0) }}%</strong></span>
-		<span><small>{{ T('DirectConnectionRate') }}</small><strong>{{ Math.round(operations.direct_rate || 0) }}%</strong></span>
-		<span><small>{{ T('AuditCollectionLag') }}</small><strong>{{ operations.audit_lag_seconds || 0 }}s</strong></span>
-	  </div>
+	  <section class="operations-overview" :aria-label="T('OperationsOverview')">
+	    <div class="service-strip">
+		  <button v-for="serviceItem in serviceHealth" :key="serviceItem.name" type="button" @click="goTo('/operations')">
+		    <i :class="`is-${serviceItem.status}`"></i>
+            <span><strong>{{ serviceItem.name }}</strong><small>{{ serviceStatusLabel(serviceItem.status) }} · {{ serviceItem.detail }}</small></span>
+		  </button>
+	    </div>
+	    <div class="ops-facts" aria-label="운영 지표">
+		  <span><small>{{ T('Uptime') }}</small><strong>{{ formatDuration(operations.uptime_seconds) }}</strong></span>
+		  <span><small>{{ T('ConnectionSuccessRate') }}</small><strong>{{ Math.round(operations.connection_success_rate || 0) }}%</strong></span>
+		  <span><small>{{ T('DirectConnectionRate') }}</small><strong>{{ Math.round(operations.direct_rate || 0) }}%</strong></span>
+		  <span :class="`is-${auditLagLevel}`"><small>{{ T('LastAuditEvent') }}</small><strong>{{ auditLagLabel }}</strong></span>
+	    </div>
+	  </section>
       <div class="dashboard-grid dashboard-grid--system">
         <el-card class="dashboard-panel dashboard-panel--status" shadow="never">
           <template #header>
@@ -243,6 +261,7 @@ import {
   Share,
   Tickets,
   User,
+  WarningFilled,
 } from '@element-plus/icons'
 import { list as listPeers } from '@/api/peer'
 import { list as listUsers } from '@/api/user'
@@ -301,6 +320,23 @@ const onlineRate = computed(() => totals.value.devices ? Math.round((onlineDevic
 const deviceSampleLimited = computed(() => totals.value.devices > deviceRows.value.length)
 const userInitial = computed(() => (userStore.nickname || userStore.username || 'U').trim().slice(0, 1).toUpperCase())
 const serviceHealth = computed(() => ['api', 'database', 'hbbs', 'hbbr'].map(key => { const item = operations.value[key] || { status: 'unknown' }; return { name: key.toUpperCase(), status: item.status, detail: item.reason || `${item.latency_ms || 0}ms` } }))
+const auditLagLevel = computed(() => {
+  const seconds = Number(operations.value.audit_lag_seconds || 0)
+  if (seconds >= 24 * 60 * 60) return 'critical'
+  if (seconds >= 60 * 60) return 'warning'
+  return 'healthy'
+})
+const formatDuration = value => {
+  const seconds = Math.max(0, Number(value || 0))
+  if (seconds < 60) return T('SecondsDuration', { param: Math.floor(seconds) })
+  if (seconds < 3600) return T('MinutesDuration', { param: Math.floor(seconds / 60) })
+  if (seconds < 86400) return T('HoursDuration', { param: Math.floor(seconds / 3600) })
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  return hours ? T('DaysHoursDuration', { days, hours }) : T('DaysDuration', { param: days })
+}
+const auditLagLabel = computed(() => T('TimeAgoValue', { param: formatDuration(operations.value.audit_lag_seconds) }))
+const serviceStatusLabel = status => T(status === 'ok' ? 'ServiceHealthy' : status === 'error' ? 'ServiceUnavailable' : status === 'degraded' ? 'ServiceDegraded' : 'ServiceUnknown')
 
 const metrics = computed(() => isSystem.value ? [
   { label: T('ManagedDevices'), detail: T('AllRegisteredResources'), value: totals.value.devices, icon: markRaw(Monitor), tone: 'blue' },
@@ -409,6 +445,16 @@ onActivated(() => {
 .dashboard-toolbar__summary small { color: var(--console-muted); font-size: 12px; font-weight: 400; }
 .dashboard-toolbar__signal { width: 8px; height: 8px; background: var(--console-success); border-radius: 50%; box-shadow: 0 0 0 4px var(--console-success-soft); }
 .dashboard-alert { border: 1px solid color-mix(in srgb, var(--console-warning) 30%, var(--console-border)); }
+.dashboard-attention { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 13px; width: 100%; padding: 13px 15px; color: var(--console-text); text-align: left; background: var(--console-warning-soft); border: 1px solid color-mix(in srgb, var(--console-warning) 38%, var(--console-border)); border-radius: 7px; cursor: pointer; }
+.dashboard-attention.is-critical { background: color-mix(in srgb, var(--console-danger) 8%, var(--console-surface)); border-color: color-mix(in srgb, var(--console-danger) 38%, var(--console-border)); }
+.dashboard-attention:hover, .dashboard-attention:focus-visible { border-color: var(--console-warning); box-shadow: 0 0 0 3px color-mix(in srgb, var(--console-warning) 13%, transparent); }
+.dashboard-attention.is-critical:hover, .dashboard-attention.is-critical:focus-visible { border-color: var(--console-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--console-danger) 12%, transparent); }
+.dashboard-attention__icon { display: grid; place-items: center; width: 40px; height: 40px; color: var(--console-warning); background: var(--console-surface); border-radius: 50%; font-size: 19px; }
+.dashboard-attention.is-critical .dashboard-attention__icon { color: var(--console-danger); }
+.dashboard-attention__content strong, .dashboard-attention__content small { display: block; }
+.dashboard-attention__content strong { color: var(--console-heading); font-size: 13px; }
+.dashboard-attention__content small { margin-top: 3px; color: var(--console-text); font-size: 12px; }
+.dashboard-attention__action { display: inline-flex; align-items: center; gap: 5px; color: var(--console-primary); font-size: 12px; font-weight: 650; white-space: nowrap; }
 .dashboard-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .dashboard-metric { min-width: 0; padding: 16px 18px; background: var(--console-surface); border: 1px solid var(--console-border); border-radius: 7px; }
 .dashboard-metric > strong, .dashboard-metric > span { display: block; }
@@ -494,8 +540,9 @@ onActivated(() => {
 .dashboard-actions button { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; padding: 11px; color: var(--console-text); text-align: left; background: var(--console-canvas); border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
 .dashboard-actions button:hover, .dashboard-actions button:focus-visible { background: var(--console-primary-soft); border-color: var(--console-primary-border); }
 .dashboard-actions strong, .dashboard-actions small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.service-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.service-strip button{display:grid;grid-template-columns:10px 1fr;align-items:center;gap:9px;padding:10px 12px;text-align:left;background:var(--console-surface);border:1px solid var(--console-border);border-radius:6px;cursor:pointer}.service-strip i{width:9px;height:9px;border-radius:50%;background:#98a2b3}.service-strip i.is-ok{background:var(--console-success)}.service-strip i.is-error{background:var(--console-danger)}.service-strip strong,.service-strip small{display:block}.service-strip small{margin-top:2px;color:var(--console-muted);font-size:11px}
-.ops-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;overflow:hidden;background:var(--console-border);border:1px solid var(--console-border);border-radius:6px}.ops-facts span{padding:10px 14px;background:var(--console-surface)}.ops-facts small,.ops-facts strong{display:block}.ops-facts small{color:var(--console-muted);font-size:11px}.ops-facts strong{margin-top:3px;color:var(--console-heading);font-variant-numeric:tabular-nums}
+.operations-overview { display: grid; gap: 8px; }
+.service-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.service-strip button{display:grid;grid-template-columns:10px 1fr;align-items:center;gap:9px;padding:10px 12px;text-align:left;background:var(--console-surface);border:1px solid var(--console-border);border-radius:6px;cursor:pointer}.service-strip button:hover,.service-strip button:focus-visible{border-color:var(--console-primary-border);background:var(--console-primary-soft)}.service-strip i{width:9px;height:9px;border-radius:50%;background:#98a2b3}.service-strip i.is-ok{background:var(--console-success)}.service-strip i.is-error{background:var(--console-danger)}.service-strip i.is-degraded{background:var(--console-warning)}.service-strip strong,.service-strip small{display:block}.service-strip small{margin-top:2px;color:var(--console-muted);font-size:11px}
+.ops-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;overflow:hidden;background:var(--console-border);border:1px solid var(--console-border);border-radius:6px}.ops-facts span{padding:10px 14px;background:var(--console-surface)}.ops-facts span.is-warning{box-shadow:inset 3px 0 var(--console-warning)}.ops-facts span.is-critical{background:color-mix(in srgb,var(--console-danger) 7%,var(--console-surface));box-shadow:inset 3px 0 var(--console-danger)}.ops-facts small,.ops-facts strong{display:block}.ops-facts small{color:var(--console-muted);font-size:11px}.ops-facts strong{margin-top:3px;color:var(--console-heading);font-variant-numeric:tabular-nums}
 .dashboard-actions small { margin-top: 2px; color: var(--console-muted); font-size: 11px; }
 @media (max-width: 1100px) {
   .dashboard-metrics, .dashboard-grid--system, .dashboard-grid--system-lower, .dashboard-grid--user { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -516,5 +563,7 @@ onActivated(() => {
   .account-readiness { grid-template-columns: 44px minmax(0, 1fr); }
   .account-readiness .el-tag { grid-column: 2; justify-self: start; }
 	.service-strip,.ops-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dashboard-attention { grid-template-columns: 38px minmax(0, 1fr); }
+  .dashboard-attention__action { grid-column: 2; }
 }
 </style>
