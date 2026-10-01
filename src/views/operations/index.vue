@@ -1,10 +1,7 @@
 <template>
   <section class="ops-page" v-loading="loading" :aria-busy="loading">
     <header class="ops-toolbar">
-      <div>
-        <span class="ops-toolbar__eyebrow"><i></i>{{ T('OperationsLiveStatus') }}</span>
-        <small v-if="lastUpdated">{{ T('UpdatedAtTime', { param: lastUpdated }) }}</small>
-      </div>
+      <small v-if="lastUpdated">{{ T('UpdatedAtTime', { param: lastUpdated }) }}</small>
       <el-button type="primary" :icon="Refresh" :loading="loading" @click="load">{{ T('Refresh') }}</el-button>
     </header>
 
@@ -164,10 +161,7 @@ onMounted(load)
 <style scoped lang="scss">
 .ops-page { display: grid; gap: 14px; }
 .ops-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 38px; }
-.ops-toolbar > div { display: flex; align-items: center; gap: 9px; }
 .ops-toolbar small { color: var(--console-muted); font-size: 12px; }
-.ops-toolbar__eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--console-heading); font-weight: 650; }
-.ops-toolbar__eyebrow i { width: 8px; height: 8px; background: var(--console-success); border-radius: 50%; box-shadow: 0 0 0 4px var(--console-success-soft); }
 .ops-incident { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 16px 18px; background: var(--console-warning-soft); border: 1px solid color-mix(in srgb, var(--console-warning) 40%, var(--console-border)); border-radius: 8px; }
 .ops-incident.is-critical { background: color-mix(in srgb, var(--console-danger) 8%, var(--console-surface)); border-color: color-mix(in srgb, var(--console-danger) 42%, var(--console-border)); }
 .ops-incident__icon { display: grid; place-items: center; width: 46px; height: 46px; color: var(--console-warning); background: var(--console-surface); border-radius: 50%; font-size: 22px; }
