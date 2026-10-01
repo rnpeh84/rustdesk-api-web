@@ -12,9 +12,8 @@ export const rollbackClientRelease = data => request({ url: '/client/admin/rollb
 
 export const endpointProfiles = () => request({ url: '/client-build/endpoint-profiles' })
 export const saveEndpointProfile = data => request({ url: '/client-build/endpoint-profiles', method: 'post', data })
-export const githubConnections = () => request({ url: '/client-build/github-connections' })
-export const saveGithubConnection = data => request({ url: '/client-build/github-connections', method: 'post', data })
-export const testGithubConnection = id => request({ url: `/client-build/github-connections/${id}/test`, method: 'post' })
+// 기존 호출부의 호환성을 유지하고 GitHub 전용 API는 별도 모듈에서 관리한다.
+export * from './github'
 export const clientBuildReadiness = params => request({ url: '/client-build/readiness', params })
 export const clientBuildJobs = params => request({ url: '/client-build/jobs', params })
 export const createClientBuildJob = data => request({ url: '/client-build/jobs', method: 'post', data })

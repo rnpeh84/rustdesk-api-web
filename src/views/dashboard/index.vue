@@ -209,6 +209,15 @@
           <empty-state v-else :title="T('NoRecentSignIns')" :description="T('NoRecentSignInsDescription')"/>
         </el-card>
       </div>
+      <el-card class="dashboard-panel dashboard-panel--connection" shadow="never">
+        <template #header><div class="dashboard-panel__header"><panel-heading title="내 RustDesk 연결 정보" description="관리자가 지정한 기본 서버 프로필입니다."/><el-button text type="primary" @click="goTo('/my/client')">설치 안내</el-button></div></template>
+        <div class="connection-facts">
+          <span><small>프로필</small><strong>{{ clientServer.name || '-' }}<em v-if="clientServer.revision">r{{ clientServer.revision }}</em></strong></span>
+          <span><small>ID 서버</small><code>{{ clientServer.id_server || '-' }}</code></span>
+          <span><small>Relay 서버</small><code>{{ clientServer.relay_server || '-' }}</code></span>
+          <span><small>API 서버</small><code>{{ clientServer.api_server || '-' }}</code></span>
+        </div>
+      </el-card>
     </template>
 
     <div class="dashboard-grid dashboard-grid--footer">
@@ -275,6 +284,7 @@ import { useUserStore } from '@/store/user'
 import { T } from '@/utils/i18n'
 import { timeAgo } from '@/utils/time'
 import { status as operationsStatus } from '@/api/operations'
+import { clientReleases } from '@/api/clientRelease'
 
 const PanelHeading = defineComponent({
   props: { title: String, description: String },
@@ -304,6 +314,7 @@ const deviceRows = ref([])
 const loginRows = ref([])
 const connectionRows = ref([])
 const operations = ref({})
+const clientServer = ref({})
 const isSystem = computed(() => props.scope === 'system')
 let requestVersion = 0
 let lastLoadedAt = 0
@@ -404,7 +415,7 @@ const loadDashboard = async () => {
   const query = { page: 1, page_size: isSystem.value ? 500 : 20 }
   const requests = isSystem.value
 	? [listPeers(query), listUsers(query), listLoginLogs(query), listConnections(query), listFiles(query), listShares(query), operationsStatus()]
-    : [listMyPeers(query), listMyLoginLogs(query), listMyShares(query)]
+    : [listMyPeers(query), listMyLoginLogs(query), listMyShares(query), clientReleases()]
   const results = (await Promise.allSettled(requests)).map(resultValue)
   if (currentVersion !== requestVersion) return
   partialFailure.value = results.some(result => !result)
@@ -416,7 +427,8 @@ const loadDashboard = async () => {
     loginRows.value = logins.list || []
     connectionRows.value = connections.list || []
   } else {
-    const [devices, logins, shares] = results.map(normalize)
+    const [devices, logins, shares] = results.slice(0, 3).map(normalize)
+	clientServer.value = results[3]?.data?.server || {}
     totals.value = { devices: devices.total || 0, users: 0, logins: logins.total || 0, connections: 0, files: 0, shares: shares.total || 0 }
     deviceRows.value = devices.list || []
     loginRows.value = logins.list || []
@@ -544,6 +556,7 @@ onActivated(() => {
 .service-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.service-strip button{display:grid;grid-template-columns:10px 1fr;align-items:center;gap:9px;padding:10px 12px;text-align:left;background:var(--console-surface);border:1px solid var(--console-border);border-radius:6px;cursor:pointer}.service-strip button:hover,.service-strip button:focus-visible{border-color:var(--console-primary-border);background:var(--console-primary-soft)}.service-strip i{width:9px;height:9px;border-radius:50%;background:#98a2b3}.service-strip i.is-ok{background:var(--console-success)}.service-strip i.is-error{background:var(--console-danger)}.service-strip i.is-degraded{background:var(--console-warning)}.service-strip strong,.service-strip small{display:block}.service-strip small{margin-top:2px;color:var(--console-muted);font-size:11px}
 .ops-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;overflow:hidden;background:var(--console-border);border:1px solid var(--console-border);border-radius:6px}.ops-facts span{padding:10px 14px;background:var(--console-surface)}.ops-facts span.is-warning{box-shadow:inset 3px 0 var(--console-warning)}.ops-facts span.is-critical{background:color-mix(in srgb,var(--console-danger) 7%,var(--console-surface));box-shadow:inset 3px 0 var(--console-danger)}.ops-facts small,.ops-facts strong{display:block}.ops-facts small{color:var(--console-muted);font-size:11px}.ops-facts strong{margin-top:3px;color:var(--console-heading);font-variant-numeric:tabular-nums}
 .dashboard-actions small { margin-top: 2px; color: var(--console-muted); font-size: 11px; }
+.connection-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;overflow:hidden;background:var(--console-border);border:1px solid var(--console-border);border-radius:6px}.connection-facts>span{min-width:0;padding:12px 14px;background:var(--console-surface)}.connection-facts small,.connection-facts strong,.connection-facts code{display:block}.connection-facts small{color:var(--console-muted);font-size:11px}.connection-facts strong,.connection-facts code{margin-top:4px;overflow:hidden;color:var(--console-heading);text-overflow:ellipsis;white-space:nowrap}.connection-facts em{margin-left:7px;color:var(--console-muted);font-size:11px;font-style:normal;font-weight:400}
 @media (max-width: 1100px) {
   .dashboard-metrics, .dashboard-grid--system, .dashboard-grid--system-lower, .dashboard-grid--user { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-grid--system > *, .dashboard-grid--system-lower > *, .dashboard-grid--user > * { grid-column: 1 / -1; }
@@ -563,6 +576,7 @@ onActivated(() => {
   .account-readiness { grid-template-columns: 44px minmax(0, 1fr); }
   .account-readiness .el-tag { grid-column: 2; justify-self: start; }
 	.service-strip,.ops-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+	.connection-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dashboard-attention { grid-template-columns: 38px minmax(0, 1fr); }
   .dashboard-attention__action { grid-column: 2; }
 }

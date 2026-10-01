@@ -7,7 +7,7 @@
         <template #header><div class="card-heading"><div><strong>{{ T('NewClientBuild') }}</strong><small>{{ T('NewClientBuildDescription') }}</small></div><el-tag :type="readiness.ready ? 'success' : 'warning'" effect="plain">{{ readiness.ready ? T('BuildReady') : T('BuildNotReady') }}</el-tag></div></template>
         <el-form label-position="top">
           <div class="form-grid">
-            <el-form-item :label="T('GitHubConnection')"><el-select v-model="form.source_connection_id" @change="checkReadiness"><el-option v-for="item in connections" :key="item.id" :label="`${item.name} · ${item.owner}/${item.repository}`" :value="item.id" /></el-select></el-form-item>
+            <el-form-item :label="T('GitHubBuildSource')"><el-select v-model="form.build_source_id" @change="selectSource"><el-option v-for="item in sources" :key="item.id" :label="`${item.name} · ${item.owner}/${item.repository}`" :value="item.id" /></el-select></el-form-item>
             <el-form-item :label="T('EndpointProfile')"><el-select v-model="form.endpoint_profile_id" @change="checkReadiness"><el-option v-for="item in profiles" :key="item.id" :label="`${item.name} · r${item.revision}`" :value="item.id" /></el-select></el-form-item>
             <el-form-item :label="T('ClientVersion')"><el-input v-model="form.version" placeholder="1.4.9-company.1" /></el-form-item>
             <el-form-item :label="T('GitRef')"><el-input v-model="form.git_ref" placeholder="master 또는 tag" /></el-form-item>
@@ -59,30 +59,35 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { CircleCheck, Close, Link, Refresh, VideoPlay, Warning } from '@element-plus/icons'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { cancelClientBuildJob, clientBuildJobs, clientBuildReadiness, createClientBuildJob, endpointProfiles, githubConnections, refreshClientBuildJob } from '@/api/clientRelease'
+import { cancelClientBuildJob, clientBuildJobs, clientBuildReadiness, createClientBuildJob, endpointProfiles, githubBuildSources, refreshClientBuildJob } from '@/api/clientRelease'
 import { T } from '@/utils/i18n'
 
-const loading = ref(false), submitting = ref(false), autoSyncing = ref(false), actionJobId = ref(null), profiles = ref([]), connections = ref([]), jobs = ref([])
+const loading = ref(false), submitting = ref(false), autoSyncing = ref(false), actionJobId = ref(null), profiles = ref([]), sources = ref([]), jobs = ref([])
 const readiness = reactive({ ready: false, checks: [] })
-const form = reactive({ source_connection_id: null, endpoint_profile_id: null, version: '', git_ref: 'master', targets: ['windows-x86_64', 'macos-aarch64', 'linux-x86_64'] })
+const form = reactive({ build_source_id: null, endpoint_profile_id: null, version: '', git_ref: '', targets: ['windows-x86_64', 'macos-aarch64', 'linux-x86_64'] })
 const targetOptions = [{ value: 'windows-x86_64', label: 'Windows x64' }, { value: 'windows-aarch64', label: 'Windows ARM64' }, { value: 'macos-x86_64', label: 'macOS Intel' }, { value: 'macos-aarch64', label: 'macOS Apple Silicon' }, { value: 'linux-x86_64', label: 'Linux x64' }, { value: 'linux-aarch64', label: 'Linux ARM64' }]
 const flowSteps = computed(() => [T('BuildFlowSource'), T('BuildFlowSnapshot'), T('BuildFlowRunner'), T('BuildFlowCandidate'), T('BuildFlowPromote')])
 const validForm = computed(() => Boolean(form.version.trim() && form.git_ref.trim() && form.targets.length))
 const load = async () => {
   loading.value = true
   try {
-    const [profileResult, connectionResult, jobResult] = await Promise.all([endpointProfiles(), githubConnections(), clientBuildJobs({ limit: 100 })])
-    profiles.value = profileResult.data?.list || []; connections.value = connectionResult.data?.list || []; jobs.value = jobResult.data?.list || []
+    const [profileResult, sourceResult, jobResult] = await Promise.all([endpointProfiles(), githubBuildSources(), clientBuildJobs({ limit: 100 })])
+    profiles.value = profileResult.data?.list || []; sources.value = sourceResult.data?.list || []; jobs.value = jobResult.data?.list || []
     if (!form.endpoint_profile_id) form.endpoint_profile_id = profiles.value.find(item => item.is_default)?.id || profiles.value[0]?.id || null
-    if (!form.source_connection_id) form.source_connection_id = connections.value.find(item => item.status === 'ready')?.id || connections.value[0]?.id || null
+    if (!form.build_source_id) form.build_source_id = sources.value.find(item => item.status === 'ready' && item.is_enabled)?.id || sources.value[0]?.id || null
+    if (!form.git_ref) form.git_ref = sources.value.find(item => item.id === form.build_source_id)?.branch || ''
     await checkReadiness()
   } finally { loading.value = false }
 }
 const checkReadiness = async () => {
   readiness.ready = false; readiness.checks = []
-  if (!form.source_connection_id || !form.endpoint_profile_id) return
-  const result = await clientBuildReadiness({ connection_id: form.source_connection_id, profile_id: form.endpoint_profile_id, targets: form.targets.join(',') }).catch(() => null)
+  if (!form.build_source_id || !form.endpoint_profile_id) return
+  const result = await clientBuildReadiness({ source_id: form.build_source_id, profile_id: form.endpoint_profile_id, targets: form.targets.join(',') }).catch(() => null)
   if (result) Object.assign(readiness, result.data)
+}
+const selectSource = () => {
+  form.git_ref = sources.value.find(item => item.id === form.build_source_id)?.branch || ''
+  checkReadiness()
 }
 const submit = async () => {
   submitting.value = true

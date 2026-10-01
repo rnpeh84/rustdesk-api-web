@@ -11,7 +11,6 @@
     <template v-else-if="release">
       <section class="recommendation" aria-labelledby="client-recommendation-title">
         <div class="recommendation__copy">
-          <p class="recommendation__context">{{ T('ClientCenterDescription') }}</p>
           <h2 id="client-recommendation-title">{{ recommendationTitle }}</h2>
           <p>{{ recommendationDescription }}</p>
           <div v-if="!detected.mobile" class="environment-selectors">
@@ -82,9 +81,9 @@
             <el-collapse-item :title="T('SignatureVerification')" name="signature">
               <pre><code>{{ signatureCommand }}</code></pre>
             </el-collapse-item>
-            <el-collapse-item v-if="selectedOs === 'linux'" :title="T('LinuxCurlInstaller')" name="curl">
+            <el-collapse-item title="명령줄 자동 설치" name="command">
               <p>{{ T('LinuxTokenSafetyDescription') }}</p>
-              <div class="copy-line"><code>{{ linuxCommand }}</code><el-button circle :aria-label="T('CopyInstallCommand')" @click="copy(linuxCommand)"><el-icon><CopyDocument /></el-icon></el-button></div>
+              <div class="copy-line"><code>{{ installCommand }}</code><el-button circle :aria-label="T('CopyInstallCommand')" @click="copy(installCommand)"><el-icon><CopyDocument /></el-icon></el-button></div>
             </el-collapse-item>
           </el-collapse>
         </article>
@@ -155,7 +154,12 @@ const recommendationTitle = computed(() => detected.value.mobile ? T('MobileClie
 const recommendationDescription = computed(() => detected.value.mobile ? T('MobileStoreOnlyDescription') : T('RecommendedInstallerDescription'))
 const checksumCommand = computed(() => selectedOs.value === 'windows' ? 'Get-FileHash .\\installer -Algorithm SHA256' : selectedOs.value === 'macos' ? 'shasum -a 256 ./installer.dmg' : 'sha256sum ./installer')
 const signatureCommand = computed(() => selectedOs.value === 'windows' ? 'Get-AuthenticodeSignature .\\installer.msi' : selectedOs.value === 'macos' ? 'spctl -a -vv -t install ./installer.dmg' : 'sha256sum --check SHA256SUMS')
-const linuxCommand = computed(() => `curl -fsS ${window.location.origin}/api/client/install/linux.sh -o install-rustdesk-client.sh && sh install-rustdesk-client.sh`)
+const installCommand = computed(() => {
+  const origin = window.location.origin
+  if (selectedOs.value === 'windows') return `curl.exe -fsS ${origin}/api/client/install/windows.ps1 -o install-rustdesk-client.ps1; powershell -ExecutionPolicy Bypass -File .\\install-rustdesk-client.ps1`
+  if (selectedOs.value === 'macos') return `curl -fsS ${origin}/api/client/install/macos.sh -o install-rustdesk-client.sh && sh install-rustdesk-client.sh`
+  return `curl -fsS ${origin}/api/client/install/linux.sh -o install-rustdesk-client.sh && sh install-rustdesk-client.sh`
+})
 
 const load = async () => {
   loading.value = true

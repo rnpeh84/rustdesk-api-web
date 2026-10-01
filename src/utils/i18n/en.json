@@ -1,4 +1,154 @@
 {
+  "GitHubBuildSource": {
+    "One": "GitHub build source"
+  },
+  "GitHubConnectTitle": {
+    "One": "GitHub build connections"
+  },
+  "GitHubConnectIntro": {
+    "One": "Connect with a token or GitHub App first, then add accessible repositories as build sources."
+  },
+  "GitHubConnectAdd": {
+    "One": "Add GitHub connection"
+  },
+  "GitHubSecretNotice": {
+    "One": "Tokens and private keys are encrypted with the server master key and excluded from API responses."
+  },
+  "GitHubAccountTitle": {
+    "One": "GitHub account connection"
+  },
+  "GitHubAccountIntro": {
+    "One": "Register a token or configure a GitHub App, then verify the connection."
+  },
+  "GitHubAccountPending": {
+    "One": "Account not verified"
+  },
+  "GitHubCheck": {
+    "One": "Verify connection"
+  },
+  "GitHubSourceAdd": {
+    "One": "Add build source"
+  },
+  "GitHubEmptyConnections": {
+    "One": "No GitHub connections registered."
+  },
+  "GitHubSourcesTitle": {
+    "One": "Build sources"
+  },
+  "GitHubSourcesIntro": {
+    "One": "Select a repository, branch, workflow and runner labels from a connected account."
+  },
+  "GitHubEmptySources": {
+    "One": "No build sources registered."
+  },
+  "GitHubName": {
+    "One": "Name"
+  },
+  "GitHubRepository": {
+    "One": "Repository"
+  },
+  "GitHubWorkflow": {
+    "One": "Workflow"
+  },
+  "GitHubRunnerLabels": {
+    "One": "Runner labels"
+  },
+  "GitHubStatus": {
+    "One": "Status"
+  },
+  "GitHubActions": {
+    "One": "Actions"
+  },
+  "GitHubSourceCheck": {
+    "One": "Verify build source"
+  },
+  "GitHubConnectEdit": {
+    "One": "Edit GitHub connection"
+  },
+  "GitHubConnectName": {
+    "One": "Connection name"
+  },
+  "GitHubConnectNameHint": {
+    "One": "Company GitHub"
+  },
+  "GitHubKeyReplace": {
+    "One": "Replace private key (optional)"
+  },
+  "GitHubKey": {
+    "One": "GitHub App private key"
+  },
+  "GitHubKeyKeep": {
+    "One": "Leave empty to retain the existing private key."
+  },
+  "GitHubSourceEdit": {
+    "One": "Edit build source"
+  },
+  "GitHubSourceName": {
+    "One": "Source name"
+  },
+  "GitHubSourceNameHint": {
+    "One": "RustDesk client"
+  },
+  "GitHubBranch": {
+    "One": "Branch"
+  },
+  "GitHubRunnerHint": {
+    "One": "Store labels rather than individual machines. The workflow runs-on setting determines the actual runner."
+  },
+  "GitHubSaved": {
+    "One": "Connection saved. Verify the connection next."
+  },
+  "GitHubVerified": {
+    "One": "GitHub connection verified."
+  },
+  "GitHubSourceSaved": {
+    "One": "Build source saved. Verify it next."
+  },
+  "GitHubSourceReady": {
+    "One": "Build source is ready."
+  },
+  "GitHubReady": {
+    "One": "Ready"
+  },
+  "GitHubCheckNeeded": {
+    "One": "Needs attention"
+  },
+  "GitHubUnchecked": {
+    "One": "Not verified"
+  },
+  "GitHubAuthType": {
+    "One": "Authentication method"
+  },
+  "GitHubPAT": {
+    "One": "API token (recommended)"
+  },
+  "GitHubApp": {
+    "One": "GitHub App"
+  },
+  "GitHubToken": {
+    "One": "GitHub API token"
+  },
+  "GitHubTokenKeep": {
+    "One": "Leave empty to retain the existing token."
+  },
+  "GitHubTokenHint": {
+    "One": "Enter a fine-grained personal access token."
+  },
+  "GitHubPermissionHint": {
+    "One": "Grant Contents read, Actions read/write and Administration read for runner discovery on selected repositories. Organization approval may be required."
+  },
+  "GitHubTokenGuide": {
+    "One": "Token creation and permissions"
+  },
+  "GitHubRequired": {
+    "One": "Enter a connection name and authentication credentials."
+  },
+  "GitHubOptionsHint": {
+    "One": "Select a repository to load options from the GitHub API."
+  },
+  "GitHubSourceRequired": {
+    "One": "Select a repository, branch and workflow."
+  },
 	"SelectPrivateKeyFile": { "One": "Select private key file" },
   "Login": {
     "One": "Login"
