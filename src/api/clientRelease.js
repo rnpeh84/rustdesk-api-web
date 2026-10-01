@@ -12,6 +12,7 @@ export const rollbackClientRelease = data => request({ url: '/client/admin/rollb
 
 export const endpointProfiles = () => request({ url: '/client-build/endpoint-profiles' })
 export const saveEndpointProfile = data => request({ url: '/client-build/endpoint-profiles', method: 'post', data })
+export const deleteEndpointProfile = id => request({ url: `/client-build/endpoint-profiles/${id}`, method: 'delete' })
 // 기존 호출부의 호환성을 유지하고 GitHub 전용 API는 별도 모듈에서 관리한다.
 export * from './github'
 export const clientBuildReadiness = params => request({ url: '/client-build/readiness', params })

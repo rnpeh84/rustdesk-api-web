@@ -1,4 +1,20 @@
 {
+  "DeploymentString": { "One": "Deployment string" },
+  "DeploymentStringHint": { "One": "Paste into RustDesk Settings → Network → Import Server Config. Also usable with --config." },
+  "CopyDeploymentString": { "One": "Copy deployment string" },
+  "ShowConnectionQr": { "One": "Show QR" },
+  "ConnectionQrTitle": { "One": "Server connection QR" },
+  "ConnectionQrHint": { "One": "Use QR Scan in the RustDesk mobile app's Settings → Network, then review and apply the server settings." },
+  "ConnectionShareSafety": { "One": "Contains only server addresses and the public key. No passwords, login tokens or private keys." },
+  "ConnectionQrFailed": { "One": "Unable to generate QR. For long settings, copy the deployment string instead." },
+  "DeploymentConfigMissing": { "One": "Set a server address and public key to enable the deployment string and QR." },
+  "DeleteSettingTitle": { "One": "Delete setting" },
+  "DeleteSettingConfirm": { "One": "Delete ‘{name}’? This cannot be undone." },
+  "DeleteConnectionHint": { "One": "Connections referenced by build sources or history cannot be deleted. Saved credentials are removed, but the GitHub token itself is not revoked." },
+  "DeleteSourceHint": { "One": "Only unused sources can be deleted. The GitHub repository is not deleted." },
+  "DeleteProfileHint": { "One": "Only this setting is deleted. Previous revisions and build history remain. Settings used by builds cannot be deleted." },
+  "DeleteDefaultProfileHint": { "One": "Select another default profile before deleting this one." },
+  "SettingDeleted": { "One": "The item was deleted." },
   "GitHubBuildSource": {
     "One": "GitHub build source"
   },
@@ -103,7 +119,12 @@
   "GitHubRunnerRestricted": { "One": "Workflow restricted" },
   "GitHubRunnerEmpty": { "One": "No runners available. Check repository access in the runner group." },
   "GitHubRunnerPermissionError": { "One": "Unable to load runners. Check token permissions and runner group access." },
-  "GitHubOrgPermissionHint": { "One": "Organization runners: Self-hosted runners read + repository access in runner group" },
+  "GitHubOrgPermissionHint": { "One": "Self-hosted runners: read (when using organization runners)" },
+  "GitHubPermissionsTitle": { "One": "Required connection permissions" },
+  "GitHubPermissionSelection": { "One": "Select the repository owner (user or organization) and grant access to the target repositories." },
+  "GitHubRepositoryPermissions": { "One": "Repository" },
+  "GitHubOrganizationPermissions": { "One": "Organization" },
+  "GitHubPermissionApproval": { "One": "Complete organization approval if required, and allow the target repository in the runner group." },
   "GitHubSaved": {
     "One": "Connection saved. Verify the connection next."
   },
@@ -144,7 +165,7 @@
     "One": "Enter a fine-grained personal access token."
   },
   "GitHubPermissionHint": {
-    "One": "Select target repositories · Contents read · Actions read/write · Administration read"
+    "One": "Contents: read · Actions: read/write · Administration: read · Metadata: read (automatic)"
   },
   "GitHubTokenGuide": {
     "One": "Token creation and permissions"

@@ -315,6 +315,28 @@ html.dark {
   transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
+// 기존 내용을 숨기되 공간과 접근 가능한 이름을 유지한다.
+.el-button.is-loading {
+  position: relative;
+}
+
+.el-button.is-loading > span {
+  opacity: 0;
+  margin-left: 0 !important;
+}
+
+.el-button.is-loading > .el-icon.is-loading {
+  position: absolute;
+  inset: 0;
+  margin: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-button.is-loading > .el-icon.is-loading {
+    animation: none;
+  }
+}
+
 .el-button--primary {
   --el-button-bg-color: var(--console-primary);
   --el-button-border-color: var(--console-primary);
@@ -847,6 +869,17 @@ html.dark .el-table {
 .el-message-box__header {
   padding: 20px 20px 14px;
   border-bottom: 1px solid var(--console-border);
+}
+
+.el-message-box.setting-delete-confirmation {
+  width: 520px;
+  max-width: calc(100vw - 32px);
+}
+
+.setting-delete-confirmation .el-message-box__message p {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
 }
 
 .el-message-box__content {

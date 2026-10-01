@@ -97,6 +97,7 @@
             <div><dt>API Server</dt><dd><code>{{ server.api_server || T('NotSet') }}</code><el-button circle :aria-label="T('CopyApiServer')" @click="copy(server.api_server)"><el-icon><CopyDocument /></el-icon></el-button></dd></div>
             <div><dt>{{ T('PublicKey') }}</dt><dd><code class="key-value">{{ server.key || T('NotSet') }}</code><el-button circle :aria-label="T('CopyPublicKey')" @click="copy(server.key)"><el-icon><CopyDocument /></el-icon></el-button></dd></div>
           </dl>
+          <server-config-share :server="server" />
         </article>
       </section>
     </template>
@@ -111,6 +112,7 @@ import { ElMessage } from 'element-plus'
 import { Checked, CopyDocument, Download, Iphone, Monitor, Refresh } from '@element-plus/icons'
 import { clientReleases, downloadClientArtifact } from '@/api/clientRelease'
 import { T } from '@/utils/i18n'
+import ServerConfigShare from '@/components/client/ServerConfigShare.vue'
 
 const desktopSystems = [
   { value: 'windows', label: 'Windows' },

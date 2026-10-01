@@ -2,7 +2,7 @@
   <section class="ops-page" v-loading="loading" :aria-busy="loading">
     <header class="ops-toolbar">
       <small v-if="lastUpdated">{{ T('UpdatedAtTime', { param: lastUpdated }) }}</small>
-      <el-button type="primary" :icon="Refresh" :loading="loading" @click="load">{{ T('Refresh') }}</el-button>
+      <el-button type="primary" :loading="loading" @click="load"><el-icon><Refresh /></el-icon><span>{{ T('Refresh') }}</span></el-button>
     </header>
 
     <section v-if="auditLagLevel !== 'healthy'" class="ops-incident" :class="`is-${auditLagLevel}`" aria-live="polite">

@@ -6,8 +6,8 @@
         <span>{{ T(isSystem ? 'OperationsSnapshot' : 'PersonalWorkspaceSummary') }}</span>
         <small v-if="lastUpdated">{{ T('UpdatedAtTime', { param: lastUpdated }) }}</small>
       </div>
-      <el-button type="primary" :icon="Refresh" :loading="loading" @click="loadDashboard">
-        {{ T('Refresh') }}
+      <el-button type="primary" :loading="loading" @click="loadDashboard">
+        <el-icon><Refresh /></el-icon><span>{{ T('Refresh') }}</span>
       </el-button>
     </div>
 
@@ -217,6 +217,7 @@
           <span><small>Relay 서버</small><code>{{ clientServer.relay_server || '-' }}</code></span>
           <span><small>API 서버</small><code>{{ clientServer.api_server || '-' }}</code></span>
         </div>
+        <server-config-share :server="clientServer" />
       </el-card>
     </template>
 
@@ -285,6 +286,7 @@ import { T } from '@/utils/i18n'
 import { timeAgo } from '@/utils/time'
 import { status as operationsStatus } from '@/api/operations'
 import { clientReleases } from '@/api/clientRelease'
+import ServerConfigShare from '@/components/client/ServerConfigShare.vue'
 
 const PanelHeading = defineComponent({
   props: { title: String, description: String },

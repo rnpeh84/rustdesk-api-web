@@ -23,7 +23,12 @@
           <div><dt>WebSocket</dt><dd>{{ profile.ws_host || T('NoData') }}</dd></div>
         </dl>
         <div class="key-row"><el-icon><Key /></el-icon><span>{{ shortKey(profile.public_key) }}</span></div>
-        <el-button plain @click="openEdit(profile)"><el-icon><Edit /></el-icon>{{ T('CreateNewRevision') }}</el-button>
+        <div class="profile-actions">
+          <el-button plain :disabled="!!deletingKey" @click="openEdit(profile)"><el-icon><Edit /></el-icon>{{ T('CreateNewRevision') }}</el-button>
+          <el-tooltip :content="profile.is_default ? T('DeleteDefaultProfileHint') : T('Delete')">
+            <span><el-button type="danger" plain :disabled="profile.is_default || !!deletingKey" :loading="deletingKey===`profile-${profile.id}`" @click="removeSetting(`profile-${profile.id}`, profile.name, () => deleteEndpointProfile(profile.id), T('DeleteProfileHint'))"><el-icon aria-hidden="true"><Delete /></el-icon>{{ T('Delete') }}</el-button></span>
+          </el-tooltip>
+        </div>
       </article>
     </div>
     <el-empty v-else :description="T('NoEndpointProfiles')"><el-button type="primary" @click="openCreate">{{ T('AddEndpointProfile') }}</el-button></el-empty>
@@ -49,10 +54,11 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { Edit, Key, Plus } from '@element-plus/icons'
+import { Delete, Edit, Key, Plus } from '@element-plus/icons'
 import { ElMessage } from 'element-plus'
-import { endpointProfiles, saveEndpointProfile } from '@/api/clientRelease'
+import { deleteEndpointProfile, endpointProfiles, saveEndpointProfile } from '@/api/clientRelease'
 import { T } from '@/utils/i18n'
+import { useSettingDeletion } from '@/utils/settingDeletion'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -62,6 +68,7 @@ const profiles = ref([])
 const emptyForm = () => ({ profile_key: '', name: '', environment: 'production', id_server: '', relay_server: '', api_server: '', ws_host: '', public_key: '', is_default: false })
 const form = reactive(emptyForm())
 const load = async () => { loading.value = true; try { profiles.value = (await endpointProfiles()).data?.list || [] } finally { loading.value = false } }
+const { deletingKey, removeSetting } = useSettingDeletion(load)
 const assignForm = value => Object.assign(form, emptyForm(), value || {})
 const openCreate = () => { editing.value = false; assignForm(); dialog.value = true }
 const openEdit = profile => { editing.value = true; assignForm(profile); dialog.value = true }
@@ -74,5 +81,6 @@ onMounted(load)
 </script>
 
 <style scoped lang="scss">
+.profile-actions{display:flex;flex-wrap:wrap;gap:8px}.profile-actions :deep(.el-button){margin-left:0}
 .build-settings-page{display:grid;gap:16px}.page-intro{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:4px 0 2px}.page-intro h1{margin:0 0 6px;font-size:24px;color:var(--console-text)}.page-intro p{margin:0;color:var(--console-muted)}.profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.profile-card{display:grid;gap:16px;padding:20px;border:1px solid var(--console-border);border-radius:10px;background:var(--console-surface);box-shadow:var(--console-shadow-sm)}.card-top{display:flex;justify-content:space-between;gap:12px}.card-top strong,.card-top span{display:block}.card-top span{margin-top:4px;color:var(--console-muted);font-size:13px}.profile-card dl{display:grid;gap:9px;margin:0}.profile-card dl div{display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px}.profile-card dt{color:var(--console-muted)}.profile-card dd{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.key-row{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:6px;background:var(--console-bg);color:var(--console-muted);font-family:monospace}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.switch-item{display:flex;align-items:flex-end;padding-bottom:4px}@media(max-width:700px){.page-intro{display:grid}.profile-grid,.form-grid{grid-template-columns:1fr}.profile-card dl div{grid-template-columns:72px minmax(0,1fr)}}
 </style>
