@@ -93,8 +93,17 @@
     "One": "브랜치"
   },
   "GitHubRunnerHint": {
-    "One": "개별 장비가 아닌 label 조합을 저장합니다. 실제 실행 러너는 워크플로의 runs-on 설정으로 결정됩니다."
+    "One": "선택한 러너의 공통 라벨을 저장합니다. 실제 실행 장비는 워크플로가 결정합니다."
   },
+  "GitHubRunnerChoose": { "One": "러너 선택 (라벨 설정)" },
+  "GitHubRunnerAutomatic": { "One": "자동 · self-hosted" },
+  "GitHubRunnerBusy": { "One": "실행 중" },
+  "GitHubRunnerIdle": { "One": "대기 중" },
+  "GitHubRunnerOffline": { "One": "오프라인" },
+  "GitHubRunnerRestricted": { "One": "워크플로 접근 제한" },
+  "GitHubRunnerEmpty": { "One": "사용 가능한 러너가 없습니다. 러너 그룹의 저장소 접근 설정을 확인하세요." },
+  "GitHubRunnerPermissionError": { "One": "러너를 불러오지 못했습니다. 토큰 권한과 러너 그룹 접근을 확인하세요." },
+  "GitHubOrgPermissionHint": { "One": "조직 러너: Self-hosted runners 읽기 + 러너 그룹에 이 저장소 허용" },
   "GitHubSaved": {
     "One": "GitHub 연결을 저장했습니다. 연결 검사를 진행해 주세요."
   },
@@ -135,7 +144,7 @@
     "One": "Fine-grained personal access token을 입력하세요."
   },
   "GitHubPermissionHint": {
-    "One": "선택한 저장소에 Contents 읽기, Actions 읽기/쓰기, 러너 조회용 Administration 읽기 권한을 허용하세요. 조직 승인이 필요할 수 있습니다."
+    "One": "대상 저장소 선택 · Contents 읽기 · Actions 읽기/쓰기 · Administration 읽기"
   },
   "GitHubTokenGuide": {
     "One": "토큰 발급·권한 안내"

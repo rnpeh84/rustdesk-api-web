@@ -93,8 +93,17 @@
     "One": "Branch"
   },
   "GitHubRunnerHint": {
-    "One": "Store labels rather than individual machines. The workflow runs-on setting determines the actual runner."
+    "One": "Stores common labels of selected runners. The workflow determines the actual machine."
   },
+  "GitHubRunnerChoose": { "One": "Choose runners (label settings)" },
+  "GitHubRunnerAutomatic": { "One": "Automatic · self-hosted" },
+  "GitHubRunnerBusy": { "One": "Busy" },
+  "GitHubRunnerIdle": { "One": "Idle" },
+  "GitHubRunnerOffline": { "One": "Offline" },
+  "GitHubRunnerRestricted": { "One": "Workflow restricted" },
+  "GitHubRunnerEmpty": { "One": "No runners available. Check repository access in the runner group." },
+  "GitHubRunnerPermissionError": { "One": "Unable to load runners. Check token permissions and runner group access." },
+  "GitHubOrgPermissionHint": { "One": "Organization runners: Self-hosted runners read + repository access in runner group" },
   "GitHubSaved": {
     "One": "Connection saved. Verify the connection next."
   },
@@ -135,7 +144,7 @@
     "One": "Enter a fine-grained personal access token."
   },
   "GitHubPermissionHint": {
-    "One": "Grant Contents read, Actions read/write and Administration read for runner discovery on selected repositories. Organization approval may be required."
+    "One": "Select target repositories · Contents read · Actions read/write · Administration read"
   },
   "GitHubTokenGuide": {
     "One": "Token creation and permissions"
