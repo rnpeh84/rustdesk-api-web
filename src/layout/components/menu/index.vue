@@ -43,7 +43,7 @@
 	  groupRoutes(children, 'SystemIdentityMenu', 'SystemIdentityMenu', 'UserFilled', ['UserList', 'UserGroup', 'UserToken', 'Oauth', 'ExternalAuth']),
       groupRoutes(children, 'SystemAddressBookMenu', 'SystemAddressBookMenu', 'Notebook', ['UserAddressBookName', 'UserAddressBook', 'UserTag']),
       groupRoutes(children, 'SystemAuditMenu', 'SystemAuditMenu', 'DocumentChecked', ['LoginLog', 'AuditConn', 'AuditFile', 'ShareRecord', 'AdminAudit']),
-	  groupRoutes(children, 'SystemOperationMenu', 'SystemOperationMenu', 'Tools', ['Operations', 'ClientReleaseAdmin', 'ServerCmd']),
+	  groupRoutes(children, 'SystemOperationMenu', 'SystemOperationMenu', 'Tools', ['Operations', 'ClientEndpointProfiles', 'ClientSourceConnection', 'ClientBuildCenter', 'ClientReleaseAdmin', 'ServerCmd']),
     ])
   }
 

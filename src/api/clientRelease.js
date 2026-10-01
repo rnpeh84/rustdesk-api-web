@@ -10,6 +10,17 @@ export const promoteClientRelease = data => request({ url: '/client/admin/promot
 export const revokeClientRelease = data => request({ url: '/client/admin/revoke', method: 'post', data })
 export const rollbackClientRelease = data => request({ url: '/client/admin/rollback', method: 'post', data })
 
+export const endpointProfiles = () => request({ url: '/client-build/endpoint-profiles' })
+export const saveEndpointProfile = data => request({ url: '/client-build/endpoint-profiles', method: 'post', data })
+export const githubConnections = () => request({ url: '/client-build/github-connections' })
+export const saveGithubConnection = data => request({ url: '/client-build/github-connections', method: 'post', data })
+export const testGithubConnection = id => request({ url: `/client-build/github-connections/${id}/test`, method: 'post' })
+export const clientBuildReadiness = params => request({ url: '/client-build/readiness', params })
+export const clientBuildJobs = params => request({ url: '/client-build/jobs', params })
+export const createClientBuildJob = data => request({ url: '/client-build/jobs', method: 'post', data })
+export const refreshClientBuildJob = id => request({ url: `/client-build/jobs/${id}/refresh`, method: 'post' })
+export const cancelClientBuildJob = id => request({ url: `/client-build/jobs/${id}/cancel`, method: 'post' })
+
 export async function downloadClientArtifact (artifact) {
   let fileHandle = null
   if (window.showSaveFilePicker) {

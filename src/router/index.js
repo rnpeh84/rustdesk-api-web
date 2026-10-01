@@ -256,6 +256,24 @@ export const asyncRoutes = [
 		component: () => import('@/views/external_auth/index.vue'),
 	  },
 	  {
+		path: '/clientEndpoints',
+		name: 'ClientEndpointProfiles',
+		meta: { title: 'ClientEndpointProfiles', icon: 'Connection' },
+		component: () => import('@/views/client_build/endpoints.vue'),
+	  },
+	  {
+		path: '/clientSource',
+		name: 'ClientSourceConnection',
+		meta: { title: 'ClientSourceConnection', icon: 'Link' },
+		component: () => import('@/views/client_build/github.vue'),
+	  },
+	  {
+		path: '/clientBuild',
+		name: 'ClientBuildCenter',
+		meta: { title: 'ClientBuildCenter', icon: 'Cpu' },
+		component: () => import('@/views/client_build/index.vue'),
+	  },
+	  {
 		path: '/clientReleases',
 		name: 'ClientReleaseAdmin',
 		meta: { title: 'ClientReleaseManagement', icon: 'Box' },
