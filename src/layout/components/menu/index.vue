@@ -32,7 +32,7 @@
       return compact([
         find('MyDashboard'),
         groupRoutes(children, 'MyAccountMenu', 'MyAccountMenu', 'User', ['MyInfo', 'MyLoginLog']),
-        groupRoutes(children, 'MyDeviceMenu', 'MyDeviceMenu', 'Monitor', ['MyPeer', 'MyTagList', 'MyShareRecordList']),
+        groupRoutes(children, 'MyDeviceMenu', 'MyDeviceMenu', 'Monitor', ['MyPeer', 'MyClient', 'MyTagList', 'MyShareRecordList']),
         groupRoutes(children, 'MyAddressBookMenu', 'MyAddressBookMenu', 'Notebook', ['MyAddressBookCollection', 'MyAddressBookList']),
       ])
     }
@@ -43,7 +43,7 @@
 	  groupRoutes(children, 'SystemIdentityMenu', 'SystemIdentityMenu', 'UserFilled', ['UserList', 'UserGroup', 'UserToken', 'Oauth', 'ExternalAuth']),
       groupRoutes(children, 'SystemAddressBookMenu', 'SystemAddressBookMenu', 'Notebook', ['UserAddressBookName', 'UserAddressBook', 'UserTag']),
       groupRoutes(children, 'SystemAuditMenu', 'SystemAuditMenu', 'DocumentChecked', ['LoginLog', 'AuditConn', 'AuditFile', 'ShareRecord', 'AdminAudit']),
-	  groupRoutes(children, 'SystemOperationMenu', 'SystemOperationMenu', 'Tools', ['Operations', 'ServerCmd']),
+	  groupRoutes(children, 'SystemOperationMenu', 'SystemOperationMenu', 'Tools', ['Operations', 'ClientReleaseAdmin', 'ServerCmd']),
     ])
   }
 

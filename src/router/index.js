@@ -78,6 +78,12 @@ export const asyncRoutes = [
         component: () => import('@/views/my/peer/index.vue'),
       },
       {
+        path: 'client',
+        name: 'MyClient',
+        meta: { title: 'ClientCenter', icon: 'Download' },
+        component: () => import('@/views/my/client/index.vue'),
+      },
+      {
         path: 'address_book_collection',
         name: 'MyAddressBookCollection',
         meta: { title: 'AddressBookName', icon: 'FolderOpened' /*keepAlive: true*/ },
@@ -248,6 +254,12 @@ export const asyncRoutes = [
 		name: 'ExternalAuth',
 		meta: { title: 'ExternalAuthOperations', icon: 'Lock' },
 		component: () => import('@/views/external_auth/index.vue'),
+	  },
+	  {
+		path: '/clientReleases',
+		name: 'ClientReleaseAdmin',
+		meta: { title: 'ClientReleaseManagement', icon: 'Box' },
+		component: () => import('@/views/client_release/index.vue'),
 	  },
     ],
   },
