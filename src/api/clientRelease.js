@@ -17,6 +17,7 @@ export const deleteEndpointProfile = id => request({ url: `/client-build/endpoin
 export * from './github'
 export const clientBuildReadiness = params => request({ url: '/client-build/readiness', params })
 export const clientBuildJobs = params => request({ url: '/client-build/jobs', params })
+export const clientBuildDetails = id => request({ url: `/client-build/jobs/${id}/details` })
 export const createClientBuildJob = data => request({ url: '/client-build/jobs', method: 'post', data })
 export const refreshClientBuildJob = id => request({ url: `/client-build/jobs/${id}/refresh`, method: 'post' })
 export const cancelClientBuildJob = id => request({ url: `/client-build/jobs/${id}/cancel`, method: 'post' })
