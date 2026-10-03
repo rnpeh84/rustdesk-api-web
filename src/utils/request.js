@@ -63,7 +63,7 @@ service.interceptors.response.use(
 
     // if the custom code is not 20000, it is judged as an error.
     if (res.code !== 0) {
-	  if (res.code !== 1201) {
+	  if (res.code !== 1201 && !response.config.silentError) {
 		ElMessage({
 		  message: res.message || 'error',
 		  type: 'error',
@@ -81,6 +81,8 @@ service.interceptors.response.use(
     }
   },
   error => {
+    // 새 입력으로 이전 조회를 취소한 것은 사용자에게 보여 줄 실패가 아니다.
+    if (axios.isCancel(error) || error.config?.silentError) return Promise.reject(error)
     if (error.code === 'ECONNABORTED'
       && error.message.indexOf('timeout') > -1) {
       error.message = 'Connection Time Out!'

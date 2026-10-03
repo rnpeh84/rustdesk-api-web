@@ -16,6 +16,7 @@ export const deleteEndpointProfile = id => request({ url: `/client-build/endpoin
 // 기존 호출부의 호환성을 유지하고 GitHub 전용 API는 별도 모듈에서 관리한다.
 export * from './github'
 export const clientBuildReadiness = params => request({ url: '/client-build/readiness', params })
+export const clientBuildVersionPreview = (params, signal) => request({ url: '/client-build/version-preview', params, signal, silentError: true })
 export const clientBuildJobs = params => request({ url: '/client-build/jobs', params })
 export const clientBuildDetails = id => request({ url: `/client-build/jobs/${id}/details` })
 export const createClientBuildJob = data => request({ url: '/client-build/jobs', method: 'post', data })

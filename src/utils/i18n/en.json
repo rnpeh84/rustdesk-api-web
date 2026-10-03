@@ -1,4 +1,5 @@
 {
+	"AutomaticBuildVersion": { "One": "Calculated from source" }, "RefreshBuildVersion": { "One": "Refresh version" }, "SourceVersion": { "One": "Source version" }, "PreviousBuildVersion": { "One": "Previous version" }, "BuildVersionFromSource": { "One": "The build number is assigned when you start the build." }, "BuildVersionFromHistory": { "One": "Source version unavailable; using previous records." }, "BuildVersionFromInitial": { "One": "Using the initial base version." }, "InitialSourceVersion": { "One": "Initial base version" }, "InitialSourceVersionGuide": { "One": "Enter once only when both source version and history are unavailable." }, "BuildVersionUnavailable": { "One": "Unable to read the version. Check the connection and retry." },
   "BuildDispatchFailed": { "One": "Request/link error" },
   "GitHubExecution": { "One": "GitHub execution" },
   "RunNotLinked": { "One": "Run not linked" },

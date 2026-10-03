@@ -9,8 +9,21 @@
           <div class="form-grid">
             <el-form-item :label="T('GitHubBuildSource')"><el-select v-model="form.build_source_id" @change="selectSource"><el-option v-for="item in sources" :key="item.id" :label="`${item.name} · ${item.owner}/${item.repository}`" :value="item.id" /></el-select></el-form-item>
             <el-form-item :label="T('EndpointProfile')"><el-select v-model="form.endpoint_profile_id" @change="checkReadiness"><el-option v-for="item in profiles" :key="item.id" :label="`${item.name} · r${item.revision}`" :value="item.id" /></el-select></el-form-item>
-            <el-form-item :label="T('ClientVersion')"><el-input v-model="form.version" placeholder="1.4.9-company.1" /></el-form-item>
+            <el-form-item :label="T('ClientVersion')">
+              <div class="version-preview" :aria-busy="versionLoading">
+                <el-input :model-value="versionPreview?.version || ''" readonly :aria-label="T('ClientVersion')" name="calculated_version" :placeholder="T('AutomaticBuildVersion')">
+                  <template #suffix><el-icon v-if="versionLoading" class="is-loading" aria-hidden="true"><Loading /></el-icon><el-button v-else link :aria-label="T('RefreshBuildVersion')" @click="refreshVersion"><el-icon aria-hidden="true"><Refresh /></el-icon></el-button></template>
+                </el-input>
+                <div class="version-evidence" aria-live="polite">
+                  <span v-if="versionPreview?.official_version">{{ T('SourceVersion') }}: {{ versionPreview.official_version }}</span>
+                  <span v-if="versionPreview?.previous_version">{{ T('PreviousBuildVersion') }}: {{ versionPreview.previous_version }}</span>
+                  <span v-if="versionPreview">{{ T({source:'BuildVersionFromSource',history:'BuildVersionFromHistory',initial:'BuildVersionFromInitial'}[versionPreview.origin]) }}</span>
+                  <span v-if="versionError" class="version-error" role="alert">{{ versionError }}</span>
+                </div>
+              </div>
+            </el-form-item>
             <el-form-item :label="T('GitRef')"><el-input v-model="form.git_ref" placeholder="master 또는 tag" /></el-form-item>
+            <el-form-item v-if="versionPreview?.needs_initial_version || versionPreview?.origin === 'initial'" :label="T('InitialSourceVersion')"><div class="version-preview"><el-input v-model="form.base_version" :aria-label="T('InitialSourceVersion')" name="initial_base_version" autocomplete="off" :spellcheck="false" placeholder="1.4.9" /><small>{{ T('InitialSourceVersionGuide') }}</small></div></el-form-item>
           </div>
           <el-form-item :label="T('BuildTargets')"><el-checkbox-group v-model="form.targets" class="target-grid" @change="checkReadiness"><el-checkbox v-for="target in targetOptions" :key="target.value" :value="target.value" border>{{ target.label }}</el-checkbox></el-checkbox-group></el-form-item>
         </el-form>
@@ -78,10 +91,10 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { CircleCheck, Close, Link, Refresh, VideoPlay, Warning } from '@element-plus/icons'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { CircleCheck, Close, Link, Loading, Refresh, VideoPlay, Warning } from '@element-plus/icons'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { cancelClientBuildJob, clientBuildDetails, clientBuildJobs, clientBuildReadiness, createClientBuildJob, endpointProfiles, githubBuildSources, refreshClientBuildJob } from '@/api/clientRelease'
+import { cancelClientBuildJob, clientBuildDetails, clientBuildJobs, clientBuildReadiness, clientBuildVersionPreview, createClientBuildJob, endpointProfiles, githubBuildSources, refreshClientBuildJob } from '@/api/clientRelease'
 import { T } from '@/utils/i18n'
 
 const loading = ref(false), submitting = ref(false), autoSyncing = ref(false), actionJobId = ref(null), profiles = ref([]), sources = ref([]), jobs = ref([])
@@ -101,10 +114,36 @@ const openDetails = async row => {
   }
 }
 const executionLabel = status => T({ queued: 'BuildQueued', waiting: 'BuildQueued', pending: 'BuildQueued', requested: 'BuildQueued', in_progress: 'BuildRunning', completed: 'BuildCompleted', success: 'BuildSucceeded', failure: 'BuildFailed', timed_out: 'BuildTimedOut', cancelled: 'BuildCancelled', skipped: 'BuildSkipped', action_required: 'BuildActionRequired' }[status] || 'Unknown')
-const form = reactive({ build_source_id: null, endpoint_profile_id: null, version: '', git_ref: '', targets: ['windows-x86_64', 'macos-aarch64', 'linux-x86_64'] })
+const form = reactive({ build_source_id: null, endpoint_profile_id: null, base_version: '', git_ref: '', targets: ['windows-x86_64', 'macos-aarch64', 'linux-x86_64'] })
+const versionPreview = ref(null), versionLoading = ref(false), versionError = ref('')
+let versionRequest = 0, versionTimer, versionController
+const refreshVersion = async () => {
+  window.clearTimeout(versionTimer)
+  const current = ++versionRequest
+  versionController?.abort()
+  versionController = new AbortController()
+  versionLoading.value = true; versionError.value = ''
+  if (!form.build_source_id || !form.git_ref.trim()) { versionPreview.value = null; versionLoading.value = false; return }
+  try {
+    const result = await clientBuildVersionPreview({ source_id: form.build_source_id, git_ref: form.git_ref.trim(), base_version: form.base_version.trim() }, versionController.signal)
+    if (current === versionRequest) versionPreview.value = result.data
+  } catch (error) {
+    if (current === versionRequest && error?.code !== 'ERR_CANCELED') {
+      if (versionPreview.value?.origin !== 'initial') versionPreview.value = null
+      versionError.value = error?.message || T('BuildVersionUnavailable')
+    }
+  } finally { if (current === versionRequest) versionLoading.value = false }
+}
+watch(() => [form.build_source_id, form.git_ref, form.base_version], (current, previous) => {
+  if (current[0] !== previous[0] || current[1] !== previous[1]) { versionPreview.value = null; form.base_version = '' }
+  ++versionRequest; versionController?.abort(); window.clearTimeout(versionTimer)
+  // 최초 입력란은 기준 버전을 입력하는 동안 유지하고 이전 제안으로 빌드하는 것은 막는다.
+  versionLoading.value = true; versionError.value = ''
+  versionTimer = window.setTimeout(refreshVersion, 400)
+})
 const targetOptions = [{ value: 'windows-x86_64', label: 'Windows x64' }, { value: 'windows-aarch64', label: 'Windows ARM64' }, { value: 'macos-x86_64', label: 'macOS Intel' }, { value: 'macos-aarch64', label: 'macOS Apple Silicon' }, { value: 'linux-x86_64', label: 'Linux x64' }, { value: 'linux-aarch64', label: 'Linux ARM64' }]
 const flowSteps = computed(() => [T('BuildFlowSource'), T('BuildFlowSnapshot'), T('BuildFlowRunner'), T('BuildFlowCandidate'), T('BuildFlowPromote')])
-const validForm = computed(() => Boolean(form.version.trim() && form.git_ref.trim() && form.targets.length))
+const validForm = computed(() => Boolean(!versionLoading.value && !versionError.value && versionPreview.value?.version && form.git_ref.trim() && form.targets.length))
 const load = async () => {
   loading.value = true
   try {
@@ -113,7 +152,7 @@ const load = async () => {
     if (!form.endpoint_profile_id) form.endpoint_profile_id = profiles.value.find(item => item.is_default)?.id || profiles.value[0]?.id || null
     if (!form.build_source_id) form.build_source_id = sources.value.find(item => item.status === 'ready' && item.is_enabled)?.id || sources.value[0]?.id || null
     if (!form.git_ref) form.git_ref = sources.value.find(item => item.id === form.build_source_id)?.branch || ''
-    await checkReadiness()
+    await Promise.all([checkReadiness(), refreshVersion()])
   } finally { loading.value = false }
 }
 const checkReadiness = async () => {
@@ -130,9 +169,9 @@ const submit = async () => {
   submitting.value = true
   try {
     const key = `web-${Date.now()}-${Math.random().toString(36).slice(2,10)}`
-    await createClientBuildJob({ ...form, idempotency_key: key })
+    await createClientBuildJob({ ...form, auto_version: true, expected_commit_sha: versionPreview.value.commit_sha, idempotency_key: key })
     ElMessage.success(T('ClientBuildRequested')); await load()
-  } finally { submitting.value = false }
+  } finally { submitting.value = false; await refreshVersion() }
 }
 const replaceJob = updated => { jobs.value = jobs.value.map(item => item.id === updated.id ? updated : item) }
 const refreshJob = async row => {
@@ -172,7 +211,7 @@ const jobDisplayLabel = row => row.status === 'failed' && !row.github_run_id ? T
 const formatTime = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(Number(value) < 1e12 ? Number(value) * 1000 : value)) : T('NoData')
 let syncTimer
 onMounted(async () => { await load(); syncTimer = window.setInterval(autoSync, 15000) })
-onBeforeUnmount(() => { if (syncTimer) window.clearInterval(syncTimer) })
+onBeforeUnmount(() => { if (syncTimer) window.clearInterval(syncTimer); window.clearTimeout(versionTimer); ++versionRequest; versionController?.abort() })
 </script>
 
 <style scoped lang="scss">
@@ -181,6 +220,7 @@ onBeforeUnmount(() => { if (syncTimer) window.clearInterval(syncTimer) })
 
 <style scoped>
 .build-details{min-height:120px;display:grid;gap:14px;overflow-wrap:anywhere}
+.version-preview{width:100%;min-width:0}.version-evidence{display:grid;gap:3px;margin-top:6px;font-size:12px;line-height:1.5;color:var(--console-muted);overflow-wrap:anywhere}.version-error{color:var(--console-danger)}.version-preview>small{display:block;margin-top:6px;line-height:1.5;color:var(--console-muted)}
 .details-note{margin:0;color:var(--console-muted)}
 .build-task{border:1px solid var(--console-border);border-radius:8px;padding:14px}
 .build-task header{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -189,4 +229,5 @@ onBeforeUnmount(() => { if (syncTimer) window.clearInterval(syncTimer) })
 .build-task li{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-top:1px solid var(--console-border)}
 .build-task li>span:first-child{min-width:0;flex:1}.build-task li>span:last-child{flex-shrink:0}
 .failed-step{color:var(--console-danger);font-weight:600}
+@media(prefers-reduced-motion:reduce){.version-preview .is-loading{animation:none}}
 </style>

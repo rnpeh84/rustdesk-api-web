@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko">
+  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>자동 빌드 버전 검증</title></head>
+  <body style="margin:0;padding:20px"><div id="app"></div>
+    <script type="module">
+      import { createApp } from 'vue'
+      import ElementPlus from 'element-plus'
+      import ko from 'element-plus/es/locale/lang/ko'
+      import { pinia } from '@/store'
+      import ClientBuild from '@/views/client_build/index.vue'
+      import 'element-plus/dist/index.css'
+      import '@/styles/style.scss'
+      createApp(ClientBuild).use(pinia).use(ElementPlus, { locale: ko }).mount('#app')
+    </script>
+  </body>
+</html>

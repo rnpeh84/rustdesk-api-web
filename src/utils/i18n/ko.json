@@ -1,4 +1,5 @@
 {
+	"AutomaticBuildVersion": { "One": "소스에서 자동 계산" }, "RefreshBuildVersion": { "One": "버전 다시 조회" }, "SourceVersion": { "One": "소스 버전" }, "PreviousBuildVersion": { "One": "이전 버전" }, "BuildVersionFromSource": { "One": "빌드 시작 시 번호가 확정됩니다." }, "BuildVersionFromHistory": { "One": "소스 버전 조회 불가 · 이전 기록 기준" }, "BuildVersionFromInitial": { "One": "최초 기준 버전 사용" }, "InitialSourceVersion": { "One": "최초 기준 버전" }, "InitialSourceVersionGuide": { "One": "소스와 이전 기록이 없을 때 한 번만 입력합니다." }, "BuildVersionUnavailable": { "One": "버전을 조회하지 못했습니다. 연결 상태를 확인하고 다시 조회해 주세요." },
   "BuildDispatchFailed": { "One": "요청·연결 오류" },
   "GitHubExecution": { "One": "GitHub 실행" },
   "RunNotLinked": { "One": "실행 연결 없음" },
