@@ -40,7 +40,7 @@
         <el-table-column prop="id" :label="T('DeviceIdAndOs')" min-width="190" fixed="left" sortable show-overflow-tooltip>
           <template #default="{row}">
             <div class="peer-id-column">
-              <PeerOs :os="row.os"/><span>{{ row.id }}</span>
+              <PeerOs :os="row.os"/><el-button class="peer-details-button" link :aria-label="`${T('ViewDetails')} ${row.id}`" @click.stop="openDetails(row)">{{ row.id }}</el-button>
               <el-button class="table-copy-button" link :aria-label="T('CopyId')" @click.stop="handleClipboard(row.id, $event)"><el-icon aria-hidden="true"><CopyDocument/></el-icon></el-button>
             </div>
           </template>
@@ -49,8 +49,8 @@
         <el-table-column prop="last_online_time" :label="T('LastOnlineTime')" min-width="150" sortable>
           <template #default="{row}">{{ row.last_online_time ? timeAgo(row.last_online_time * 1000) : T('NeverConnected') }}</template>
         </el-table-column>
-        <el-table-column :label="T('QuickConnect')" align="center" width="112">
-          <template #default="{row}"><el-button type="primary" link :icon="Connection" @click.stop="connectByClient(row.id)">{{ T('Connect') }}</el-button></template>
+        <el-table-column :label="T('QuickConnect')" align="center" width="220">
+          <template #default="{row}"><DeviceConnect :key="row.row_id" :peer="row"/></template>
         </el-table-column>
         <el-table-column :label="T('Actions')" align="center" width="64" class-name="table-actions" fixed="right">
           <template #default="{row}">
@@ -59,7 +59,6 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item :icon="View" @click="openDetails(row)">{{ T('ViewDetails') }}</el-dropdown-item>
-                  <el-dropdown-item v-if="appStore.setting.appConfig.web_client" :icon="Monitor" @click="toWebClientLink(row)">Web Client</el-dropdown-item>
                   <el-dropdown-item :icon="Notebook" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -78,7 +77,9 @@
                      :total="listRes.total">
       </el-pagination>
     </el-card>
-    <DeviceDetailDrawer v-model="detailVisible" :peer="selectedPeer" @connect="connectByClient"/>
+    <DeviceDetailDrawer v-model="detailVisible" :peer="selectedPeer" @connect="connectByClient">
+      <template #connect><DeviceConnect v-if="selectedPeer" :key="selectedPeer.row_id" :peer="selectedPeer"/></template>
+    </DeviceDetailDrawer>
 
     <el-dialog v-model="ABFormVisible" width="800" :title="T('Create')">
       <el-form class="dialog-form" ref="form" :model="ABFormData" label-width="120px">
@@ -159,7 +160,6 @@
   import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
   import { list } from '@/api/my/peer'
   import { ElMessage } from 'element-plus'
-  import { toWebClientLink } from '@/utils/webclient'
   import { T } from '@/utils/i18n'
   import { timeAgo } from '@/utils/time'
   import { jsonToCsv, downBlob } from '@/utils/file'
@@ -171,6 +171,7 @@
   import { batchCreateFromPeers } from '@/api/my/address_book'
   import PeerOs from '@/components/icons/peerOs.vue'
   import DeviceDetailDrawer from '@/components/device/DeviceDetailDrawer.vue'
+  import DeviceConnect from '@/components/device/DeviceConnect.vue'
 
   const appStore = useAppStore()
   const listRes = reactive({

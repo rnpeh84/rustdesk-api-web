@@ -218,6 +218,7 @@
           <span><small>API 서버</small><code>{{ clientServer.api_server || '-' }}</code></span>
         </div>
         <server-config-share :server="clientServer" />
+        <official-client-install :server="clientServer" />
       </el-card>
     </template>
 
@@ -287,6 +288,7 @@ import { timeAgo } from '@/utils/time'
 import { status as operationsStatus } from '@/api/operations'
 import { clientReleases } from '@/api/clientRelease'
 import ServerConfigShare from '@/components/client/ServerConfigShare.vue'
+import OfficialClientInstall from '@/components/client/OfficialClientInstall.vue'
 
 const PanelHeading = defineComponent({
   props: { title: String, description: String },

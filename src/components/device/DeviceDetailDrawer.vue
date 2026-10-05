@@ -28,10 +28,12 @@
           </span>
           <strong>{{ peer.last_online_time ? timeAgo(peer.last_online_time * 1000) : T('NeverConnected') }}</strong>
         </div>
-        <el-button type="primary" :icon="Connection" @click="emit('connect', peer.id)">
+        <slot name="connect"><el-button type="primary" :icon="Connection" @click="emit('connect', peer.id)">
           {{ T('ConnectNow') }}
-        </el-button>
+        </el-button></slot>
       </section>
+
+      <slot name="terminal"/>
 
       <section class="device-detail-section">
         <h3>{{ T('DeviceIdentity') }}</h3>

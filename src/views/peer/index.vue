@@ -116,7 +116,7 @@
           <template #default="{row}">
             <div class="peer-id-column">
               <PeerOs :os="row.os"/>
-              <span>{{ row.id }}</span>
+              <el-button class="peer-details-button" link :aria-label="`${T('ViewDetails')} ${row.id}`" @click.stop="openDetails(row)">{{ row.id }}</el-button>
               <el-button class="table-copy-button" link :aria-label="T('CopyId')" @click.stop="handleClipboard(row.id, $event)">
                 <el-icon aria-hidden="true"><CopyDocument/></el-icon>
               </el-button>
@@ -147,9 +147,9 @@
           <el-table-column v-else-if="column.name === 'updated_at'" prop="updated_at" :label="T('UpdatedAt')" min-width="160" sortable/>
         </template>
 
-        <el-table-column :label="T('QuickConnect')" align="center" width="112">
+        <el-table-column :label="T('QuickConnect')" align="center" width="220">
           <template #default="{row}">
-            <el-button type="primary" link :icon="Connection" @click.stop="connectByClient(row.id)">{{ T('Connect') }}</el-button>
+            <DeviceConnect :key="row.row_id" :peer="row"/>
           </template>
         </el-table-column>
         <el-table-column :label="T('Actions')" align="center" width="64" class-name="table-actions" fixed="right">
@@ -159,7 +159,6 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item :icon="View" @click="openDetails(row)">{{ T('ViewDetails') }}</el-dropdown-item>
-                  <el-dropdown-item v-if="appStore.setting.appConfig.web_client" :icon="Monitor" @click="toWebClientLink(row)">Web Client</el-dropdown-item>
                   <el-dropdown-item :icon="Notebook" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
                   <el-dropdown-item :icon="Edit" @click="toEdit(row)">{{ T('Edit') }}</el-dropdown-item>
                   <el-dropdown-item :icon="Delete" class="dropdown-danger" divided @click="del(row)">{{ T('Delete') }}</el-dropdown-item>
@@ -189,10 +188,12 @@
         v-model="detailVisible"
         :peer="selectedPeer"
         :group-name="getGroupName(selectedPeer?.group_id)"
-        allow-audit
+          allow-audit
         @connect="connectByClient"
         @update:model-value="handleDetailVisibility"
-    />
+      >
+        <template #connect><DeviceConnect v-if="selectedPeer" :key="selectedPeer.row_id" :peer="selectedPeer"/></template>
+      </DeviceDetailDrawer>
 
     <el-dialog v-model="formVisible" :title="!formData.row_id?T('Create'):T('Update')" width="800">
       <el-form class="dialog-form" ref="form" :model="formData" label-width="120px">
@@ -307,7 +308,6 @@
   import { batchRemove, create, detail, list, remove, update } from '@/api/peer'
   import { list as groupList } from '@/api/device_group'
   import { ElMessage, ElMessageBox } from 'element-plus'
-  import { toWebClientLink } from '@/utils/webclient'
   import { T } from '@/utils/i18n'
   import { timeAgo } from '@/utils/time'
   import { jsonToCsv, downBlob } from '@/utils/file'
@@ -325,6 +325,7 @@
   } from '@element-plus/icons-vue'
   import PeerOs from '@/components/icons/peerOs.vue'
   import DeviceDetailDrawer from '@/components/device/DeviceDetailDrawer.vue'
+  import DeviceConnect from '@/components/device/DeviceConnect.vue'
   import { useUserStore } from '@/store/user'
 
   const appStore = useAppStore()

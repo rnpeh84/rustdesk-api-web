@@ -3,6 +3,9 @@ import { getToken } from '@/utils/auth'
 import { downBlob } from '@/utils/file'
 
 export const clientReleases = () => request({ url: '/client/releases' })
+export const officialInstallSettings = () => request({ url: '/client/official-install/settings', silentError: true })
+export const officialInstallPassword = () => request({ url: '/client/official-install/password', method: 'post', silentError: true })
+export const prepareOfficialInstall = data => request({ url: '/client/official-install/prepare', method: 'post', data, silentError: true })
 export const adminClientReleases = () => request({ url: '/client/admin/releases' })
 export const clientReleaseHistory = params => request({ url: '/client/admin/history', params })
 export const validateClientRelease = data => request({ url: '/client/admin/validate', method: 'post', data })

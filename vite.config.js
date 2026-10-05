@@ -23,6 +23,10 @@ const conf = {
     open: true,
     port: process.env.VITE_DEV_PORT,
     proxy: {
+      '/api/terminal/connect': {
+        target: process.env.VITE_SERVER_PATH,
+        ws: true,
+      },
       [process.env.VITE_SERVER_API]: {
         target: process.env.VITE_SERVER_PATH,
         // rewrite: path => path.replace(/^\/api/, '/api'), //为了模拟
@@ -48,6 +52,7 @@ const conf = {
               case 'axios':
               case 'element-plus':
               case '@element-plus':
+              case '@xterm':
                 return '_' + arr[0]
               default :
                 return '__vendor'
