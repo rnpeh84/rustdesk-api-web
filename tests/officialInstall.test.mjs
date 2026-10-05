@@ -9,7 +9,7 @@ test('비밀번호는 8자리이며 안전한 난수로 매번 생성한다', ()
   assert.equal(values.size, 100)
   for (const value of values) assert.match(value, /^[ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789]{8}$/)
 })
-test('설치 화면의 모든 문구에 한국어와 영문 fallback이 있다', async () => {
+test('사용자 설치·연결 화면 문구에 한국어와 영문 fallback이 있다', async () => {
   const component = await readFile(new URL('../src/components/client/OfficialClientInstall.vue', import.meta.url), 'utf8')
   const ko = JSON.parse(await readFile(new URL('../src/utils/i18n/ko.json', import.meta.url), 'utf8'))
   const en = JSON.parse(await readFile(new URL('../src/utils/i18n/en.json', import.meta.url), 'utf8'))
@@ -18,6 +18,13 @@ test('설치 화면의 모든 문구에 한국어와 영문 fallback이 있다',
     assert.ok(ko[key]?.One, `한국어 번역 누락: ${key}`)
     assert.ok(en[key]?.One, `영문 fallback 누락: ${key}`)
   }
+  const dashboard = await readFile(new URL('../src/views/dashboard/index.vue', import.meta.url), 'utf8')
+  for (const key of new Set(dashboard.match(/Dashboard[A-Za-z_]+/g))) {
+    assert.ok(ko[key]?.One, `한국어 번역 누락: ${key}`)
+    assert.ok(en[key]?.One, `영문 fallback 누락: ${key}`)
+  }
+  assert.ok(ko.ViewDeploymentString?.One)
+  assert.ok(en.ViewDeploymentString?.One)
 })
 
 async function withClipboard (clipboard, item, run) {

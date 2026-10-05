@@ -1,5 +1,5 @@
 <template>
-  <section class="dashboard" v-loading="loading" :aria-busy="loading">
+  <section class="dashboard" :class="{ 'dashboard--user': !isSystem }" v-loading="loading" :aria-busy="loading">
     <div class="dashboard-toolbar">
       <div class="dashboard-toolbar__summary">
         <span class="dashboard-toolbar__signal" aria-hidden="true"></span>
@@ -209,17 +209,27 @@
           <empty-state v-else :title="T('NoRecentSignIns')" :description="T('NoRecentSignInsDescription')"/>
         </el-card>
       </div>
-      <el-card class="dashboard-panel dashboard-panel--connection" shadow="never">
-        <template #header><div class="dashboard-panel__header"><panel-heading title="내 RustDesk 연결 정보" description="관리자가 지정한 기본 서버 프로필입니다."/><el-button text type="primary" @click="goTo('/my/client')">설치 안내</el-button></div></template>
-        <div class="connection-facts">
-          <span><small>프로필</small><strong>{{ clientServer.name || '-' }}<em v-if="clientServer.revision">r{{ clientServer.revision }}</em></strong></span>
-          <span><small>ID 서버</small><code>{{ clientServer.id_server || '-' }}</code></span>
-          <span><small>Relay 서버</small><code>{{ clientServer.relay_server || '-' }}</code></span>
-          <span><small>API 서버</small><code>{{ clientServer.api_server || '-' }}</code></span>
-        </div>
-        <server-config-share :server="clientServer" />
-        <official-client-install :server="clientServer" />
-      </el-card>
+      <section class="dashboard-connection-workspace" :aria-label="T('DashboardConnectionWorkspace')">
+        <el-card class="dashboard-panel dashboard-panel--installation" shadow="never">
+          <official-client-install :server="clientServer" />
+        </el-card>
+        <el-card class="dashboard-panel dashboard-panel--connection" shadow="never">
+          <template #header>
+            <div class="connection-heading">
+              <panel-heading :title="T('DashboardServerInfo')" :description="T('DashboardServerInfoHint')" />
+              <span class="connection-readonly">{{ T('DashboardReadOnly') }}</span>
+            </div>
+          </template>
+          <dl class="connection-facts">
+            <div><dt>{{ T('DashboardServerProfile') }}</dt><dd>{{ clientServer.name || '-' }}<em v-if="clientServer.revision">r{{ clientServer.revision }}</em></dd></div>
+            <div><dt>{{ T('DashboardIdServer') }}</dt><dd><code>{{ clientServer.id_server || '-' }}</code></dd></div>
+            <div><dt>{{ T('DashboardRelayServer') }}</dt><dd><code>{{ clientServer.relay_server || '-' }}</code></dd></div>
+            <div><dt>{{ T('DashboardApiServer') }}</dt><dd><code>{{ clientServer.api_server || '-' }}</code></dd></div>
+          </dl>
+          <server-config-share :server="clientServer" compact />
+          <router-link class="connection-install-guide" to="/my/client">{{ T('DashboardClientGuide') }}<el-icon aria-hidden="true"><ArrowRight /></el-icon></router-link>
+        </el-card>
+      </section>
     </template>
 
     <div class="dashboard-grid dashboard-grid--footer">
@@ -560,11 +570,13 @@ onActivated(() => {
 .service-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.service-strip button{display:grid;grid-template-columns:10px 1fr;align-items:center;gap:9px;padding:10px 12px;text-align:left;background:var(--console-surface);border:1px solid var(--console-border);border-radius:6px;cursor:pointer}.service-strip button:hover,.service-strip button:focus-visible{border-color:var(--console-primary-border);background:var(--console-primary-soft)}.service-strip i{width:9px;height:9px;border-radius:50%;background:#98a2b3}.service-strip i.is-ok{background:var(--console-success)}.service-strip i.is-error{background:var(--console-danger)}.service-strip i.is-degraded{background:var(--console-warning)}.service-strip strong,.service-strip small{display:block}.service-strip small{margin-top:2px;color:var(--console-muted);font-size:11px}
 .ops-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;overflow:hidden;background:var(--console-border);border:1px solid var(--console-border);border-radius:6px}.ops-facts span{padding:10px 14px;background:var(--console-surface)}.ops-facts span.is-warning{box-shadow:inset 3px 0 var(--console-warning)}.ops-facts span.is-critical{background:color-mix(in srgb,var(--console-danger) 7%,var(--console-surface));box-shadow:inset 3px 0 var(--console-danger)}.ops-facts small,.ops-facts strong{display:block}.ops-facts small{color:var(--console-muted);font-size:11px}.ops-facts strong{margin-top:3px;color:var(--console-heading);font-variant-numeric:tabular-nums}
 .dashboard-actions small { margin-top: 2px; color: var(--console-muted); font-size: 11px; }
-.connection-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;overflow:hidden;background:var(--console-border);border:1px solid var(--console-border);border-radius:6px}.connection-facts>span{min-width:0;padding:12px 14px;background:var(--console-surface)}.connection-facts small,.connection-facts strong,.connection-facts code{display:block}.connection-facts small{color:var(--console-muted);font-size:11px}.connection-facts strong,.connection-facts code{margin-top:4px;overflow:hidden;color:var(--console-heading);text-overflow:ellipsis;white-space:nowrap}.connection-facts em{margin-left:7px;color:var(--console-muted);font-size:11px;font-style:normal;font-weight:400}
+.dashboard-connection-workspace{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(300px,1fr);gap:14px;align-items:start}.connection-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.connection-readonly{flex-shrink:0;padding:3px 8px;color:var(--console-muted);background:var(--console-neutral-soft);border-radius:4px;font-size:11px;line-height:1.6}.connection-facts{display:grid;margin:0 0 18px}.connection-facts>div{display:grid;gap:5px;min-width:0;padding:12px 0;border-bottom:1px solid var(--console-border)}.connection-facts>div:first-child{padding-top:0}.connection-facts dt{color:var(--console-muted);font-size:12px}.connection-facts dd{margin:0;color:var(--console-heading);font-size:13px;overflow-wrap:anywhere}.connection-facts code{font-size:12px;line-height:1.6;white-space:normal}.connection-facts em{margin-left:7px;color:var(--console-muted);font-size:11px;font-style:normal;font-weight:400}.connection-install-guide{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--console-border);font-size:13px;color:var(--console-primary);line-height:1.6}
+.dashboard--user .dashboard-metric{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:14px 16px}.dashboard--user .dashboard-metric__topline{grid-column:1/-1}.dashboard--user .dashboard-metric__icon{width:28px;height:28px;font-size:16px}.dashboard--user .dashboard-metric__topline small{white-space:normal;text-align:right}.dashboard--user .dashboard-metric>strong{grid-row:2;grid-column:2;margin:0;font-size:24px}.dashboard--user .dashboard-metric>span{grid-row:2;grid-column:1;margin:0;font-size:12px}.dashboard--user :deep(.dashboard-empty){min-height:110px;padding:18px}.dashboard--user :deep(.dashboard-empty__icon){width:32px;height:32px;font-size:17px}
 @media (max-width: 1100px) {
   .dashboard-metrics, .dashboard-grid--system, .dashboard-grid--system-lower, .dashboard-grid--user { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-grid--system > *, .dashboard-grid--system-lower > *, .dashboard-grid--user > * { grid-column: 1 / -1; }
   .dashboard-actions { grid-template-columns: 1fr; }
+  .dashboard-connection-workspace{grid-template-columns:1fr}
 }
 @media (max-width: 700px) {
   .dashboard-toolbar { align-items: flex-start; }
@@ -580,7 +592,7 @@ onActivated(() => {
   .account-readiness { grid-template-columns: 44px minmax(0, 1fr); }
   .account-readiness .el-tag { grid-column: 2; justify-self: start; }
 	.service-strip,.ops-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
-	.connection-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dashboard--user .dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dashboard-attention { grid-template-columns: 38px minmax(0, 1fr); }
   .dashboard-attention__action { grid-column: 2; }
 }
