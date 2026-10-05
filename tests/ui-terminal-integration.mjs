@@ -91,7 +91,9 @@ try {
   await waitOutput('모의 장치 터미널')
   // 사용자별 1분 5회 제한이 실제 API에도 적용된다. 다음 요청은 서버에서 막혀야 한다.
   const denied = await context.request.post(`${fixture.origin}/api/admin/terminal/sessions`, { headers: { 'api-token': fixture.token, Origin: fixture.origin }, data: { peer_id: fixture.peer_id, use_saved: true } })
-  assert.notEqual((await denied.json()).code, 0)
+  const deniedBody = await denied.json()
+  assert.equal(deniedBody.code, 101)
+  assert.deepEqual(deniedBody.data, { state: 'busy', stage: 'request' })
   await control('revoke')
   await page.keyboard.type('revoked input')
   await page.waitForFunction(() => !document.querySelector('.xterm'))

@@ -2,15 +2,19 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
+import { readFile } from 'node:fs/promises'
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const origin = process.env.UI_TEST_ORIGIN || 'http://127.0.0.1:15173'
 const browser = await chromium.launch({ headless: true, channel: 'chrome' })
 const context = await browser.newContext({ locale: 'ko-KR' })
-await context.addInitScript(() => { localStorage.setItem('lang', 'ko'); localStorage.setItem('access_token', 'fixture-local-ui-token') })
+await context.addInitScript(() => { if (!localStorage.getItem('lang')) localStorage.setItem('lang', 'ko'); localStorage.setItem('access_token', 'fixture-local-ui-token') })
 const page = await context.newPage()
+page.setDefaultTimeout(15000)
 const errors = [], requests = [], input = []
-let state = 'unknown', response = 'ready', closed = 0, admin = false
+let state = 'unknown', response = 'ready', responseStage = '', rawMessage, closeSocket = false, sessionHTTPStatus = 200, prepareState = '', closed = 0, admin = false
+const ko = JSON.parse(await readFile(new URL('../src/utils/i18n/ko.json', import.meta.url), 'utf8'))
+const en = JSON.parse(await readFile(new URL('../src/utils/i18n/en.json', import.meta.url), 'utf8'))
 page.on('pageerror', e => errors.push(e.message))
 await page.route('**/api/admin/**', async route => {
   const path = new URL(route.request().url()).pathname
@@ -20,7 +24,12 @@ await page.route('**/api/admin/**', async route => {
   if (path.endsWith('/config/app')) data = { web_client: 0 }
   if (path.endsWith('/peer/list')) data = { list: [{ row_id: 10, id: '123456789', hostname: '검증용 Linux', os: 'Linux', user_id: admin ? 2 : 1, last_online_time: Math.floor(Date.now() / 1000) }], total: 1 }
   if (path.endsWith('/terminal/status')) data = { state, checked_at: 0, has_saved_password: !admin, desktop_state:'no_session',terminal_state:'available',service_running:true,reported_at:Math.floor(Date.now()/1000),desktop_web_enabled:false,platform:'linux' }
-  if (path.endsWith('/terminal/sessions')) { requests.push(route.request().postDataJSON()); data = { ticket: 'fixture-single-use-ticket', websocket_path: '/api/terminal/connect', expires_in: 30 } }
+  if (path.endsWith('/terminal/sessions')) {
+    requests.push(route.request().postDataJSON())
+    if (sessionHTTPStatus !== 200) { await route.fulfill({ status: sessionHTTPStatus, contentType: 'application/json', body: JSON.stringify({ message: 'fixture-private-request-reason' }) }); return }
+    if (prepareState) { await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ code: 101, message: '연결 요청 검증 오류', data: { state: prepareState, stage: 'fixture-private-stage' } }) }); return }
+    data = { ticket: 'fixture-single-use-ticket', websocket_path: '/api/terminal/connect', expires_in: 30 }
+  }
   await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ code: 0, data }) })
 })
 await page.routeWebSocket('**/api/terminal/connect', ws => {
@@ -33,7 +42,10 @@ await page.routeWebSocket('**/api/terminal/connect', ws => {
       ws.send(JSON.stringify({ type: 'output', data: Buffer.from('\x1b[32mfixture shell\x1b[0m\r\n한글 출력\r\n$ ').toString('base64') }))
     }
   })
-  setTimeout(() => { ws.send(JSON.stringify(response === 'ready' ? { type: 'status', state: 'allowed' } : { type: 'error', state: response })) }, 50)
+  setTimeout(() => {
+    if (closeSocket) { ws.close({ code: 1011, reason: 'fixture-private-socket-reason' }); return }
+    ws.send(rawMessage ?? JSON.stringify(response === 'ready' ? { type: 'status', state: 'allowed' } : { type: 'error', state: response, stage: responseStage, message: 'fixture-private-server-reason' }))
+  }, 50)
 })
 try {
   const openEntry = async () => {
@@ -93,6 +105,99 @@ try {
     await page.keyboard.press('Escape')
     await page.locator('.device-detail-drawer').waitFor({ state: 'hidden' })
   }
+  // 서버 원인은 정해진 번역으로 표시하고 임의 원문·내부 정보는 화면에 반영하지 않는다.
+  for (const [code, stage] of [
+    ['key_mismatch','rendezvous'], ['offline','rendezvous'], ['peer_not_found','rendezvous'], ['server_rejected','rendezvous'],
+    ['signature_failed','server_verification'], ['id_server_unreachable','id_server'], ['relay_unreachable','relay'],
+    ['connection_timeout','authentication'], ['connection_closed','session'], ['protocol_error','device_verification'],
+    ['browser_transport','browser'], ['request_failed','request'], ['access_denied','request'], ['browser_terminal_error','browser'],
+    ['fixture-private-unknown-state','fixture-private-unknown-stage'],
+  ]) {
+    response = code; responseStage = stage; await page.reload()
+    const entry = await openEntry()
+    await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    const expected = ko[`TerminalState_${code}`] ? code : 'unavailable'
+    const status = dialog.getByRole('status')
+    await status.getByText(ko[`TerminalState_${expected}`].One, { exact: true }).waitFor()
+    await status.getByText(ko[`TerminalHelp_${expected}`].One, { exact: true }).waitFor()
+    if (ko[`TerminalStage_${stage}`]) await status.getByText(`실패 단계: ${ko[`TerminalStage_${stage}`].One}`, { exact: true }).waitFor()
+    else assert.equal(await status.locator('.terminal-failure-stage').count(), 0)
+    assert.equal((await dialog.innerText()).includes('fixture-private-'), false)
+    assert.equal(await dialog.locator('.xterm').count(), 0)
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)
+    if (code === 'key_mismatch') {
+      if (process.env.UI_TEST_SCREENSHOTS) await dialog.screenshot({ path: join(process.env.UI_TEST_SCREENSHOTS, 'web-terminal-key-mismatch-390.png') })
+      response = 'ready'; responseStage = ''
+      await dialog.getByRole('button', { name: '확인 후 연결' }).click()
+      await status.getByText('접속 중', { exact: true }).waitFor()
+      assert.equal(await status.locator('.terminal-failure-stage').count(), 0, '복구 후 이전 실패 단계 노출')
+    }
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click()
+    await dialog.waitFor({ state: 'hidden' })
+    await page.keyboard.press('Escape')
+    await page.locator('.device-detail-drawer').waitFor({ state: 'hidden' })
+  }
+  // JSON 해석 실패·브라우저 연결 종료·HTTP 거부도 실제 프런트엔드 처리 경로를 실행한다.
+  response = 'ready'; responseStage = ''
+  for (const [kind, expected, stage] of [['null','protocol_error','browser'], ['json','protocol_error','browser'], ['closed','connection_closed','browser'], ['403','access_denied','request'], ['500','request_failed','request']]) {
+    rawMessage = kind === 'null' ? 'null' : kind === 'json' ? '{' : undefined
+    closeSocket = kind === 'closed'; sessionHTTPStatus = /^\d+$/.test(kind) ? Number(kind) : 200
+    await page.reload(); const entry = await openEntry()
+    await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    await dialog.getByRole('status').getByText(ko[`TerminalState_${expected}`].One, { exact: true }).waitFor()
+    await dialog.getByText(`실패 단계: ${ko[`TerminalStage_${stage}`].One}`, { exact: true }).waitFor()
+    assert.equal((await dialog.innerText()).includes('fixture-private-'), false)
+    assert.equal(await dialog.locator('.xterm').count(), 0)
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click()
+    await dialog.waitFor({ state: 'hidden' }); await page.keyboard.press('Escape')
+    await page.locator('.device-detail-drawer').waitFor({ state: 'hidden' })
+  }
+  rawMessage = undefined; closeSocket = false; sessionHTTPStatus = 200
+  for (const code of ['busy', 'saved_password_unavailable', 'fixture-private-unknown-request', 'ready']) {
+    prepareState = code; await page.reload(); const entry = await openEntry()
+    await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    const expected = ['busy','saved_password_unavailable'].includes(code) ? code : 'request_failed'
+    await dialog.getByRole('status').getByText(ko[`TerminalState_${expected}`].One, { exact: true }).waitFor()
+    await dialog.getByText(ko[`TerminalHelp_${expected}`].One, { exact: true }).waitFor()
+    await dialog.getByText('실패 단계: 웹 연결 요청 발급', { exact: true }).waitFor()
+    assert.equal((await dialog.innerText()).includes('fixture-private-'), false)
+    assert.equal(await dialog.locator('.xterm').count(), 0)
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click()
+    await dialog.waitFor({ state: 'hidden' }); await page.keyboard.press('Escape')
+    await page.locator('.device-detail-drawer').waitFor({ state: 'hidden' })
+  }
+  prepareState = ''
+  // 긴 실패 안내를 태블릿·데스크톱에서도 확인하고 영문 번역 및 키보드 재시도를 검증한다.
+  for (const width of [768, 1440]) {
+    response = 'key_mismatch'; responseStage = 'rendezvous'
+    await page.setViewportSize({ width, height: 1000 }); await page.reload()
+    const entry = await openEntry()
+    await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    await dialog.getByRole('status').getByText('서버 공개키 불일치', { exact: true }).waitFor()
+    const box = await dialog.boundingBox()
+    assert.ok(box.x >= 0 && box.x + box.width <= width + 1)
+    if (process.env.UI_TEST_SCREENSHOTS) await dialog.screenshot({ path: join(process.env.UI_TEST_SCREENSHOTS, `web-terminal-key-mismatch-${width}.png`) })
+    response = 'ready'; responseStage = ''
+    await dialog.getByRole('button', { name: '확인 후 연결' }).focus(); await page.keyboard.press('Enter')
+    await dialog.getByRole('status').getByText('접속 중', { exact: true }).waitFor()
+    assert.equal(await dialog.locator('.terminal-failure-stage').count(), 0)
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click()
+    await dialog.waitFor({ state: 'hidden' })
+    if (width < 900) { await page.keyboard.press('Escape'); await page.locator('.device-detail-drawer').waitFor({ state: 'hidden' }) }
+  }
+  await page.evaluate(() => localStorage.setItem('lang','en'))
+  response = 'key_mismatch'; responseStage = 'rendezvous'; await page.reload()
+  await page.locator('.device-connect button').first().click()
+  const englishDialog = page.getByRole('dialog')
+  await englishDialog.getByRole('status').getByText(en.TerminalState_key_mismatch.One, { exact: true }).waitFor()
+  await englishDialog.getByText(`${en.TerminalFailureStage.One}: ${en.TerminalStage_rendezvous.One}`, { exact: true }).waitFor()
+  await englishDialog.getByRole('button', { name: 'Close', exact: true }).click()
+  await englishDialog.waitFor({ state: 'hidden' })
+  await page.evaluate(() => localStorage.setItem('lang','ko')); await page.reload()
   assert.ok(closed >= 3, '종료 후 WebSocket 정리')
   admin = true; response = 'ready'; state = 'unknown'
   await page.setViewportSize({ width: 1440, height: 1000 })
@@ -109,5 +214,5 @@ try {
   await page.goto(`${origin}/#/user/deviceGroup`)
   await page.waitForFunction(() => !document.querySelector('.xterm'))
   assert.deepEqual(errors, [])
-  console.log('PASS: 1440/768/390px, 사용자·장치관리자, 저장 비밀번호·직접 입력, 터미널 렌더링·키보드·종료·화면 이탈, 비활성·미지원·인증·셸·연결 실패 표시')
+  console.log('PASS: 1440/768/390px, 사용자·장치관리자, 저장 비밀번호·직접 입력, 렌더링·키보드·정리, 기존 5개·추가 15개 실패 원인/단계/대처 안내, 요청 제한/저장 비밀번호 실패, 미등록 코드/원문 비노출, JSON/연결 종료/HTTP 오류, 재시도 복구·영문')
 } finally { await context.close(); await browser.close() }

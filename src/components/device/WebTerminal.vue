@@ -17,6 +17,7 @@
       <div class="terminal-session-status" role="status" aria-live="polite">
         <strong>{{ T(`TerminalState_${state}`) }}</strong>
         <span>{{ T(`TerminalHelp_${state}`) }}</span>
+        <span v-if="failureStage" class="terminal-failure-stage">{{ T('TerminalFailureStage') }}: {{ T(`TerminalStage_${failureStage}`) }}</span>
       </div>
       <div v-show="active" ref="screen" class="terminal-screen" :aria-label="T('WebTerminalTitle', { param: peer.id })"/>
       <template #footer>
@@ -42,11 +43,14 @@ const useSaved = ref(false)
 const hasSaved = ref(false)
 const busy = ref(false)
 const active = ref(false)
+const failureStage = ref('')
 const screen = ref(null)
 const socket = ref(null)
 let terminal, fit, observer, expiry, attempt = 0, alive = true
-const states = new Set(['unknown', 'checking', 'allowed', 'ready', 'disabled', 'unsupported', 'auth_required', 'unavailable', 'configuration', 'pty_failed', 'busy'])
-const setState = value => { state.value = states.has(value) ? value : 'unavailable' }
+const states = new Set(['unknown', 'checking', 'allowed', 'ready', 'disabled', 'unsupported', 'auth_required', 'unavailable', 'configuration', 'pty_failed', 'busy', 'key_mismatch', 'offline', 'peer_not_found', 'server_rejected', 'signature_failed', 'id_server_unreachable', 'relay_unreachable', 'connection_timeout', 'connection_closed', 'protocol_error', 'browser_transport', 'request_failed', 'access_denied', 'browser_terminal_error', 'saved_password_unavailable'])
+const requestFailures = new Set(['busy', 'saved_password_unavailable', 'request_failed'])
+const stages = new Set(['configuration', 'id_server', 'server_verification', 'rendezvous', 'relay', 'device_verification', 'authentication', 'shell', 'session', 'browser', 'request'])
+const setState = (value, stage = '') => { state.value = states.has(value) ? value : 'unavailable'; failureStage.value = stages.has(stage) ? stage : '' }
 const send = message => { if (socket.value?.readyState === WebSocket.OPEN) socket.value.send(JSON.stringify(message)) }
 const clearTerminal = () => { observer?.disconnect(); observer = null; terminal?.dispose(); terminal = null; fit = null; active.value = false }
 const disconnect = () => {
@@ -99,22 +103,29 @@ const connect = async () => {
     socket.value = current
     current.onmessage = event => {
       if (socket.value !== current) return
-      let msg; try { msg = JSON.parse(event.data) } catch { disconnect(); setState('unavailable'); return }
+      let msg; try { msg = JSON.parse(event.data); if (!msg || typeof msg !== 'object' || Array.isArray(msg)) throw new Error('invalid message') } catch { disconnect(); setState('protocol_error', 'browser'); return }
       if (msg.type === 'ping') { send({ type: 'pong' }); return }
       if (msg.type === 'status') {
         setState(msg.state)
-        if (msg.state === 'allowed') setupTerminal(current).catch(() => { disconnect(); setState('unavailable') })
+        if (msg.state === 'allowed') setupTerminal(current).catch(() => { disconnect(); setState('browser_terminal_error', 'browser') })
       } else if (msg.type === 'opened') {
         busy.value = false; setState('ready'); if (terminal) { terminal.options.disableStdin = false; terminal.focus() }
       } else if (msg.type === 'output' && terminal && typeof msg.data === 'string') {
-        try { terminal.write(Uint8Array.from(atob(msg.data), c => c.charCodeAt(0))) } catch { disconnect(); setState('unavailable') }
+        try { terminal.write(Uint8Array.from(atob(msg.data), c => c.charCodeAt(0))) } catch { disconnect(); setState('protocol_error', 'session') }
       } else if (msg.type === 'error') {
-        disconnect(); setState(msg.state)
+        disconnect(); setState(msg.state, msg.stage)
       } else if (msg.type === 'closed') disconnect()
     }
-    current.onerror = () => { disconnect(); setState('unavailable') }
-    current.onclose = () => { disconnect() }
-  } catch { if (generation === attempt) { busy.value = false; setState('unavailable') } }
+    current.onerror = () => { disconnect(); setState('browser_transport', 'browser') }
+    current.onclose = () => { disconnect(); setState('connection_closed', 'browser') }
+  } catch (error) {
+    if (generation === attempt) {
+      busy.value = false
+      const denied = error?.code === 403 || [401, 403].includes(error?.response?.status)
+      const reason = error?.code === 101 && requestFailures.has(error?.data?.state) ? error.data.state : 'request_failed'
+      setState(denied ? 'access_denied' : error?.code === 'ECONNABORTED' ? 'connection_timeout' : reason, 'request')
+    }
+  }
 }
 onMounted(async () => {
   expiry = setInterval(() => { if (!socket.value && !visible.value) setState('unknown') }, 60000)
