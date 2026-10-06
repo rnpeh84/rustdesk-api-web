@@ -3,7 +3,7 @@
       :model-value="modelValue"
       class="device-detail-drawer"
       :title="T('DeviceDetails')"
-      size="min(520px, 100vw)"
+      size="min(640px, 100vw)"
       append-to-body
       destroy-on-close
       @open="openDetails"
@@ -21,7 +21,7 @@
 
     <div v-if="peer" class="device-detail-content">
       <section class="device-detail-status" :class="isOnline ? 'is-online' : 'is-offline'">
-        <div>
+        <div class="device-presence">
           <span class="device-status-label">
             <el-icon aria-hidden="true"><CircleCheck v-if="isOnline"/><Warning v-else/></el-icon>
             {{ isOnline ? T('Online') : T('Offline') }}
@@ -56,7 +56,7 @@
       </section>
 
       <section class="device-detail-section">
-        <div class="device-detail-section-title"><h3>{{ T('SystemInformation') }}</h3><el-button link :loading="infoLoading" @click="loadInformation(true)">{{ T('Refresh') }}</el-button></div>
+        <div class="device-detail-section-title"><h3>{{ T('SystemInformation') }}</h3><el-tooltip :content="T('Refresh')"><el-button circle :icon="Refresh" :aria-label="T('Refresh')" :loading="infoLoading" @click="loadInformation(true)"/></el-tooltip></div>
         <el-alert v-if="infoError" :title="infoError" type="warning" :closable="false"/>
         <dl class="device-detail-grid">
           <div><dt>{{ T('Os') }}</dt><dd class="is-breakable">{{ device.os || T('NotCollected') }}</dd></div>
@@ -71,41 +71,57 @@
       <section class="device-detail-section">
         <div class="device-detail-section-title">
           <h3>{{ T('RecentActivity') }}</h3>
-          <el-button v-if="allowAudit" link :loading="activity.loading" @click="loadActivity">
-            {{ T('Refresh') }}
-          </el-button>
+          <div class="activity-actions">
+            <el-button link @click="openHistory">{{ T('HistoryDetails') }}</el-button>
+            <el-tooltip :content="T('Refresh')"><el-button circle :icon="Refresh" :aria-label="T('Refresh')" :loading="activity.loading" @click="loadActivity"/></el-tooltip>
+          </div>
         </div>
         <el-skeleton v-if="activity.loading" :rows="3" animated/>
         <el-alert
-            v-else-if="activity.error"
+            v-if="!activity.loading && activity.error"
             type="warning"
             :closable="false"
             :title="T('ActivityLoadFailed')"
         />
-        <ol v-else-if="activity.list.length" class="device-activity-list">
-          <li v-for="item in activity.list" :key="item.id">
-            <div>
-              <strong>{{ item.from_name || item.from_peer || T('Unknown') }}</strong>
-              <span>{{ item.ip || T('NoIpInformation') }}</span>
-            </div>
-            <time :datetime="toDateTime(item.created_at)">{{ formatDate(item.created_at) }}</time>
-          </li>
-        </ol>
-        <el-empty v-else :image-size="64" :description="allowAudit ? T('NoConnectionActivity') : T('ActivityUnavailable')"/>
+        <DeviceActivityList v-if="!activity.loading && activity.list.length" :items="activity.list"/>
+        <el-empty v-if="!activity.loading && !activity.error && !activity.list.length" :image-size="64" :description="T('NoConnectionActivity')"/>
       </section>
     </div>
+    <el-dialog v-model="history.visible" :title="T('ConnectionHistory')" width="min(760px, calc(100vw - 24px))" class="connection-history-dialog" append-to-body destroy-on-close @closed="closeHistory">
+      <template #header="{ titleId, titleClass }">
+        <div class="history-heading">
+          <span :id="titleId" :class="titleClass">{{ T('ConnectionHistory') }}</span>
+          <el-button class="history-refresh" link :icon="Refresh" :aria-label="T('Refresh')" :title="T('Refresh')" :loading="history.loading" @click="resetHistory"/>
+        </div>
+      </template>
+      <div v-if="allowAudit" class="history-tools">
+        <el-radio-group v-if="allowAudit" v-model="history.source" size="small" @change="resetHistory">
+          <el-radio-button value="web">{{ T('ActivityWebConnections') }}</el-radio-button>
+          <el-radio-button value="desktop">{{ T('DeviceConnectionDesktop') }}</el-radio-button>
+        </el-radio-group>
+
+      </div>
+      <div class="history-records" v-loading="history.loading" :aria-busy="history.loading">
+        <el-alert v-if="history.error" :title="T('ActivityLoadFailed')" type="warning" :closable="false"/>
+        <DeviceActivityList v-else-if="history.list.length" :items="history.list"/>
+        <el-empty v-else-if="!history.loading" :image-size="64" :description="T('NoConnectionActivity')"/>
+      </div>
+      <template #footer>
+        <el-pagination v-if="history.total > 0" v-model:current-page="history.page" :page-size="20" :total="history.total" :disabled="history.loading" layout="total, prev, pager, next" :pager-count="5" small @current-change="loadHistory"/>
+      </template>
+    </el-dialog>
   </el-drawer>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch, onBeforeUnmount, onDeactivated } from 'vue'
-import { CircleCheck, Connection, Warning } from '@element-plus/icons-vue'
+import { CircleCheck, Connection, Warning, Refresh } from '@element-plus/icons-vue'
 import { list as auditList } from '@/api/audit'
+import DeviceActivityList from './DeviceActivityList.vue'
 import PeerOs from '@/components/icons/peerOs.vue'
-import { useAppStore } from '@/store/app'
 import { T } from '@/utils/i18n'
 import { timeAgo } from '@/utils/time'
-import { terminalStatus } from '@/api/terminal'
+import { terminalStatus, terminalHistory } from '@/api/terminal'
 import { DeviceFilesClient, fileErrorKey } from '@/utils/deviceFiles'
 
 const props = defineProps({
@@ -115,8 +131,10 @@ const props = defineProps({
   allowAudit: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update:modelValue', 'connect'])
-const appStore = useAppStore()
 
+
+const history = reactive({ visible: false, list: [], loading: false, error: false, source: 'web', page: 1, total: 0, anchor: 0 })
+let historyRequest = 0
 const activity = reactive({ list: [], loading: false, error: false })
 const reported = ref({}), infoLoading = ref(false), infoError = ref(''), now = ref(Date.now())
 const device = computed(() => ({ ...props.peer, ...reported.value.device }))
@@ -127,7 +145,7 @@ const isOnline = computed(() => {
   return now.value - onlineTime.value * 1000 < 90 * 1000
 })
 let timer, probe, generation = 0, probed = false, activeRow
-const stop = () => { generation++; clearInterval(timer); timer = undefined; activeRow = undefined; probe?.close(); probe = null; infoLoading.value = false }
+const stop = () => { closeHistory(); generation++; clearInterval(timer); timer = undefined; activeRow = undefined; probe?.close(); probe = null; infoLoading.value = activity.loading = false }
 const loadInformation = async (force = false) => {
   if (!props.modelValue || !props.peer?.row_id || infoLoading.value) return
   const current = generation, rowID = props.peer.row_id
@@ -146,7 +164,7 @@ const loadInformation = async (force = false) => {
   } catch (e) { if (current === generation) infoError.value = T(fileErrorKey(e?.message)) }
   finally { if (current === generation) infoLoading.value = false }
 }
-const openDetails = () => { if (timer && activeRow === props.peer?.row_id) return; stop(); activeRow = props.peer?.row_id; probed = false; reported.value = {}; loadActivity(); loadInformation(); timer = setInterval(() => { now.value = Date.now(); if (document.visibilityState !== 'hidden') loadInformation() }, 15000) }
+const openDetails = () => { if (timer && activeRow === props.peer?.row_id) return; stop(); activeRow = props.peer?.row_id; probed = false; reported.value = {}; loadActivity(); loadInformation(); timer = setInterval(() => { now.value = Date.now(); if (document.visibilityState !== 'hidden') {loadInformation();loadActivity()} }, 15000) }
 watch(() => props.modelValue, value => { if (!value) stop() })
 watch(() => props.peer?.row_id, () => { if (props.modelValue) openDetails() })
 onDeactivated(stop)
@@ -159,29 +177,41 @@ const parseDate = (value) => {
   const date = new Date(normalized)
   return Number.isNaN(date.getTime()) ? null : date
 }
-const formatDate = (value) => {
-  const date = parseDate(value)
-  if (!date) return '-'
-  return new Intl.DateTimeFormat(appStore.setting.lang, {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date)
-}
-const toDateTime = (value) => parseDate(value)?.toISOString() || ''
-
 const loadActivity = async () => {
+  if (!props.modelValue || !props.peer?.row_id || activity.loading) return
+  const current=generation,rowID=props.peer.row_id,deviceID=props.peer.id
   activity.list = []
   activity.error = false
-  if (!props.allowAudit || !props.peer?.id) return
-
   activity.loading = true
-  const response = await auditList({ page: 1, page_size: 5, peer_id: props.peer.id }).catch(() => false)
+  const [terminalResult,desktopResult]=await Promise.allSettled([terminalHistory(rowID),props.allowAudit ? auditList({page:1,page_size:5,peer_id:deviceID}) : Promise.resolve({data:{list:[]}})])
+  if(current!==generation)return
   activity.loading = false
-  if (!response) {
-    activity.error = true
-    return
+  activity.error = terminalResult.status==='rejected' || desktopResult.status==='rejected'
+  const terminalItems = terminalResult.status==='fulfilled' ? terminalResult.value.data?.list || [] : []
+  const desktopItems = desktopResult.status==='fulfilled' ? desktopResult.value.data?.list || [] : []
+  activity.list = [...terminalItems,...desktopItems].sort((a,b)=>(parseDate(b.created_at)?.getTime()||0)-(parseDate(a.created_at)?.getTime()||0)).slice(0,5)
+}
+const closeHistory = () => { historyRequest++; history.visible = false; history.loading = false }
+const openHistory = () => { history.visible = true; history.source = 'web'; resetHistory() }
+const resetHistory = () => { history.page = 1; history.anchor = 0; loadHistory() }
+const loadHistory = async () => {
+  if (!history.visible || !props.modelValue || !props.peer?.row_id) return
+  const requestID = ++historyRequest, current = generation, rowID = props.peer.row_id
+  const source = history.source, page = history.page
+  history.loading = true; history.error = false; history.list = []
+  try {
+    const reply = source === 'web'
+      ? await terminalHistory(rowID, { page, page_size: 20, before_id: history.anchor || undefined })
+      : await auditList({ page, page_size: 20, peer_id: props.peer.id })
+    if (requestID !== historyRequest || current !== generation || !history.visible) return
+    history.list = reply.data?.list || []
+    history.total = Number(reply.data?.total) || 0
+    if (source === 'web') history.anchor = reply.data?.before_id || 0
+  } catch {
+    if (requestID === historyRequest && current === generation) { history.error = true; history.total = 0 }
+  } finally {
+    if (requestID === historyRequest && current === generation) history.loading = false
   }
-  activity.list = response.data?.list || []
 }
 </script>
 
@@ -233,7 +263,7 @@ const loadActivity = async () => {
   border-radius: 8px;
 }
 
-.device-detail-status > div {
+.device-presence { display: flex; align-items: center; gap: 10px; white-space: nowrap;
   min-width: 0;
 }
 
@@ -245,7 +275,7 @@ const loadActivity = async () => {
 }
 
 .device-detail-status strong {
-  margin-top: 3px;
+  margin-top: 0;
   color: var(--console-heading);
   font-size: 13px;
 }
@@ -301,35 +331,22 @@ const loadActivity = async () => {
 }
 .device-detail-grid dd.is-breakable { overflow-wrap: anywhere; white-space: normal; }
 
-.device-activity-list {
-  display: grid;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.device-activity-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-width: 0;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--console-border);
-}
-
-.device-activity-list li:last-child { border-bottom: 0; }
-.device-activity-list li > div { min-width: 0; }
-.device-activity-list strong,
-.device-activity-list span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.device-activity-list span,
-.device-activity-list time { color: var(--console-muted); font-size: 12px; }
-.device-activity-list time { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.activity-actions { display: flex; align-items: center; gap: 8px; }
+.device-detail-section-title { margin-bottom: 10px; }
+.device-detail-section-title h3 { margin: 0; }
+.history-heading { padding-right: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: 1; min-width: 0; }
+.history-heading > span { min-width: 0; }
+.history-refresh { width: 32px; height: 32px; min-height: 32px; min-width: 32px; padding: 0; margin: 0; color: var(--console-muted); background: transparent; border: 0; }
+.history-refresh:hover { color: var(--console-primary); background: transparent; }
+.history-refresh:focus-visible { outline: 2px solid var(--console-primary); outline-offset: 2px; }
+.history-tools { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 12px; }
+.history-tools .el-radio-group { margin-right: auto; }
+.history-records { min-height: 100px; max-height: 56dvh; overflow: auto; }
+:deep(.connection-history-dialog .el-dialog__footer) { display: flex; justify-content: flex-end; }
 
 @media (max-width: 520px) {
-  .device-detail-status { align-items: stretch; flex-direction: column; }
-  .device-detail-status .el-button { width: 100%; }
+  .device-detail-status { gap: 10px; }
+
   .device-detail-grid { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

@@ -51,9 +51,7 @@
         </el-form-item>
       </el-form>
     </el-dialog>
-    <el-dialog v-model="rulesVisible" :title="T('ShareRules')" destroy-on-close top="5vh" width="80%">
-      <Rule :collection="clickRow" :is_my="1"></Rule>
-    </el-dialog>
+    <AddressBookShareDialog v-model="rulesVisible" :collection="clickRow" @saved="getList"/>
 
   </div>
 </template>
@@ -63,7 +61,7 @@
   import { computed, ref } from 'vue'
   import { useRepositories } from '@/views/address_book/collection'
   import { onActivated, onMounted, watch } from 'vue'
-  import Rule from '@/views/address_book/rule.vue'
+  import AddressBookShareDialog from '@/components/device/AddressBookShareDialog.vue'
   import { Delete, Edit, Share } from '@element-plus/icons-vue'
 
   const {

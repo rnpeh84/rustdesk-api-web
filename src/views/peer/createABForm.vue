@@ -63,9 +63,8 @@
   import { onMounted, defineProps, defineEmits, onActivated } from 'vue'
   import { useRepositories as useABRepositories } from '@/views/address_book'
   import { batchCreate } from '@/api/address_book'
-  import { ElMessage } from 'element-plus'
-
-  const emits = defineEmits(['cancel', 'success'])
+  import { notify as ElMessage } from '@/utils/notifications';
+const emits = defineEmits(['cancel', 'success'])
   const props = defineProps({
     peer: {
       type: Object,

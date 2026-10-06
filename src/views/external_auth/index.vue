@@ -6,7 +6,8 @@
   </section>
 </template>
 <script setup>
-import { onMounted, reactive, ref } from 'vue'; import { ElMessage } from 'element-plus'; import { dryRunLDAP, invite, saveSMTP, smtp, testOIDC, testSMTP } from '@/api/externalAuth'; import { T } from '@/utils/i18n'
+import { onMounted, reactive, ref } from 'vue'; import { notify as ElMessage } from '@/utils/notifications';
+ import { dryRunLDAP, invite, saveSMTP, smtp, testOIDC, testSMTP } from '@/api/externalAuth'; import { T } from '@/utils/i18n'
 const loading=ref(false),hasPassword=ref(false),testTo=ref(''),issuer=ref(''),ldapUser=ref(''),oidcResult=ref(null),ldapResult=ref(null);const smtpForm=reactive({host:'',port:587,username:'',password:'',from:'',tls:false});const inviteForm=reactive({username:'',email:''})
 const load=async()=>{loading.value=true;const res=await smtp().catch(()=>false);if(res){Object.assign(smtpForm,res.data.setting);hasPassword.value=res.data.has_password}loading.value=false}
 const save=async()=>{if(await saveSMTP(smtpForm).catch(()=>false)){ElMessage.success(T('Saved'));smtpForm.password='';load()}}

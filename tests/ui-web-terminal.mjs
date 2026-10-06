@@ -12,7 +12,7 @@ await context.addInitScript(() => { if (!localStorage.getItem('lang')) localStor
 const page = await context.newPage()
 page.setDefaultTimeout(15000)
 const errors = [], requests = [], input = []
-let state = 'unknown', response = 'ready', responseStage = '', rawMessage, closeSocket = false, sessionHTTPStatus = 200, prepareState = '', closed = 0, admin = false
+let state = 'unknown', response = 'ready', responseStage = '', rawMessage, closeSocket = false, sessionHTTPStatus = 200, prepareState = '', closed = 0, admin = false, sessionSocket
 const ko = JSON.parse(await readFile(new URL('../src/utils/i18n/ko.json', import.meta.url), 'utf8'))
 const en = JSON.parse(await readFile(new URL('../src/utils/i18n/en.json', import.meta.url), 'utf8'))
 page.on('pageerror', e => errors.push(e.message))
@@ -33,6 +33,7 @@ await page.route('**/api/admin/**', async route => {
   await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ code: 0, data }) })
 })
 await page.routeWebSocket('**/api/terminal/connect', ws => {
+  sessionSocket = ws
   ws.onClose(() => closed++)
   ws.onMessage(message => {
     const v = JSON.parse(message)
@@ -63,7 +64,7 @@ try {
     const entry = await openEntry()
     await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).waitFor()
     await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    const dialog = page.getByRole('dialog', { name: 'ID : 123456789' })
     await dialog.waitFor()
     await dialog.getByText('접속 중', { exact: true }).waitFor()
     await page.waitForFunction(() => document.querySelector('.xterm-screen')?.textContent.includes('한글 출력'))
@@ -83,6 +84,25 @@ try {
     const expandedBox = await dialog.boundingBox()
     assert.ok(expandedBox.width >= width - 2)
     assert.ok((await dialog.locator('.terminal-screen').boundingBox()).height > normalHeight)
+    sessionSocket.send(JSON.stringify({ type: 'output', data: Buffer.from('스크롤 확인용 출력\r\n'.repeat(200)).toString('base64') }))
+    for (const height of [1000, 600, 390]) {
+      await page.setViewportSize({ width, height })
+      await page.waitForTimeout(200)
+      const layout = await dialog.evaluate(element => {
+        const panel = element.querySelector('.el-dialog') || element
+        const bounds = panel.getBoundingClientRect(), footer = element.querySelector('.el-dialog__footer').getBoundingClientRect()
+        const containers = [panel, element.querySelector('.el-dialog__body'), element.closest('.el-overlay-dialog')]
+        const viewport = element.querySelector('.xterm-viewport')
+        return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, footerBottom: footer.bottom, overflow: containers.map(node => node.scrollHeight - node.clientHeight), terminalScroll: viewport.scrollHeight - viewport.clientHeight }
+      })
+      assert.ok(Math.abs(layout.x) <= 1 && Math.abs(layout.y) <= 1 && Math.abs(layout.width - width) <= 1 && Math.abs(layout.height - height) <= 1, `${width}x${height}: 확대 창이 화면을 채우지 않음`)
+      assert.ok(layout.overflow.every(value => value <= 1), `${width}x${height}: 확대 창에 추가 스크롤 발생 ${JSON.stringify(layout)}`)
+      assert.ok(layout.footerBottom <= height + 1, `${width}x${height}: 하단 버튼 가림`)
+      assert.ok(layout.terminalScroll > 0, `${width}x${height}: 터미널 출력 스크롤 누락`)
+    }
+    await page.setViewportSize({ width, height: 1000 })
+    await page.waitForTimeout(200)
+    if (process.env.UI_TEST_SCREENSHOTS) await dialog.screenshot({ path: join(process.env.UI_TEST_SCREENSHOTS, `web-terminal-expanded-${width}.png`) })
     await dialog.getByRole('button', { name: '터미널 원래 크기', exact: true }).click()
     await page.waitForTimeout(200)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)
@@ -99,9 +119,13 @@ try {
     await page.reload()
     const entry = await openEntry()
     await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    const dialog = page.getByRole('dialog', { name: 'ID : 123456789' })
     await dialog.waitFor()
     await dialog.getByText(label, { exact: true }).waitFor()
+    const form=await dialog.locator('.terminal-connect-form').boundingBox(),check=await dialog.locator('.terminal-connect-form>.el-checkbox').boundingBox(),connect=await dialog.getByRole('button',{name:'확인 후 연결',exact:true}).boundingBox()
+    assert.ok(Math.abs(check.y+check.height/2-connect.y-connect.height/2)<2,`연결 체크박스와 버튼의 세로 중심이 다릅니다: ${JSON.stringify({form,check,connect})}`)
+    assert.ok(form.x+form.width-connect.x-connect.width<=17&&form.x+form.width-connect.x-connect.width>=11,'연결 버튼의 우측 여백/정렬이 다릅니다.')
+    assert.ok(form.height<=48,'저장 비밀번호 연결 행의 위아래 여백이 과도합니다.')
     await dialog.getByText('웹에 저장한 설치 비밀번호 사용', { exact: true }).click()
     await dialog.getByRole('textbox', { name: '장치 무인 접속 비밀번호' }).fill('fixture-password')
     await dialog.getByRole('button', { name: '확인 후 연결' }).click()
@@ -125,7 +149,7 @@ try {
     response = code; responseStage = stage; await page.reload()
     const entry = await openEntry()
     await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    const dialog = page.getByRole('dialog', { name: 'ID : 123456789' })
     const expected = ko[`TerminalState_${code}`] ? code : 'unavailable'
     const status = dialog.getByRole('status')
     await status.getByText(ko[`TerminalState_${expected}`].One, { exact: true }).waitFor()
@@ -154,7 +178,7 @@ try {
     closeSocket = kind === 'closed'; sessionHTTPStatus = /^\d+$/.test(kind) ? Number(kind) : 200
     await page.reload(); const entry = await openEntry()
     await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    const dialog = page.getByRole('dialog', { name: 'ID : 123456789' })
     await dialog.getByRole('status').getByText(ko[`TerminalState_${expected}`].One, { exact: true }).waitFor()
     await dialog.getByText(`실패 단계: ${ko[`TerminalStage_${stage}`].One}`, { exact: true }).waitFor()
     assert.equal((await dialog.innerText()).includes('fixture-private-'), false)
@@ -167,7 +191,7 @@ try {
   for (const code of ['busy', 'saved_password_unavailable', 'fixture-private-unknown-request', 'ready']) {
     prepareState = code; await page.reload(); const entry = await openEntry()
     await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    const dialog = page.getByRole('dialog', { name: 'ID : 123456789' })
     const expected = ['busy','saved_password_unavailable'].includes(code) ? code : 'request_failed'
     await dialog.getByRole('status').getByText(ko[`TerminalState_${expected}`].One, { exact: true }).waitFor()
     await dialog.getByText(ko[`TerminalHelp_${expected}`].One, { exact: true }).waitFor()
@@ -185,7 +209,7 @@ try {
     await page.setViewportSize({ width, height: 1000 }); await page.reload()
     const entry = await openEntry()
     await entry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
-    const dialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+    const dialog = page.getByRole('dialog', { name: 'ID : 123456789' })
     await dialog.getByRole('status').getByText('서버 공개키 불일치', { exact: true }).waitFor()
     const box = await dialog.boundingBox()
     assert.ok(box.x >= 0 && box.x + box.width <= width + 1)
@@ -214,7 +238,7 @@ try {
   await page.reload()
   const adminEntry = page.locator('.device-connect').first()
   await adminEntry.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()
-  const adminDialog = page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+  const adminDialog = page.getByRole('dialog', { name: 'ID : 123456789' })
   await adminDialog.getByRole('textbox', { name: '장치 무인 접속 비밀번호' }).fill('fixture-admin-device-password')
   assert.equal(await adminDialog.getByRole('checkbox').count(), 0, '타인 장치에 저장 비밀번호 선택 노출')
   await adminDialog.getByRole('button', { name: '확인 후 연결' }).click()

@@ -13,7 +13,8 @@
   </main>
 </template>
 <script setup>
-import { computed, ref } from 'vue'; import { useRoute, useRouter } from 'vue-router'; import { ElMessage } from 'element-plus'; import { acceptInvite, confirmPasswordReset, requestPasswordReset } from '@/api/accountActions'; import { T } from '@/utils/i18n'
+import { computed, ref } from 'vue'; import { useRoute, useRouter } from 'vue-router'; import { notify as ElMessage } from '@/utils/notifications';
+ import { acceptInvite, confirmPasswordReset, requestPasswordReset } from '@/api/accountActions'; import { T } from '@/utils/i18n'
 const route=useRoute(),router=useRouter(),loading=ref(false),email=ref(''),password=ref(''),confirmation=ref('');const mode=computed(()=>route.name==='PasswordResetRequest'?'request':route.name==='InviteAccept'?'invite':'reset');const title=computed(()=>T(mode.value==='request'?'RequestPasswordReset':mode.value==='invite'?'AcceptInvitation':'ResetPassword'));const description=computed(()=>T(mode.value==='request'?'RequestPasswordResetDescription':mode.value==='invite'?'AcceptInvitationDescription':'ResetPasswordDescription'));const actionLabel=computed(()=>T(mode.value==='request'?'SendResetLink':mode.value==='invite'?'CreateAccount':'ChangePassword'))
 const submit=async()=>{if(mode.value!=='request'&&(password.value.length<8||password.value!==confirmation.value)){ElMessage.error(T('PasswordValidationGuide'));return}loading.value=true;try{if(mode.value==='request')await requestPasswordReset({email:email.value});else if(mode.value==='invite')await acceptInvite({token:route.query.token,password:password.value});else await confirmPasswordReset({token:route.query.token,password:password.value});ElMessage.success(T(mode.value==='request'?'ResetRequestAccepted':'Completed'));if(mode.value!=='request')router.push('/login')}catch(error){ElMessage.error(error?.message||T('OperationFailed'))}finally{loading.value=false}}
 </script>

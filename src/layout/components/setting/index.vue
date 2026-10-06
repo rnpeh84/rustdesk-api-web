@@ -1,22 +1,6 @@
 <template>
   <div class="setting">
-    <div class="menu-item">
-      <el-switch
-          v-model="isDark"
-          style="--el-switch-on-color:#18222c"
-      >
-        <template #active-action>
-          <el-icon>
-            <Moon/>
-          </el-icon>
-        </template>
-        <template #inactive-action>
-          <el-icon>
-            <Sunny color="#000"/>
-          </el-icon>
-        </template>
-      </el-switch>
-    </div>
+    <button type="button" class="menu-item title icon-title theme-toggle" :aria-label="T(isDark ? 'UseLightMode' : 'UseDarkMode')" :title="T(isDark ? 'UseLightMode' : 'UseDarkMode')" :aria-pressed="isDark" @click="isDark = !isDark"><el-icon :size="19"><Moon v-if="isDark"/><Sunny v-else/></el-icon></button>
     <el-dropdown class="menu-item">
       <div class="title icon-title" :aria-label="T('Language')">
         <el-icon :size="19"><ChatLineSquare/></el-icon>
@@ -84,6 +68,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  .theme-toggle{border:0;background:transparent;padding:0;font:inherit}
 
   .menu-item {
     margin-left: 0;

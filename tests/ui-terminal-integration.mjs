@@ -26,7 +26,7 @@ const entry = async () => {
   if (page.viewportSize().width < 900) { await page.getByRole('button', { name: '상세 정보 123456789', exact: true }).click(); return page.locator('.device-detail-drawer .device-connect') }
   return page.locator('.device-connect').first()
 }
-const dialog = () => page.getByRole('dialog', { name: '웹 터미널 · 123456789' })
+const dialog = () => page.getByRole('dialog', { name: 'ID : 123456789' })
 const waitOutput = text => page.waitForFunction(text => document.querySelector('.xterm-screen')?.textContent.includes(text), text)
 const waitInactive = async () => {
   for (let i = 0; i < 50; i++) { if ((await stats()).Active === 0) return; await page.waitForTimeout(100) }
@@ -82,7 +82,7 @@ try {
   await dialog().getByText('웹에 저장한 설치 비밀번호 사용', { exact: true }).click()
   await dialog().getByRole('textbox', { name: '장치 무인 접속 비밀번호' }).fill('wrong-fixture-password')
   await dialog().getByRole('button', { name: '확인 후 연결' }).click()
-  await dialog().getByText('인증 필요', { exact: true }).waitFor()
+  await dialog().locator('.terminal-session-status').getByText('인증 필요', { exact: true }).waitFor()
   assert.equal(await dialog().locator('.xterm').count(), 0)
   await waitInactive()
   await dialog().getByRole('textbox', { name: '장치 무인 접속 비밀번호' }).fill(fixture.password)

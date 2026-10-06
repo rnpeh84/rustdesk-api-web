@@ -90,6 +90,12 @@ export const asyncRoutes = [
         component: () => import('@/views/my/address_book/collection.vue'),
       },
       {
+        path: 'sharing',
+        name: 'MyAddressBookSharing',
+        meta: { title: 'AddressBookSharing', icon: 'Share' },
+        component: () => import('@/views/my/address_book/sharing.vue'),
+      },
+      {
         path: 'address_book',
         name: 'MyAddressBookList',
         meta: { title: 'AddressBooks', icon: 'Notebook' /*keepAlive: true*/ },

@@ -1,5 +1,9 @@
 <template>
   <div class="peer-management">
+    <el-tabs v-model="listQuery.scope" @tab-change="changeScope">
+      <el-tab-pane :label="T('OwnDevices')" name="mine"/>
+      <el-tab-pane :label="T('ReceivedDevices')" name="received"/>
+    </el-tabs>
     <el-card class="device-filter-card" shadow="never">
       <form class="device-filter-toolbar" role="search" @submit.prevent="handlerQuery">
         <div class="device-filter-primary">
@@ -15,6 +19,7 @@
       </form>
     </el-card>
     <el-card class="list-body device-list-card" shadow="never">
+      <el-alert v-if="listRes.failed" :title="T('DeviceListLoadFailed')" type="error" :closable="false"><el-button @click="getList">{{ T('Retry') }}</el-button></el-alert>
       <div class="list-table-toolbar">
         <div class="list-table-summary" aria-live="polite">
           <strong>{{ T('ResultsCount', { param: listRes.total }) }}</strong>
@@ -23,12 +28,13 @@
           </span>
         </div>
       </div>
-      <div v-if="multipleSelection.length" class="batch-action-bar" aria-live="polite">
+      <div v-if="multipleSelection.length && listQuery.scope === 'mine'" class="batch-action-bar" aria-live="polite">
         <strong>{{ T('SelectedCount', { param: multipleSelection.length }) }}</strong>
         <el-button type="primary" plain :icon="Notebook" @click="toBatchAddToAB">{{ T('BatchAddToAB') }}</el-button>
+        <el-button :icon="Share" @click="shareDevices(multipleSelection)">{{ T('ShareDevices') }}</el-button>
       </div>
       <el-table class="device-table" :data="listRes.list" v-loading="listRes.loading" row-key="row_id" border stripe scrollbar-always-on @selection-change="handleSelectionChange" @row-click="openDetails">
-        <el-table-column type="selection" width="48" align="center" fixed="left"/>
+        <el-table-column v-if="listQuery.scope === 'mine'" type="selection" width="48" align="center" fixed="left"/>
         <el-table-column prop="last_online_time" :label="T('Status')" width="106" fixed="left" sortable>
           <template #default="{row}">
             <span class="device-status" :class="isPeerOnline(row) ? 'is-online' : 'is-offline'">
@@ -46,6 +52,8 @@
           </template>
         </el-table-column>
         <el-table-column prop="hostname" :label="T('Hostname')" min-width="160" sortable show-overflow-tooltip/>
+        <el-table-column prop="owner_name" :label="T('DeviceOwner')" min-width="130" show-overflow-tooltip/>
+        <el-table-column v-if="listQuery.scope === 'received'" :label="T('ShareSource')" min-width="180" show-overflow-tooltip><template #default="{row}">{{ row.share_sources?.join(', ') }}</template></el-table-column>
         <el-table-column prop="last_online_time" :label="T('LastOnlineTime')" min-width="150" sortable>
           <template #default="{row}">{{ row.last_online_time ? timeAgo(row.last_online_time * 1000) : T('NeverConnected') }}</template>
         </el-table-column>
@@ -59,7 +67,8 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item :icon="View" @click="openDetails(row)">{{ T('ViewDetails') }}</el-dropdown-item>
-                  <el-dropdown-item :icon="Notebook" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
+                  <el-dropdown-item v-if="listQuery.scope === 'mine'" :icon="Notebook" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
+                  <el-dropdown-item v-if="listQuery.scope === 'mine'" :icon="Share" @click="shareDevices([row])">{{ T('ShareDevices') }}</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -80,6 +89,7 @@
     <DeviceDetailDrawer v-model="detailVisible" :peer="selectedPeer" @connect="connectByClient">
       <template #connect><DeviceConnect v-if="selectedPeer" :key="selectedPeer.row_id" :peer="selectedPeer"/></template>
     </DeviceDetailDrawer>
+    <AddressBookShareDialog v-model="shareVisible" :peer-ids="sharePeerIDs" @saved="getList"/>
 
     <el-dialog v-model="ABFormVisible" width="800" :title="T('Create')">
       <el-form class="dialog-form" ref="form" :model="ABFormData" label-width="120px">
@@ -166,18 +176,20 @@
   import { useRepositories as useABRepositories } from '@/views/address_book/index'
   import { useAppStore } from '@/store/app'
   import { connectByClient } from '@/utils/peer'
-  import { CircleCheck, Connection, CopyDocument, Download, Monitor, MoreFilled, Notebook, RefreshLeft, Search, View, Warning } from '@element-plus/icons-vue'
+  import { CircleCheck, Connection, CopyDocument, Download, Monitor, MoreFilled, Notebook, RefreshLeft, Search, Share, View, Warning } from '@element-plus/icons-vue'
   import { handleClipboard } from '@/utils/clipboard'
   import { batchCreateFromPeers } from '@/api/my/address_book'
   import PeerOs from '@/components/icons/peerOs.vue'
   import DeviceDetailDrawer from '@/components/device/DeviceDetailDrawer.vue'
   import DeviceConnect from '@/components/device/DeviceConnect.vue'
+  import AddressBookShareDialog from '@/components/device/AddressBookShareDialog.vue'
 
   const appStore = useAppStore()
   const listRes = reactive({
-    list: [], total: 0, loading: false,
+    list: [], total: 0, loading: false, failed: false,
   })
   const listQuery = reactive({
+    scope: 'mine',
     page: 1,
     page_size: 10,
     time_ago: null,
@@ -185,17 +197,24 @@
     hostname: '',
   })
   const detailVisible = ref(false)
+  const shareVisible = ref(false), sharePeerIDs = ref([])
+  const shareDevices = peers => { sharePeerIDs.value = peers.map(peer => peer.row_id); shareVisible.value = true }
+  const changeScope = () => { multipleSelection.value = []; detailVisible.value = false; listRes.list = []; handlerQuery() }
   const selectedPeer = ref(null)
   const activeFilterCount = computed(() => ['id', 'hostname', 'time_ago'].filter(key => listQuery[key]).length)
 
+  let listRequestGeneration = 0
   const getList = async () => {
+    const generation = ++listRequestGeneration
     listRes.loading = true
-    const res = await list(listQuery).catch(_ => false)
+    listRes.failed = false
+    const res = await list({ ...listQuery }).catch(_ => false)
+    if (generation !== listRequestGeneration) return
     listRes.loading = false
     if (res) {
       listRes.list = res.data.list
       listRes.total = res.data.total
-    }
+    } else { listRes.list = []; listRes.total = 0; listRes.failed = true }
   }
   const handlerQuery = () => {
     if (listQuery.page === 1) {

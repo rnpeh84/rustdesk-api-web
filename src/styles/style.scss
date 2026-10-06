@@ -805,7 +805,8 @@ html.dark .el-table {
   flex: 0 0 auto;
 }
 
-.table-actions .el-button.is-circle {
+.table-actions .el-button.is-circle,
+.device-connect .connection-icon-button {
   width: 32px;
   min-width: 32px;
   height: 32px;
@@ -818,10 +819,21 @@ html.dark .el-table {
   border-radius: 7px;
 }
 
-.table-actions .el-button.is-circle:hover {
+.table-actions .el-button.is-circle:hover,
+.device-connect .connection-icon-button:not(:disabled):hover {
   color: var(--console-primary);
   background: var(--console-primary-soft);
   border-color: var(--console-primary-border);
+}
+
+.device-connect .connection-icon-button.is-multiple {
+  width: auto;
+  padding: 0 8px;
+}
+
+.device-connect .connection-icon-button:disabled {
+  color: var(--console-muted);
+  opacity: 0.55;
 }
 
 .table-actions .el-button--primary.is-plain {

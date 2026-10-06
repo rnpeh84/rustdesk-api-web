@@ -33,7 +33,7 @@
         find('MyDashboard'),
         groupRoutes(children, 'MyAccountMenu', 'MyAccountMenu', 'User', ['MyInfo', 'MyLoginLog']),
         groupRoutes(children, 'MyDeviceMenu', 'MyDeviceMenu', 'Monitor', ['MyPeer', 'MyClient', 'MyTagList', 'MyShareRecordList']),
-        groupRoutes(children, 'MyAddressBookMenu', 'MyAddressBookMenu', 'Notebook', ['MyAddressBookCollection', 'MyAddressBookList']),
+        groupRoutes(children, 'MyAddressBookMenu', 'MyAddressBookMenu', 'Notebook', ['MyAddressBookCollection', 'MyAddressBookList', 'MyAddressBookSharing']),
       ])
     }
 
@@ -126,7 +126,7 @@
       color: var(--console-primary);
       font-weight: 650;
       background: var(--console-primary-soft);
-      box-shadow: inset 3px 0 0 var(--console-primary);
+      box-shadow: none;
     }
 
     :deep(.el-sub-menu .el-menu) {
