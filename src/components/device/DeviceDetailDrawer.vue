@@ -6,14 +6,14 @@
       size="min(520px, 100vw)"
       append-to-body
       destroy-on-close
-      @open="loadActivity"
+      @open="openDetails"
       @close="emit('update:modelValue', false)"
   >
     <template #header>
       <div class="device-detail-heading">
-        <PeerOs :os="peer?.os"/>
+        <PeerOs :os="device.os"/>
         <div>
-          <strong>{{ peer?.hostname || peer?.alias || peer?.id || T('Unknown') }}</strong>
+          <strong>{{ device.hostname || peer?.alias || peer?.id || T('Unknown') }}</strong>
           <span>{{ peer?.id || '-' }}</span>
         </div>
       </div>
@@ -26,7 +26,7 @@
             <el-icon aria-hidden="true"><CircleCheck v-if="isOnline"/><Warning v-else/></el-icon>
             {{ isOnline ? T('Online') : T('Offline') }}
           </span>
-          <strong>{{ peer.last_online_time ? timeAgo(peer.last_online_time * 1000) : T('NeverConnected') }}</strong>
+          <strong>{{ onlineTime ? timeAgo(onlineTime * 1000) : T('NeverConnected') }}</strong>
         </div>
         <slot name="connect"><el-button type="primary" :icon="Connection" @click="emit('connect', peer.id)">
           {{ T('ConnectNow') }}
@@ -39,7 +39,7 @@
         <h3>{{ T('DeviceIdentity') }}</h3>
         <dl class="device-detail-grid">
           <div><dt>ID</dt><dd>{{ peer.id || '-' }}</dd></div>
-          <div><dt>{{ T('Hostname') }}</dt><dd>{{ peer.hostname || '-' }}</dd></div>
+          <div><dt>{{ T('Hostname') }}</dt><dd>{{ device.hostname || '-' }}</dd></div>
           <div><dt>{{ T('Alias') }}</dt><dd>{{ peer.alias || '-' }}</dd></div>
           <div><dt>{{ T('Uuid') }}</dt><dd class="is-breakable">{{ peer.uuid || '-' }}</dd></div>
         </dl>
@@ -48,7 +48,7 @@
       <section class="device-detail-section">
         <h3>{{ T('Assignment') }}</h3>
         <dl class="device-detail-grid">
-          <div><dt>{{ T('Username') }}</dt><dd>{{ peer.username || '-' }}</dd></div>
+          <div><dt>{{ T('Username') }}</dt><dd>{{ device.username || reported.shell_user || '-' }}</dd></div>
           <div><dt>{{ T('Group') }}</dt><dd>{{ groupName || T('NotSet') }}</dd></div>
           <div><dt>{{ T('AppliedPolicy') }}</dt><dd>{{ T('NotCollected') }}</dd></div>
           <div><dt>{{ T('DeviceNote') }}</dt><dd>{{ T('NotCollected') }}</dd></div>
@@ -56,12 +56,13 @@
       </section>
 
       <section class="device-detail-section">
-        <h3>{{ T('SystemInformation') }}</h3>
+        <div class="device-detail-section-title"><h3>{{ T('SystemInformation') }}</h3><el-button link :loading="infoLoading" @click="loadInformation(true)">{{ T('Refresh') }}</el-button></div>
+        <el-alert v-if="infoError" :title="infoError" type="warning" :closable="false"/>
         <dl class="device-detail-grid">
-          <div><dt>{{ T('Os') }}</dt><dd>{{ peer.os || '-' }}</dd></div>
-          <div><dt>{{ T('Version') }}</dt><dd>{{ peer.version || '-' }}</dd></div>
-          <div><dt>CPU</dt><dd>{{ peer.cpu || '-' }}</dd></div>
-          <div><dt>{{ T('Memory') }}</dt><dd>{{ peer.memory || '-' }}</dd></div>
+          <div><dt>{{ T('Os') }}</dt><dd class="is-breakable">{{ device.os || T('NotCollected') }}</dd></div>
+          <div><dt>{{ T('Version') }}</dt><dd>{{ device.version || T('NotCollected') }}</dd></div>
+          <div><dt>CPU</dt><dd class="is-breakable">{{ device.cpu || T('NotCollected') }}</dd></div>
+          <div><dt>{{ T('Memory') }}</dt><dd>{{ device.memory || T('NotCollected') }}</dd></div>
           <div><dt>{{ T('LastOnlineIp') }}</dt><dd>{{ peer.last_online_ip || '-' }}</dd></div>
           <div><dt>{{ T('PublicKeyFingerprint') }}</dt><dd>{{ T('NotCollected') }}</dd></div>
         </dl>
@@ -97,13 +98,15 @@
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref, watch, onBeforeUnmount, onDeactivated } from 'vue'
 import { CircleCheck, Connection, Warning } from '@element-plus/icons-vue'
 import { list as auditList } from '@/api/audit'
 import PeerOs from '@/components/icons/peerOs.vue'
 import { useAppStore } from '@/store/app'
 import { T } from '@/utils/i18n'
 import { timeAgo } from '@/utils/time'
+import { terminalStatus } from '@/api/terminal'
+import { DeviceFilesClient, fileErrorKey } from '@/utils/deviceFiles'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -115,10 +118,39 @@ const emit = defineEmits(['update:modelValue', 'connect'])
 const appStore = useAppStore()
 
 const activity = reactive({ list: [], loading: false, error: false })
+const reported = ref({}), infoLoading = ref(false), infoError = ref(''), now = ref(Date.now())
+const device = computed(() => ({ ...props.peer, ...reported.value.device }))
+const onlineTime = computed(() => reported.value.service_running && now.value / 1000 - reported.value.reported_at <= 90 ? Math.max(Number(device.value.last_online_time) || 0, reported.value.reported_at) : Number(device.value.last_online_time) || 0)
 const isOnline = computed(() => {
-  if (!props.peer?.last_online_time) return false
-  return Date.now() - props.peer.last_online_time * 1000 < 60 * 1000
+  if (reported.value.reported_at && now.value / 1000 - reported.value.reported_at <= 90) return !!reported.value.service_running
+  if (!onlineTime.value) return false
+  return now.value - onlineTime.value * 1000 < 90 * 1000
 })
+let timer, probe, generation = 0, probed = false, activeRow
+const stop = () => { generation++; clearInterval(timer); timer = undefined; activeRow = undefined; probe?.close(); probe = null; infoLoading.value = false }
+const loadInformation = async (force = false) => {
+  if (!props.modelValue || !props.peer?.row_id || infoLoading.value) return
+  const current = generation, rowID = props.peer.row_id
+  infoLoading.value = true; infoError.value = ''; now.value = Date.now()
+  try {
+    const res = await terminalStatus(rowID)
+    if (current !== generation) return
+    reported.value = res.data
+    const missing = ['os', 'cpu', 'memory', 'version'].some(key => !device.value[key])
+    if ((force || (missing && !probed)) && res.data.files_enabled && res.data.has_saved_password) {
+      probed = true
+      const client = new DeviceFilesClient(props.peer); probe = client
+      try { const ready = await client.connect('', true); if (current === generation) reported.value = { ...reported.value, device: { ...reported.value.device, ...ready.system_info } } }
+      finally { client.close(); if (probe === client) probe = null }
+    }
+  } catch (e) { if (current === generation) infoError.value = T(fileErrorKey(e?.message)) }
+  finally { if (current === generation) infoLoading.value = false }
+}
+const openDetails = () => { if (timer && activeRow === props.peer?.row_id) return; stop(); activeRow = props.peer?.row_id; probed = false; reported.value = {}; loadActivity(); loadInformation(); timer = setInterval(() => { now.value = Date.now(); if (document.visibilityState !== 'hidden') loadInformation() }, 15000) }
+watch(() => props.modelValue, value => { if (!value) stop() })
+watch(() => props.peer?.row_id, () => { if (props.modelValue) openDetails() })
+onDeactivated(stop)
+onBeforeUnmount(stop)
 
 const parseDate = (value) => {
   if (!value) return null

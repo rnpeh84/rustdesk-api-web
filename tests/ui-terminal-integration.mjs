@@ -52,7 +52,7 @@ try {
   for (const width of [1440, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 }); await reload()
     const button = await entry()
-    await button.getByText('터미널 사용 가능', { exact: true }).waitFor()
+    await button.getByRole('button', { name: '터미널 접속 123456789', exact: true }).waitFor()
     const before = await stats()
     assert.equal(before.Active, 0, '버튼 클릭 전 원격 세션 생성')
     await button.getByRole('button', { name: '터미널 접속 123456789', exact: true }).click()

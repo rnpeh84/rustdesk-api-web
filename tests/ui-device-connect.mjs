@@ -60,10 +60,10 @@ try{
     await entry.getByRole('button',{name:'접속 대기 123456789',exact:true}).waitFor()
     assert.equal(await entry.getByRole('button',{name:'접속 대기 123456789',exact:true}).isDisabled(),true)
     assert.equal(sessions.length,1,'비활성 상태에서 연결 시도')
-    if(patch.terminal_state==='disabled')await entry.getByText('터미널 비활성 · 장치의 터미널 허용 설정을 확인해 주세요.').waitFor()
-    if(patch.terminal_state==='unsupported')await entry.getByText('터미널 미지원 · 장치 OS와 공식 클라이언트 버전을 확인해 주세요.').waitFor()
+    if(patch.terminal_state==='disabled')assert.ok((await entry.locator('span[tabindex="0"]').getAttribute('aria-label')).includes('터미널 비활성'))
+    if(patch.terminal_state==='unsupported')assert.ok((await entry.locator('span[tabindex="0"]').getAttribute('aria-label')).includes('터미널 미지원'))
   }
-  await entry.getByText('지정한 Windows 계정으로 장치에 로그인하면 터미널을 사용할 수 있습니다.').waitFor()
+  assert.ok((await entry.locator('span[tabindex="0"]').getAttribute('aria-label')).includes('지정한 Windows 계정'))
   // 실제 주기 갱신으로 별도의 상태 확인 버튼 없이 모드가 바뀌는지 확인한다.
   report={...report,desktop_state:'available',terminal_state:'available',service_running:true,platform:'linux',reported_at:Math.floor(Date.now()/1000)}
   await choose.waitFor({timeout:20000})

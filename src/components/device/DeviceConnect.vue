@@ -1,6 +1,5 @@
 <template>
   <div class="device-connect" @click.stop>
-    <span class="connection-summary" aria-live="polite">{{ summary }}</span>
     <el-dropdown v-if="modes.length === 2" trigger="click" @command="connect">
       <el-button type="primary" :aria-label="`${T('DeviceConnectionChoose')} ${peer.id}`">{{ T('DeviceConnectionChoose') }} <el-icon class="choice-icon" aria-hidden="true"><ArrowDown/></el-icon></el-button>
       <template #dropdown><el-dropdown-menu>
@@ -8,11 +7,7 @@
         <el-dropdown-item command="terminal">{{ T('DeviceConnectionTerminal') }}</el-dropdown-item>
       </el-dropdown-menu></template>
     </el-dropdown>
-    <el-button v-else type="primary" :disabled="!modes.length" :aria-label="`${buttonLabel} ${peer.id}`" @click="connect(modes[0])">{{ buttonLabel }}</el-button>
-    <span v-if="availability.desktop_state === 'available' && !availability.desktop_web_enabled" class="connection-hint">{{ T('DeviceConnectionWebDisabled') }}</span>
-    <span v-if="!availability.reported_at" class="connection-hint">{{ T('DeviceConnectionReportNeeded') }}</span>
-    <span v-if="availability.terminal_state === 'permission_required'" class="connection-hint">{{ T('DeviceConnectionLoginNeeded') }}</span>
-    <span v-if="fresh && availability.service_running && ['disabled','unsupported'].includes(availability.terminal_state)" class="connection-hint">{{ T(`DeviceConnectionTerminal_${availability.terminal_state}`) }}</span>
+    <el-tooltip v-else :content="unavailableReason" :disabled="!!modes.length"><span :tabindex="!modes.length ? 0 : undefined" :aria-label="!modes.length ? unavailableReason : undefined"><el-button type="primary" :disabled="!modes.length" :aria-label="`${buttonLabel} ${peer.id}`" @click="connect(modes[0])">{{ buttonLabel }}</el-button></span></el-tooltip>
     <WebTerminal ref="terminal" :peer="peer" :show-entry="false"/>
   </div>
 </template>
@@ -37,7 +32,7 @@ const modes=computed(()=>{
   return result
 })
 const buttonLabel=computed(()=>T(modes.value.length?modes.value[0]==='desktop'?'DeviceConnectionDesktop':'DeviceConnectionTerminal':'DeviceConnectionUnavailable'))
-const summary=computed(()=>T(!fresh.value?'DeviceConnectionUnknown':!availability.value.service_running?'DeviceConnectionOffline':modes.value.length===2?'DeviceConnectionBoth':modes.value.length===1?modes.value[0]==='desktop'?'DeviceConnectionDesktopReady':'DeviceConnectionTerminalReady':'DeviceConnectionUnavailable'))
+const unavailableReason=computed(()=>T(!availability.value.reported_at?'DeviceConnectionReportNeeded':!fresh.value?'DeviceConnectionUnknown':!availability.value.service_running?'DeviceConnectionOffline':availability.value.terminal_state==='permission_required'?'DeviceConnectionLoginNeeded':['disabled','unsupported'].includes(availability.value.terminal_state)?`DeviceConnectionTerminal_${availability.value.terminal_state}`:availability.value.desktop_state==='available'&&!availability.value.desktop_web_enabled?'DeviceConnectionWebDisabled':'DeviceConnectionUnavailable'))
 const refresh=async()=>{
   now.value=Date.now()
   if(!enabled||fetching||document.visibilityState==='hidden')return

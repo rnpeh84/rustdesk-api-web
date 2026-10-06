@@ -1,12 +1,14 @@
 <template>
   <div class="web-terminal-entry" @click.stop>
-    <span v-if="showEntry" class="terminal-status" :class="`terminal-${state}`">{{ T(`TerminalState_${state}`) }}</span>
     <div v-if="showEntry">
       <el-button type="primary" link :disabled="blocked" @click="visible = true">{{ T('WebTerminalConnect') }}</el-button>
       <el-button v-if="blocked" link @click="visible = true">{{ T('WebTerminalRecheck') }}</el-button>
     </div>
-    <el-dialog v-model="visible" :title="T('WebTerminalTitle', { param: peer.id })" width="min(960px, calc(100vw - 24px))" append-to-body destroy-on-close :close-on-click-modal="false" @closed="dispose">
-      <p class="terminal-explanation">{{ T('WebTerminalExplanation') }}</p>
+    <el-dialog v-model="visible" class="terminal-dialog" :class="{ 'terminal-expanded': expanded }" :fullscreen="expanded" :title="T('WebTerminalTitle', { param: peer.id })" width="min(960px, calc(100vw - 24px))" append-to-body destroy-on-close :close-on-click-modal="false" @closed="dispose">
+      <template #header="{ titleId }"><div class="terminal-heading"><span :id="titleId">{{ T('WebTerminalTitle', { param: peer.id }) }}</span><div>
+        <el-button v-if="filesAllowed" :disabled="!active || state !== 'ready'" :icon="FolderOpened" :aria-label="T('DeviceFiles')" @click="openFiles()"/>
+        <el-button :icon="expanded ? ScaleToOriginal : FullScreen" :aria-label="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :aria-pressed="expanded" @click="expanded = !expanded"/>
+      </div></div></template>
       <el-form v-if="!active" @submit.prevent="connect">
         <el-checkbox v-if="hasSaved" v-model="useSaved" :disabled="busy">{{ T('WebTerminalSavedPassword') }}</el-checkbox>
         <el-form-item v-if="!useSaved" :label="T('WebTerminalPassword')">
@@ -16,15 +18,16 @@
       </el-form>
       <div class="terminal-session-status" role="status" aria-live="polite">
         <strong>{{ T(`TerminalState_${state}`) }}</strong>
-        <span>{{ T(`TerminalHelp_${state}`) }}</span>
+        <span v-if="failureStage || !['unknown','checking','allowed','ready'].includes(state)">{{ T(`TerminalHelp_${state}`) }}</span>
         <span v-if="failureStage" class="terminal-failure-stage">{{ T('TerminalFailureStage') }}: {{ T(`TerminalStage_${failureStage}`) }}</span>
       </div>
-      <div v-show="active" ref="screen" class="terminal-screen" :aria-label="T('WebTerminalTitle', { param: peer.id })"/>
+      <div v-show="active" ref="screen" class="terminal-screen" :class="{ 'is-dragging': dragging }" :aria-label="T('WebTerminalTitle', { param: peer.id })" @dragover="dragOver" @dragleave="dragging = false" @drop="dropFiles"/>
       <template #footer>
         <el-button v-if="socket" @click="disconnect">{{ T('WebTerminalDisconnect') }}</el-button>
         <el-button @click="visible = false">{{ T('Close') }}</el-button>
       </template>
     </el-dialog>
+    <DeviceFiles ref="files" :peer="peer"/>
   </div>
 </template>
 
@@ -33,6 +36,9 @@ import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, ref, wat
 import '@xterm/xterm/css/xterm.css'
 import { T } from '@/utils/i18n'
 import { prepareTerminal, terminalStatus } from '@/api/terminal'
+import { FullScreen, ScaleToOriginal, FolderOpened } from '@element-plus/icons-vue'
+import DeviceFiles from './DeviceFiles.vue'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({ peer: { type: Object, required: true }, showEntry:{type:Boolean,default:true} })
 const state = ref('unknown')
@@ -46,6 +52,8 @@ const active = ref(false)
 const failureStage = ref('')
 const screen = ref(null)
 const socket = ref(null)
+const expanded = ref(false), filesAllowed = ref(false), files = ref(null), dragging = ref(false)
+let connectionAvailability = {}
 let terminal, fit, observer, expiry, attempt = 0, alive = true
 const states = new Set(['unknown', 'checking', 'allowed', 'ready', 'disabled', 'unsupported', 'auth_required', 'unavailable', 'configuration', 'pty_failed', 'busy', 'key_mismatch', 'offline', 'peer_not_found', 'server_rejected', 'signature_failed', 'id_server_unreachable', 'relay_unreachable', 'connection_timeout', 'connection_closed', 'protocol_error', 'browser_transport', 'request_failed', 'access_denied', 'browser_terminal_error', 'saved_password_unavailable'])
 const requestFailures = new Set(['busy', 'saved_password_unavailable', 'request_failed'])
@@ -62,7 +70,16 @@ const disconnect = () => {
   clearTerminal()
   if (['ready', 'allowed', 'checking'].includes(state.value)) setState('unknown')
 }
-const dispose = () => { disconnect(); password.value = '' }
+const dispose = () => { disconnect(); password.value = ''; expanded.value = dragging.value = false }
+const openFiles = list => files.value?.open(connectionAvailability, list)
+const dragOver = event => { if (event.dataTransfer?.types.includes('Files')) { event.preventDefault(); dragging.value = filesAllowed.value } }
+const dropFiles = event => {
+  if (!event.dataTransfer?.files.length) return
+  event.preventDefault(); event.stopPropagation(); dragging.value = false
+  if (!filesAllowed.value || state.value !== 'ready') return
+  if (Array.from(event.dataTransfer.items || []).some(item => item.webkitGetAsEntry?.()?.isDirectory)) { ElMessage.warning(T('FilesDirectoriesUnsupported')); return }
+  openFiles(Array.from(event.dataTransfer.files))
+}
 watch(visible, value => { if (!value) dispose() })
 const setupTerminal = async current => {
   active.value = true
@@ -133,7 +150,7 @@ onMounted(async () => {
   try { const res = await terminalStatus(props.peer.row_id); if (alive && !socket.value && !visible.value) { setState(res.data.state); hasSaved.value = !!res.data.has_saved_password; useSaved.value = hasSaved.value } } catch { /* 조회 실패 시 활성 여부를 추측하지 않는다. */ }
 })
 onDeactivated(dispose)
-defineExpose({open:async availability=>{hasSaved.value=!!availability.has_saved_password;useSaved.value=hasSaved.value;visible.value=true;await nextTick();if(hasSaved.value)await connect()}})
+defineExpose({open:async availability=>{connectionAvailability=availability;filesAllowed.value=!!availability.files_enabled;hasSaved.value=!!availability.has_saved_password;useSaved.value=hasSaved.value;visible.value=true;await nextTick();if(hasSaved.value)await connect()}})
 onBeforeUnmount(() => { alive = false; clearInterval(expiry); dispose() })
 </script>
 
@@ -143,9 +160,12 @@ onBeforeUnmount(() => { alive = false; clearInterval(expiry); dispose() })
 .terminal-ready, .terminal-allowed { color: var(--el-color-success); }
 .terminal-disabled, .terminal-pty_failed { color: var(--el-color-danger); }
 .terminal-explanation { margin: 0 0 16px; color: var(--el-text-color-regular); line-height: 1.6; }
-.terminal-session-status { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; line-height: 1.5; }
+.terminal-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-right:24px;font-size:16px}.terminal-heading>div{display:flex;gap:8px}.terminal-heading .el-button+.el-button{margin-left:0}
+.terminal-session-status { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; line-height: 1.5; font-size:12px; }
 .terminal-session-status span { color: var(--el-text-color-secondary); }
-.terminal-screen { background: #111827; padding: 12px; height: min(55vh, 520px); min-height: 200px; border-radius: 6px; overflow: hidden; }
+.terminal-screen { background: #111827; padding: 12px; height: min(65vh, 620px); min-height: 200px; border-radius: 6px; overflow: hidden; }
+.terminal-screen.is-dragging{outline:3px solid var(--el-color-primary);outline-offset:-3px}
+.terminal-expanded .terminal-screen{height:calc(100dvh - 165px)}
 .terminal-screen :deep(.xterm) { height: 100%; }
 @media (max-width: 600px) { .terminal-screen { padding: 6px; } }
 </style>
