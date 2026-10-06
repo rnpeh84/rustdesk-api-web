@@ -42,7 +42,7 @@ try{
   for(const button of await terminal.locator('.terminal-toolbar button').all())assert.ok(await button.getAttribute('title'))
   const checkExpandPosition=async()=>{const expand=await terminal.locator('.terminal-expand-button').boundingBox(),close=await terminal.locator('.el-dialog__headerbtn').first().boundingBox();assert.ok(expand.x+expand.width<=close.x+1&&close.x-expand.x-expand.width<9,'확대 버튼이 X 왼쪽에 붙어 있지 않습니다.')}
   await checkExpandPosition()
-  await terminal.locator('.resource-freshness.is-fresh').waitFor();assert.match(await terminal.locator('.resource-freshness').innerText(),/^\d+초 전$/)
+  await terminal.locator('.resource-freshness.is-fresh').waitFor();assert.equal(await terminal.locator('.resource-freshness').innerText(),'');assert.match(await terminal.locator('.resource-freshness').getAttribute('aria-label'),/초 전.*마지막 장치 보고/);assert.equal(await terminal.locator('.report-cycle').count(),1)
   const terminalAction=async name=>{await screen.click({button:'right',position:{x:30,y:30}});await tmenu.getByRole('menuitem',{name,exact:true}).click()}
   await terminalAction('전체 선택')
   await terminalAction('복사')
@@ -152,7 +152,7 @@ try{
   await files.getByRole('button',{name:'파일 패널 닫기',exact:true}).click()
   await terminal.locator('.terminal-heading').click({button:'right'});await tmenu.getByRole('menuitem',{name:'파일 전송',exact:true}).waitFor();await page.keyboard.press('Escape')
   await page.clock.install();await page.clock.fastForward(120000);assert.equal(await terminal.isVisible(),true,'기본값에서 자동으로 닫힘')
-  await terminal.locator('.resource-freshness.is-stale').waitFor();assert.equal(await terminal.locator('.resource-freshness').innerText(),'보고 지연');assert.ok((await terminal.locator('.resource-meter b').allTextContents()).every(text=>text==='—'),'만료된 자원 현황을 계속 표시함')
+  await terminal.locator('.resource-freshness.is-stale').waitFor();assert.match(await terminal.locator('.resource-freshness').getAttribute('aria-label'),/^보고 지연/);assert.ok((await terminal.locator('.resource-meter b').allTextContents()).every(text=>text==='—'),'만료된 자원 현황을 계속 표시함')
   await terminal.getByRole('button',{name:'터미널 설정',exact:true}).click()
   const settings=page.getByRole('dialog',{name:'터미널 설정',exact:true})
   await screenshot('terminal-settings',settings)
