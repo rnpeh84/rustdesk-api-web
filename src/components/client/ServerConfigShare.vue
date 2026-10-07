@@ -1,7 +1,7 @@
 <template>
-  <section class="server-config-share" :class="{ 'is-compact': compact }" :aria-label="T('DeploymentString')">
+  <section class="server-config-share" :class="{ 'is-compact': compact, 'is-minimal': minimal }" :aria-label="T('DeploymentString')">
     <div class="share-toolbar">
-      <div><strong>{{ T('DeploymentString') }}</strong><p>{{ T('DeploymentStringHint') }}</p></div>
+      <div><strong :title="T('DeploymentStringHint')">{{ T('DeploymentString') }}</strong><p v-if="!minimal">{{ T('DeploymentStringHint') }}</p></div>
       <div class="share-actions">
         <el-button :disabled="!configString" @click="copyConfig"><el-icon aria-hidden="true"><CopyDocument /></el-icon><span>{{ T('CopyDeploymentString') }}</span></el-button>
         <el-button :disabled="!configString" @click="showQr"><el-icon aria-hidden="true"><Grid /></el-icon><span>{{ T('ShowConnectionQr') }}</span></el-button>
@@ -12,7 +12,7 @@
       <el-input :model-value="configString" type="textarea" :rows="3" readonly :aria-label="T('DeploymentString')" :spellcheck="false" />
     </details>
     <el-input v-else-if="configString" :model-value="configString" type="textarea" :rows="2" readonly :aria-label="T('DeploymentString')" :spellcheck="false" />
-    <p v-else class="share-empty">{{ T('DeploymentConfigMissing') }}</p>
+    <p v-else-if="!configString && !minimal" class="share-empty">{{ T('DeploymentConfigMissing') }}</p>
     <el-dialog v-model="qrDialog" :title="T('ConnectionQrTitle')" width="min(400px, 94vw)" append-to-body destroy-on-close @closed="clearQr">
       <div class="qr-content" :aria-busy="qrLoading" aria-live="polite">
         <p>{{ T('ConnectionQrHint') }}</p>
@@ -34,7 +34,7 @@ import { ElMessage } from 'element-plus'
 import { encodeRustDeskConfig, rustDeskQrPayload } from '@/utils/rustdeskConfig'
 import { T } from '@/utils/i18n'
 
-const props = defineProps({ server: { type: Object, default: () => ({}) }, compact: Boolean })
+const props = defineProps({ server: { type: Object, default: () => ({}) }, compact: Boolean, minimal: Boolean })
 const configString = computed(() => encodeRustDeskConfig(props.server))
 const qrDialog = ref(false), qrLoading = ref(false), qrError = ref(false), qrImage = ref('')
 let qrVersion = 0

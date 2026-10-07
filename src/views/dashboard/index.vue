@@ -76,7 +76,7 @@
             <el-progress
               type="dashboard"
               :percentage="onlineRate"
-              :width="126"
+              :width="portainerPreview ? 88 : 126"
               :stroke-width="10"
               :color="progressColors"
             >
@@ -105,7 +105,7 @@
 
         <el-card class="dashboard-panel dashboard-panel--activity" shadow="never">
           <template #header>
-            <panel-heading :title="T('ActivityOverview')" :description="T('ActivityOverviewDescription')"/>
+            <panel-heading :icon="Tickets" :title="T('ActivityOverview')" :description="T('ActivityOverviewDescription')"/>
           </template>
           <div class="activity-grid">
             <button v-for="item in systemActivity" :key="item.label" type="button" @click="goTo(item.route)">
@@ -122,7 +122,7 @@
       <div class="dashboard-grid dashboard-grid--system-lower">
         <el-card class="dashboard-panel dashboard-panel--trend" shadow="never">
           <template #header>
-            <panel-heading :title="T('SevenDayActivity')" :description="T('SevenDayActivityDescription')"/>
+            <panel-heading :icon="DataLine" :title="T('SevenDayActivity')" :description="T('SevenDayActivityDescription')"/>
           </template>
           <div class="trend-legend" aria-hidden="true">
             <span><i class="is-connection"></i>{{ T('ConnectionEvents') }}</span>
@@ -142,7 +142,7 @@
         <el-card class="dashboard-panel dashboard-panel--events" shadow="never">
           <template #header>
             <div class="dashboard-panel__header">
-              <panel-heading :title="T('RecentConnections')" :description="T('RecentConnectionsDescription')"/>
+              <panel-heading :icon="Connection" :title="T('RecentConnections')" :description="T('RecentConnectionsDescription')"/>
               <el-button text type="primary" @click="goTo('/auditConn')">{{ T('ViewAll') }}</el-button>
             </div>
           </template>
@@ -192,7 +192,7 @@
         <el-card class="dashboard-panel dashboard-panel--logins" shadow="never">
           <template #header>
             <div class="dashboard-panel__header">
-              <panel-heading :title="T('RecentSignIns')" :description="T('RecentSignInsDescription')"/>
+              <panel-heading :icon="Lock" :title="T('RecentSignIns')" :description="T('RecentSignInsDescription')"/>
               <el-button text type="primary" @click="goTo('/my/loginLog')">{{ T('ViewAll') }}</el-button>
             </div>
           </template>
@@ -209,33 +209,13 @@
           <empty-state v-else :title="T('NoRecentSignIns')" :description="T('NoRecentSignInsDescription')"/>
         </el-card>
       </div>
-      <section class="dashboard-connection-workspace" :aria-label="T('DashboardConnectionWorkspace')">
-        <el-card class="dashboard-panel dashboard-panel--installation" shadow="never">
-          <official-client-install :server="clientServer" />
-        </el-card>
-        <el-card class="dashboard-panel dashboard-panel--connection" shadow="never">
-          <template #header>
-            <div class="connection-heading">
-              <panel-heading :title="T('DashboardServerInfo')" :description="T('DashboardServerInfoHint')" />
-              <span class="connection-readonly">{{ T('DashboardReadOnly') }}</span>
-            </div>
-          </template>
-          <dl class="connection-facts">
-            <div><dt>{{ T('DashboardServerProfile') }}</dt><dd>{{ clientServer.name || '-' }}<em v-if="clientServer.revision">r{{ clientServer.revision }}</em></dd></div>
-            <div><dt>{{ T('DashboardIdServer') }}</dt><dd><code>{{ clientServer.id_server || '-' }}</code></dd></div>
-            <div><dt>{{ T('DashboardRelayServer') }}</dt><dd><code>{{ clientServer.relay_server || '-' }}</code></dd></div>
-            <div><dt>{{ T('DashboardApiServer') }}</dt><dd><code>{{ clientServer.api_server || '-' }}</code></dd></div>
-          </dl>
-          <server-config-share :server="clientServer" compact />
-          <router-link class="connection-install-guide" to="/my/client">{{ T('DashboardClientGuide') }}<el-icon aria-hidden="true"><ArrowRight /></el-icon></router-link>
-        </el-card>
-      </section>
+
     </template>
 
     <div class="dashboard-grid dashboard-grid--footer">
       <el-card v-if="!isSystem" class="dashboard-panel dashboard-panel--account" shadow="never">
         <template #header>
-          <panel-heading :title="T('AccountReadiness')" :description="T('AccountReadinessDescription')"/>
+          <panel-heading :icon="User" :title="T('AccountReadiness')" :description="T('AccountReadinessDescription')"/>
         </template>
         <div class="account-readiness">
           <span class="account-readiness__avatar">{{ userInitial }}</span>
@@ -254,7 +234,7 @@
 
       <el-card class="dashboard-panel dashboard-panel--quick" shadow="never">
         <template #header>
-          <panel-heading :title="T('QuickActions')" :description="T(isSystem ? 'SystemQuickActionsDescription' : 'UserQuickActionsDescription')"/>
+          <panel-heading :icon="Share" :title="T('QuickActions')" :description="T(isSystem ? 'SystemQuickActionsDescription' : 'UserQuickActionsDescription')"/>
         </template>
         <nav class="dashboard-actions" :aria-label="T('QuickActions')">
           <button v-for="action in quickActions" :key="action.route" type="button" @click="goTo(action.route)">
@@ -265,6 +245,27 @@
         </nav>
       </el-card>
     </div>
+      <section v-if="!isSystem" class="dashboard-connection-workspace" :aria-label="T('DashboardConnectionWorkspace')">
+        <el-card class="dashboard-panel dashboard-panel--installation" shadow="never">
+          <official-client-install :server="clientServer" :compact="portainerPreview" />
+        </el-card>
+        <el-card class="dashboard-panel dashboard-panel--connection" shadow="never">
+          <template #header>
+            <div class="connection-heading">
+              <panel-heading :icon="Connection" :title="T('DashboardServerInfo')" />
+              <span class="connection-readonly">{{ T('DashboardReadOnly') }}</span>
+            </div>
+          </template>
+          <dl class="connection-facts">
+            <div><dt>{{ T('DashboardServerProfile') }}</dt><dd>{{ clientServer.name || '-' }}<em v-if="clientServer.revision">r{{ clientServer.revision }}</em></dd></div>
+            <div><dt>{{ T('DashboardIdServer') }}</dt><dd><code>{{ clientServer.id_server || '-' }}</code></dd></div>
+            <div><dt>{{ T('DashboardRelayServer') }}</dt><dd><code>{{ clientServer.relay_server || '-' }}</code></dd></div>
+            <div><dt>{{ T('DashboardApiServer') }}</dt><dd><code>{{ clientServer.api_server || '-' }}</code></dd></div>
+          </dl>
+          <server-config-share :server="clientServer" compact :minimal="portainerPreview" />
+          <router-link class="connection-install-guide" to="/my/client">{{ T('DashboardClientGuide') }}<el-icon aria-hidden="true"><ArrowRight /></el-icon></router-link>
+        </el-card>
+      </section>
   </section>
 </template>
 
@@ -301,9 +302,14 @@ import { clientReleases } from '@/api/clientRelease'
 import ServerConfigShare from '@/components/client/ServerConfigShare.vue'
 import OfficialClientInstall from '@/components/client/OfficialClientInstall.vue'
 
+const portainerPreview = document.documentElement.classList.contains('portainer-ui')
+
 const PanelHeading = defineComponent({
-  props: { title: String, description: String },
-  setup: props => () => h('div', { class: 'panel-heading' }, [h('h2', props.title), h('p', props.description)]),
+  props: { title: String, description: String, icon: { type: [Object, Function], default: () => Monitor } },
+  setup: props => () => h('div', { class: 'panel-heading' }, [
+    h('span', { class: 'portainer-heading-icon', 'aria-hidden': 'true' }, [h(props.icon)]),
+    h('div', [h('h2', props.title), h('p', props.description)]),
+  ]),
 })
 
 const EmptyState = defineComponent({
@@ -482,6 +488,7 @@ onActivated(() => {
 .dashboard-attention__content strong { color: var(--console-heading); font-size: 13px; }
 .dashboard-attention__content small { margin-top: 3px; color: var(--console-text); font-size: 12px; }
 .dashboard-attention__action { display: inline-flex; align-items: center; gap: 5px; color: var(--console-primary); font-size: 12px; font-weight: 650; white-space: nowrap; }
+:deep(.portainer-heading-icon) { display: none; }
 .dashboard-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .dashboard-metric { min-width: 0; padding: 16px 18px; background: var(--console-surface); border: 1px solid var(--console-border); border-radius: 7px; }
 .dashboard-metric > strong, .dashboard-metric > span { display: block; }

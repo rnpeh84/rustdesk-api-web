@@ -1,5 +1,5 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
-import logo from '@/assets/logo.png'
+import logo from '@/assets/solution-mark.svg'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
 import ko from 'element-plus/es/locale/lang/ko'
@@ -45,7 +45,7 @@ export const useAppStore = defineStore({
   id: 'App',
   state: () => ({
     setting: {
-      title: 'RustDesk API 관리자',
+      title: 'Re;De',
       hello: '',
       sideIsCollapse: false,
       logo,

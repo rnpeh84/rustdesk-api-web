@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-card class="list-query" shadow="hover">
+    <QueryToolbar class="list-query" shadow="hover" :query="listQuery" fields="collection_id,id,username,hostname" @query="handlerQuery">
       <el-form inline label-width="120px">
         <el-form-item :label="T('AddressBookName')">
           <el-select v-model="listQuery.collection_id" clearable>
@@ -9,26 +9,26 @@
           </el-select>
         </el-form-item>
         <el-form-item :label="T('Id')">
-          <el-input v-model="listQuery.id" clearable></el-input>
+          <el-input v-model="listQuery.id" clearable class="query-search-field" :placeholder="T('Id')" :aria-label="T('Id')"></el-input>
         </el-form-item>
         <el-form-item :label="T('Username')">
-          <el-input v-model="listQuery.username" clearable></el-input>
+          <el-input v-model="listQuery.username" clearable class="query-search-field" :placeholder="T('Username')" :aria-label="T('Username')"></el-input>
         </el-form-item>
         <el-form-item :label="T('Hostname')">
-          <el-input v-model="listQuery.hostname" clearable></el-input>
+          <el-input v-model="listQuery.hostname" clearable class="query-search-field" :placeholder="T('Hostname')" :aria-label="T('Hostname')"></el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
-          <el-button type="primary" @click="showBatchEditTags">{{ T('BatchEditTags') }}</el-button>
-          <el-button v-if="selectedBook" type="primary" plain :icon="Share" @click="bookShareVisible = true">{{ T('ShareAddressBook') }}</el-button>
+          <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+          <el-tooltip :content="T('Add')"><el-button :icon="ToolbarPlus" type="success" @click="toAdd" :aria-label="T('Add')"><span class="query-action-label">{{ T('Add') }}</span></el-button></el-tooltip>
+          <el-tooltip :content="T('BatchEditTags')"><el-button type="primary" @click="showBatchEditTags" :icon="ToolbarEdit" :aria-label="T('BatchEditTags')"><span class="query-action-label">{{ T('BatchEditTags') }}</span></el-button></el-tooltip>
+          <el-tooltip v-if="selectedBook" :content="T('ShareAddressBook')"><el-button type="primary" plain :icon="Share" :aria-label="T('ShareAddressBook')" @click="bookShareVisible = true"><span class="query-action-label">{{ T('ShareAddressBook') }}</span></el-button></el-tooltip>
         </el-form-item>
       </el-form>
-    </el-card>
+    </QueryToolbar>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border stripe scrollbar-always-on @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" align="center" fixed="left"></el-table-column>
-        <el-table-column prop="id" label="ID" align="center" width="200" fixed="left" sortable>
+        <el-table-column prop="id" label="ID" class-name="device-identity-column" align="left" width="200" fixed="left" sortable>
           <template #default="{row}">
             <div class="peer-id-column">
               <PeerOs :os="row.peer?.os || row.platform"/>
@@ -52,15 +52,16 @@
         <el-table-column prop="alias" :label="T('Alias')" width="150" sortable/>
         <el-table-column prop="peer.version" :label="T('Version')" align="center" width="100" sortable/>
         <el-table-column prop="hash" :label="T('Hash')" align="center" width="150" show-overflow-tooltip/>
-        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="220" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="260" fixed="right">
           <template #default="{row}">
             <DeviceConnect :key="`${row.row_id}-${row.peer?.row_id || 0}`" :peer="{...row.peer, id:row.id, hash:row.hash}" show-client/>
+            <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
             <el-dropdown trigger="click">
               <el-button circle size="small" :aria-label="T('More')"><el-icon><MoreFilled/></el-icon></el-button>
               <template #dropdown><el-dropdown-menu>
                 <el-dropdown-item v-if="appStore.setting.appConfig.web_client" :icon="Share" @click="toShowShare(row)">{{ T('ShareByWebClient') }}</el-dropdown-item>
                 <el-dropdown-item :icon="Edit" @click="toEdit(row)">{{ T('Edit') }}</el-dropdown-item>
-                <el-dropdown-item :icon="Delete" class="dropdown-danger" @click="del(row)">{{ T('Delete') }}</el-dropdown-item>
+
               </el-dropdown-menu></template>
             </el-dropdown>
           </template>
@@ -183,6 +184,10 @@
 </template>
 
 <script setup>
+import { Edit as ToolbarEdit } from '@element-plus/icons-vue'
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import { Plus as ToolbarPlus } from '@element-plus/icons-vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
   import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import AddressBookShareDialog from '@/components/device/AddressBookShareDialog.vue'

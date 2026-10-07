@@ -4,7 +4,7 @@
       <el-tab-pane :label="T('OwnDevices')" name="mine"/>
       <el-tab-pane :label="T('ReceivedDevices')" name="received"/>
     </el-tabs>
-    <el-card class="device-filter-card" shadow="never">
+    <QueryToolbar class="device-filter-card" shadow="never" :query="listQuery" fields="id,hostname,time_ago" @query="handlerQuery">
       <form class="device-filter-toolbar" role="search" @submit.prevent="handlerQuery">
         <div class="device-filter-primary">
           <el-input v-model="listQuery.id" clearable :placeholder="T('SearchDeviceId')" :aria-label="T('SearchDeviceId')"/>
@@ -12,12 +12,12 @@
           <el-select v-model="listQuery.time_ago" clearable :placeholder="T('LastOnlineTime')" :aria-label="T('LastOnlineTime')">
             <el-option v-for="item in timeFilters" :key="item.value" :label="item.text" :value="item.value" :disabled="item.value === 0"/>
           </el-select>
-          <el-button native-type="submit" type="primary" :icon="Search">{{ T('Filter') }}</el-button>
-          <el-button :icon="RefreshLeft" @click="resetQuery">{{ T('Reset') }}</el-button>
+          <el-button class="query-submit" native-type="submit" type="primary" :icon="Search">{{ T('Filter') }}</el-button>
+          <el-tooltip :content="T('Reset')"><el-button :icon="RefreshLeft" @click="resetQuery" :aria-label="T('Reset')"><span class="query-action-label">{{ T('Reset') }}</span></el-button></el-tooltip>
         </div>
-        <el-button :icon="Download" @click="toExport">{{ T('Export') }}</el-button>
+        <el-tooltip :content="T('Export')"><el-button :icon="Download" @click="toExport" :aria-label="T('Export')"><span class="query-action-label">{{ T('Export') }}</span></el-button></el-tooltip>
       </form>
-    </el-card>
+    </QueryToolbar>
     <el-card class="list-body device-list-card" shadow="never">
       <el-alert v-if="listRes.failed" :title="T('DeviceListLoadFailed')" type="error" :closable="false"><el-button @click="getList">{{ T('Retry') }}</el-button></el-alert>
       <div class="list-table-toolbar">
@@ -164,6 +164,7 @@
 </template>
 
 <script setup>
+import QueryToolbar from '@/components/QueryToolbar.vue'
   import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
   import { list } from '@/api/my/peer'
   import { ElMessage } from 'element-plus'

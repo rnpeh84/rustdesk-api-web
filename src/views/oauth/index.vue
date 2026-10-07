@@ -1,13 +1,13 @@
 <template>
   <div>
-    <el-card class="list-query" shadow="hover">
+    <QueryToolbar class="list-query" shadow="hover" :query="listQuery" fields="" @query="handlerQuery">
       <el-form inline label-width="80px">
         <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
+          <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+          <el-tooltip :content="T('Add')"><el-button :icon="ToolbarPlus" type="success" @click="toAdd" :aria-label="T('Add')"><span class="query-action-label">{{ T('Add') }}</span></el-button></el-tooltip>
         </el-form-item>
       </el-form>
-    </el-card>
+    </QueryToolbar>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border stripe scrollbar-always-on>
         <el-table-column prop="id" label="ID" align="center" width="90" fixed="left" sortable/>
@@ -21,7 +21,7 @@
         <el-table-column :label="T('Actions')" align="center" width="112" class-name="table-actions" fixed="right">
           <template #default="{row}">
             <el-tooltip :content="T('Edit')"><el-button circle size="small" :aria-label="T('Edit')" @click="toEdit(row)"><el-icon><Edit/></el-icon></el-button></el-tooltip>
-            <el-tooltip :content="T('Delete')"><el-button circle size="small" type="danger" plain :aria-label="T('Delete')" @click="del(row)"><el-icon><Delete/></el-icon></el-button></el-tooltip>
+            <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
           </template>
         </el-table-column>
       </el-table>
@@ -101,9 +101,12 @@
 </template>
 
 <script setup>
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import { Plus as ToolbarPlus } from '@element-plus/icons-vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
   import { onMounted, reactive, watch, ref, onActivated } from 'vue'
   import { list, create, update, detail, remove } from '@/api/oauth'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import { T } from '@/utils/i18n'
   import { handleClipboard } from '@/utils/clipboard'
   import { useAppStore } from '@/store/app'
@@ -147,15 +150,6 @@
   }
 
   const del = async (row) => {
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('Delete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await remove({ id: row.id }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))

@@ -1,18 +1,18 @@
 <template>
   <div>
-    <el-card class="list-query" shadow="never">
+    <QueryToolbar class="list-query" shadow="never" :query="listQuery" fields="username" @query="handlerQuery">
       <el-form inline @keyup.enter="handlerQuery">
         <el-form-item :label="T('Username')">
-          <el-input v-model="listQuery.username" name="user-search" clearable autocomplete="off" spellcheck="false" />
+          <el-input v-model="listQuery.username" name="user-search" clearable autocomplete="off" spellcheck="false" class="query-search-field" :placeholder="T('Username')" :aria-label="T('Username')" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button plain @click="resetQuery">{{ T('Reset') }}</el-button>
-          <el-button type="success" @click="openCreate">{{ T('Add') }}</el-button>
-          <el-button type="info" plain @click="toExport">{{ T('Export') }}</el-button>
+          <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+          <el-tooltip :content="T('Reset')"><el-button plain @click="resetQuery" :icon="ToolbarRefreshLeft" :aria-label="T('Reset')"><span class="query-action-label">{{ T('Reset') }}</span></el-button></el-tooltip>
+          <el-tooltip :content="T('Add')"><el-button :icon="ToolbarPlus" type="success" @click="openCreate" :aria-label="T('Add')"><span class="query-action-label">{{ T('Add') }}</span></el-button></el-tooltip>
+          <el-tooltip :content="T('Export')"><el-button type="info" plain @click="toExport" :icon="ToolbarDownload" :aria-label="T('Export')"><span class="query-action-label">{{ T('Export') }}</span></el-button></el-tooltip>
         </el-form-item>
       </el-form>
-    </el-card>
+    </QueryToolbar>
 
     <el-card class="list-body" shadow="never">
       <div class="list-table-toolbar">
@@ -48,7 +48,7 @@
         <el-table-column prop="remark" :label="T('Remark')" min-width="140" sortable show-overflow-tooltip />
         <el-table-column prop="created_at" :label="T('CreatedAt')" min-width="160" sortable />
         <el-table-column prop="updated_at" :label="T('UpdatedAt')" min-width="160" sortable />
-        <el-table-column :label="T('Actions')" align="center" width="152" class-name="table-actions" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" width="192" class-name="table-actions" fixed="right">
           <template #default="{row}">
             <el-tooltip :content="T('Edit')">
               <el-button circle :icon="Edit" :aria-label="T('Edit')" @click="openEdit(row)" />
@@ -56,13 +56,14 @@
             <el-tooltip :content="T('ResetPassword')">
               <el-button circle type="warning" plain :icon="Key" :aria-label="T('ResetPassword')" @click="openPasswordReset(row)" />
             </el-tooltip>
+            <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => remove(row)"/>
             <el-dropdown trigger="click">
               <el-button circle :icon="MoreFilled" :aria-label="T('More')" />
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item :icon="CollectionTag" @click="toTag(row)">{{ T('UserTags') }}</el-dropdown-item>
                   <el-dropdown-item :icon="Notebook" @click="toAddressBook(row)">{{ T('UserAddressBook') }}</el-dropdown-item>
-                  <el-dropdown-item class="dropdown-danger" :icon="Delete" divided @click="remove(row)">{{ T('Delete') }}</el-dropdown-item>
+
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -88,6 +89,10 @@
 </template>
 
 <script setup>
+import { RefreshLeft as ToolbarRefreshLeft, Download as ToolbarDownload } from '@element-plus/icons-vue'
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import { Plus as ToolbarPlus } from '@element-plus/icons-vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 import { onMounted, ref, watch } from 'vue'
 import { CollectionTag, Delete, Edit, Key, MoreFilled, Notebook } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'

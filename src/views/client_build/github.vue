@@ -13,7 +13,7 @@
           <div class="connection-main">
             <div class="source-icon"><el-icon><Link /></el-icon></div>
             <div class="connection-copy"><div><strong>{{ connection.name }}</strong><el-tag :type="statusType(connection.status)" effect="plain">{{ statusLabel(connection.status) }}</el-tag></div><p>{{ connection.account_login || T('GitHubAccountPending') }} · {{ connection.auth_type === 'pat' ? T('GitHubPAT') : `App ${connection.app_id} · Installation ${connection.installation_id}` }}</p><small>{{ connection.status_message }}</small></div>
-<div class="connection-actions"><el-button :loading="testingKey===`connection-${connection.id}`" @click="testConnection(connection)"><el-icon><CircleCheck /></el-icon>{{ T('GitHubCheck') }}</el-button><el-button plain @click="openConnection(connection)"><el-icon><Edit /></el-icon>{{ T('Edit') }}</el-button><el-button v-if="connection.status==='ready'" type="primary" plain @click="openSource(connection)"><el-icon><Plus /></el-icon>{{ T('GitHubSourceAdd') }}</el-button><el-button type="danger" plain :disabled="!!deletingKey || !!testingKey" :loading="deletingKey===`connection-${connection.id}`" @click="removeSetting(`connection-${connection.id}`, connection.name, () => deleteGithubConnection(connection.id), T('DeleteConnectionHint'))"><el-icon aria-hidden="true"><Delete /></el-icon>{{ T('Delete') }}</el-button></div>
+<div class="connection-actions"><el-button :loading="testingKey===`connection-${connection.id}`" @click="testConnection(connection)"><el-icon><CircleCheck /></el-icon>{{ T('GitHubCheck') }}</el-button><el-button plain @click="openConnection(connection)"><el-icon><Edit /></el-icon>{{ T('Edit') }}</el-button><el-button v-if="connection.status==='ready'" type="primary" plain @click="openSource(connection)"><el-icon><Plus /></el-icon>{{ T('GitHubSourceAdd') }}</el-button><InlineConfirmButton circle :disabled="!!deletingKey || !!testingKey" :loading="deletingKey===`connection-${connection.id}`" :label="T('Delete')" :confirm-key="`connection-${connection.id}`" :action="() => removeSetting(`connection-${connection.id}`, connection.name, () => deleteGithubConnection(connection.id), T('DeleteConnectionHint'))"/></div>
           </div>
         </el-card>
         <el-empty v-if="!connections.length" :description="T('GitHubEmptyConnections')" />
@@ -28,7 +28,7 @@
         <el-table-column prop="workflow_file" :label="T('GitHubWorkflow')" min-width="180" show-overflow-tooltip />
         <el-table-column :label="T('GitHubRunnerLabels')" min-width="220"><template #default="{row}"><code>{{ row.required_runner_labels || '-' }}</code></template></el-table-column>
         <el-table-column :label="T('GitHubStatus')" width="120"><template #default="{row}"><el-tag :type="statusType(row.status)" effect="plain">{{ statusLabel(row.status) }}</el-tag></template></el-table-column>
-        <el-table-column :label="T('GitHubActions')" width="170" fixed="right" align="center"><template #default="{row}"><div class="row-actions"><el-tooltip :content="T('GitHubSourceCheck')"><el-button circle :aria-label="T('GitHubSourceCheck')" :loading="testingKey===`source-${row.id}`" @click="testSource(row)"><el-icon><CircleCheck /></el-icon></el-button></el-tooltip><el-tooltip :content="T('Edit')"><el-button circle :aria-label="T('Edit')" @click="editSource(row)"><el-icon><Edit /></el-icon></el-button></el-tooltip><el-tooltip :content="T('Delete')"><el-button circle type="danger" plain :aria-label="T('Delete')" :disabled="!!deletingKey || !!testingKey" :loading="deletingKey===`source-${row.id}`" @click="removeSetting(`source-${row.id}`, row.name, () => deleteGithubBuildSource(row.id), T('DeleteSourceHint'))"><el-icon aria-hidden="true"><Delete /></el-icon></el-button></el-tooltip></div></template></el-table-column>
+        <el-table-column :label="T('GitHubActions')" width="170" fixed="right" align="center"><template #default="{row}"><div class="row-actions"><el-tooltip :content="T('GitHubSourceCheck')"><el-button circle :aria-label="T('GitHubSourceCheck')" :loading="testingKey===`source-${row.id}`" @click="testSource(row)"><el-icon><CircleCheck /></el-icon></el-button></el-tooltip><el-tooltip :content="T('Edit')"><el-button circle :aria-label="T('Edit')" @click="editSource(row)"><el-icon><Edit /></el-icon></el-button></el-tooltip><el-tooltip :content="T('Delete')"><InlineConfirmButton circle :disabled="!!deletingKey || !!testingKey" :loading="deletingKey===`source-${row.id}`" :label="T('Delete')" :confirm-key="`source-${row.id}`" :action="() => removeSetting(`source-${row.id}`, row.name, () => deleteGithubBuildSource(row.id), T('DeleteSourceHint'))"/></el-tooltip></div></template></el-table-column>
       </el-table>
     </section>
 
@@ -65,6 +65,7 @@
 </template>
 
 <script setup>
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { CircleCheck, Delete, Edit, Link, Plus, Upload } from '@element-plus/icons'
 import { ElMessage } from 'element-plus'

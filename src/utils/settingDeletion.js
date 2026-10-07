@@ -1,20 +1,14 @@
 import { ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { T } from '@/utils/i18n'
 
-// 삭제 확인에서 이름은 HTML이 아닌 일반 문자열로 표시한다.
+// 확인 버튼을 두 번 누른 뒤 호출하며, 설정 삭제 요청의 중복 실행을 차단한다.
 export function useSettingDeletion (reload) {
   const deletingKey = ref('')
-  const removeSetting = async (key, name, remove, hint) => {
+  const removeSetting = async (key, name, remove) => {
     if (deletingKey.value) return
     deletingKey.value = key
     try {
-      const confirmed = await ElMessageBox.confirm(
-        `${T('DeleteSettingConfirm', { name })}\n${hint}`,
-        T('DeleteSettingTitle'),
-        { type: 'warning', customClass: 'setting-delete-confirmation', confirmButtonText: T('Delete'), cancelButtonText: T('Cancel'), confirmButtonClass: 'el-button--danger', autofocus: false, distinguishCancelAndClose: true },
-      ).then(() => true, () => false)
-      if (!confirmed) return
       await remove()
       ElMessage.success(T('SettingDeleted'))
       await reload()

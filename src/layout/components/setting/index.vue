@@ -38,7 +38,7 @@
   import changePwdDialog from '@/components/changePwdDialog.vue'
   import { computed, ref } from 'vue'
   import { T } from '@/utils/i18n'
-  import { useDark } from '@vueuse/core'
+  import { isDark } from '@/utils/theme'
   import { ChatLineSquare, Sunny, Moon } from '@element-plus/icons'
 
   const userStore = useUserStore()
@@ -58,8 +58,6 @@
   const changeLang = (v) => {
     appStore.changeLang(v)
   }
-  const isDark = useDark()
-  // const toggleDark = useToggle(isDark)
 </script>
 
 <style lang="scss" scoped>

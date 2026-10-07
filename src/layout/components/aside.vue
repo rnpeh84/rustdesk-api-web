@@ -1,8 +1,11 @@
 <template>
   <div class="sidebar-shell">
     <div class="sidebar-brand">
-      <img :src="setting.logo" alt="" class="sidebar-brand__logo">
-      <span v-show="forceExpanded || !setting.sideIsCollapse" class="sidebar-brand__title">{{ setting.title }}</span>
+      <img :src="setting.logo" :alt="forceExpanded || !setting.sideIsCollapse ? '' : setting.title" width="36" height="36" class="sidebar-brand__logo">
+      <div v-show="forceExpanded || !setting.sideIsCollapse" class="sidebar-brand__identity">
+        <span class="sidebar-brand__title" :class="{ 'sidebar-brand__title--re-de': setting.title === 'Re;De' }"><BrandName :title="setting.title" /></span>
+        <span v-if="setting.title === 'Re;De'" class="sidebar-brand__subtitle">Remote Desktop</span>
+      </div>
     </div>
     <el-scrollbar class="scroll-sidebar">
       <menus :force-expanded="forceExpanded"></menus>
@@ -13,6 +16,7 @@
   import { computed } from 'vue'
   import Menus from '@/layout/components/menu/index.vue'
   import { useAppStore } from '@/store/app'
+  import BrandName from '@/components/BrandName.vue'
 
   defineProps({
     forceExpanded: {
@@ -63,4 +67,8 @@
   flex: 1 1 auto;
   background: var(--console-sidebar);
 }
+.sidebar-brand .sidebar-brand__title--re-de { font-size: 25px; white-space: nowrap; }
+.sidebar-brand__title :deep(.brand-name__separator) { color: #7adcf5; }
+.sidebar-brand__identity { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.sidebar-brand__subtitle { color: var(--console-muted); font-size: 10px; font-weight: 400; letter-spacing: 0.055em; line-height: 1; white-space: nowrap; }
 </style>

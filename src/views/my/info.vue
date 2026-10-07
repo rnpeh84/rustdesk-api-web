@@ -100,7 +100,7 @@
 
 	<el-card class="profile-panel" shadow="never">
 	  <template #header><div class="profile-panel__heading"><span class="profile-panel__icon"><el-icon><Monitor/></el-icon></span><div><h2>{{ T('ActiveSessions') }}</h2><p>{{ T('ActiveSessionsDescription') }}</p></div></div></template>
-	  <el-table :data="sessionRows"><el-table-column prop="device_id" :label="T('Device')"/><el-table-column prop="device_uuid" label="UUID"/><el-table-column prop="expired_at" :label="T('ExpiresAt')"><template #default="{row}">{{ new Date(row.expired_at*1000).toLocaleString() }}</template></el-table-column><el-table-column :label="T('Action')" width="100"><template #default="{row}"><el-button text type="danger" @click="endSession(row)">{{ T('Revoke') }}</el-button></template></el-table-column></el-table>
+	  <el-table :data="sessionRows"><el-table-column prop="device_id" :label="T('Device')"/><el-table-column prop="device_uuid" label="UUID"/><el-table-column prop="expired_at" :label="T('ExpiresAt')"><template #default="{row}">{{ new Date(row.expired_at*1000).toLocaleString() }}</template></el-table-column><el-table-column :label="T('Action')" width="100"><template #default="{row}"><InlineConfirmButton circle :label="T('Revoke')" :confirm-key="row.id" :action="() => endSession(row)"/></template></el-table-column></el-table>
 	</el-card>
 
 	<el-dialog v-model="totpDialog" :title="T('SetupTOTP')" width="560px"><p>{{ T('TOTPSetupGuide') }}</p><el-input :model-value="setup.secret" readonly/><p class="totp-uri">{{ setup.otpauth_uri }}</p><strong>{{ T('RecoveryCodes') }}</strong><div class="recovery-codes"><code v-for="code in setup.recovery_codes" :key="code">{{ code }}</code></div><el-form-item :label="T('VerificationCode')"><el-input v-model="verifyCode" maxlength="6"/></el-form-item><template #footer><el-button @click="totpDialog=false">{{ T('Cancel') }}</el-button><el-button type="primary" @click="confirmTOTP">{{ T('Enable') }}</el-button></template></el-dialog>
@@ -110,6 +110,7 @@
 </template>
 
 <script setup>
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 import { computed, onMounted, ref } from 'vue'
 import { Key, Link, Lock, Monitor, User, UserFilled } from '@element-plus/icons'
 import { ElMessageBox } from 'element-plus'
@@ -163,7 +164,7 @@ const loadSecurity = async () => {
 const startTOTP = async () => { const res = await setupTOTP().catch(() => false); if (res) { setup.value = res.data; verifyCode.value = ''; totpDialog.value = true } }
 const confirmTOTP = async () => { if (await enableTOTP({ code: verifyCode.value }).catch(() => false)) { totpDialog.value = false; loadSecurity() } }
 const turnOffTOTP = async () => { if (await ElMessageBox.confirm(T('DisableTOTPConfirm')).catch(() => false) && await disableTOTP().catch(() => false)) loadSecurity() }
-const endSession = async row => { if (await revokeSession({ id: row.id }).catch(() => false)) loadSecurity() }
+const endSession = async row => { if (await revokeSession({ id: row.id }).catch(() => false)) await loadSecurity() }
 
 onMounted(() => { getMyOauth(); loadSecurity() })
 </script>
@@ -172,9 +173,10 @@ onMounted(() => { getMyOauth(); loadSecurity() })
 .profile-page { display: grid; gap: 14px; }
 .profile-summary :deep(.el-card__body) { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; }
 .profile-summary__identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.profile-summary__identity strong, .profile-summary__identity span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.profile-summary__identity strong { color: var(--console-heading); font-size: 16px; }
-.profile-summary__identity span { margin-top: 2px; color: var(--console-muted); font-size: 12px; }
+.profile-summary__identity > div { min-width: 0; }
+.profile-summary__identity > div > strong, .profile-summary__identity > div > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-summary__identity > div > strong { color: var(--console-heading); font-size: 16px; }
+.profile-summary__identity > div > span { margin-top: 2px; color: var(--console-muted); font-size: 12px; }
 .profile-summary__avatar { display: grid; flex: 0 0 auto; place-items: center; width: 38px; height: 38px; color: var(--console-primary); background: var(--console-primary-soft); border-radius: 50%; font-size: 17px; }
 .profile-summary__role { flex: 0 0 auto; color: var(--console-primary); background: var(--console-primary-soft); border-color: var(--console-primary-border); }
 .profile-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr); gap: 14px; }

@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 import { list, remove, fileList, fileRemove, batchDelete, fileBatchDelete } from '@/api/audit'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { formatTime } from '@/utils/time'
 import { T } from '@/utils/i18n'
 import { downBlob, jsonToCsv } from '@/utils/file'
@@ -37,15 +37,6 @@ export function useRepositories () {
   }
 
   const del = async (row) => {
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('Delete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await remove({ id: row.id }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))
@@ -58,15 +49,6 @@ export function useRepositories () {
       ElMessage.warning(T('PleaseSelectData'))
       return false
     }
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('BatchDelete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await batchDelete({ ids }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))
@@ -127,15 +109,6 @@ export function useFileRepositories () {
   }
 
   const del = async (row) => {
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('Delete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await fileRemove({ id: row.id }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))
@@ -148,15 +121,6 @@ export function useFileRepositories () {
       ElMessage.warning(T('PleaseSelectData'))
       return false
     }
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('BatchDelete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await fileBatchDelete({ ids }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))

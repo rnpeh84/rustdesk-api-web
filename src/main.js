@@ -9,7 +9,12 @@ import { pinia } from '@/store'
 import '@/permission'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import '@/styles/style.scss'
+import '@/styles/portainer.scss'
 import * as ElementIcons from '@element-plus/icons'
+import '@/utils/theme'
+
+// 새 관리 화면을 기본으로 적용하고 쿼리로 기존 디자인과 비교할 수 있다.
+document.documentElement.classList.toggle('portainer-ui', new URLSearchParams(window.location.search).get('ui') !== 'classic')
 
 const app = createApp(App)
 app.use(ElementPlus, { locale: ko })

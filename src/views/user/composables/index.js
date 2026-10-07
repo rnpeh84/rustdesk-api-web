@@ -88,15 +88,6 @@ export function useToEditOrAdd () {
 
 export function useDel () {
   const del = async (id) => {
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('Delete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await remove({ id }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))

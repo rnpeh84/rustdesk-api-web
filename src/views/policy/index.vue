@@ -3,7 +3,6 @@
     <el-card class="list-query" shadow="never">
       <div class="list-filter-row">
         <div>
-          <strong>{{ T('PolicyManage') }}</strong>
           <p class="list-filter-hint">{{ T('PolicyDescription') }}</p>
         </div>
         <el-button type="primary" :icon="Plus" @click="openCreate">{{ T('AddPolicy') }}</el-button>

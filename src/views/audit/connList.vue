@@ -1,20 +1,20 @@
 <template>
   <div>
-    <el-card class="list-query" shadow="hover">
+    <QueryToolbar class="list-query" shadow="hover" :query="listQuery" fields="peer_id,from_peer" @query="handlerQuery">
       <el-form inline label-width="80px">
         <el-form-item :label="T('Peer')">
-          <el-input v-model="listQuery.peer_id" clearable></el-input>
+          <el-input v-model="listQuery.peer_id" clearable class="query-search-field" :placeholder="T('Peer')" :aria-label="T('Peer')"></el-input>
         </el-form-item>
         <el-form-item :label="T('FromPeer')">
-          <el-input v-model="listQuery.from_peer" clearable></el-input>
+          <el-input v-model="listQuery.from_peer" clearable class="query-search-field" :placeholder="T('FromPeer')" :aria-label="T('FromPeer')"></el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="danger" @click="toBatchDelete">{{ T('BatchDelete') }}</el-button>
-          <el-button type="info" plain @click="toExport">{{ T('Export') }}</el-button>
+          <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+          <InlineConfirmButton show-label :label="T('BatchDelete')" :confirm-key="multipleSelection.map(item => item.row_id || item.id).join(',')" :action="() => toBatchDelete()"/>
+          <el-tooltip :content="T('Export')"><el-button type="info" plain @click="toExport" :icon="ToolbarDownload" :aria-label="T('Export')"><span class="query-action-label">{{ T('Export') }}</span></el-button></el-tooltip>
         </el-form-item>
       </el-form>
-    </el-card>
+    </QueryToolbar>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border @selection-change="handleSelectionChange">
         <el-table-column type="selection" align="center" width="50" fixed="left"/>
@@ -34,7 +34,7 @@
         <el-table-column :label="T('CloseTime')" prop="close_time" align="center"/>
         <el-table-column :label="T('Actions')" align="center" width="120" class-name="table-actions" fixed="right">
           <template #default="{row}">
-            <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
+            <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
           </template>
         </el-table-column>
       </el-table>
@@ -52,6 +52,9 @@
 </template>
 
 <script setup>
+import { Download as ToolbarDownload } from '@element-plus/icons-vue'
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
   import { onActivated, onMounted, ref, watch } from 'vue'
   import { useRepositories } from '@/views/audit/reponsitories'
   import { T } from '@/utils/i18n'
@@ -80,7 +83,7 @@
     if (multipleSelection.value.length === 0) {
       return
     }
-    batchdel(multipleSelection.value)
+    return batchdel(multipleSelection.value)
   }
 </script>
 

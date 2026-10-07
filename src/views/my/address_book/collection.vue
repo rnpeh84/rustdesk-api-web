@@ -1,13 +1,14 @@
 <template>
   <div>
-    <el-card class="list-query" shadow="hover">
+    <QueryToolbar class="list-query" shadow="hover" :query="listQuery" fields="" @query="handlerQuery">
       <el-form inline label-width="80px">
         <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
+          <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+          <el-tooltip :content="T('Add')"><el-button :icon="ToolbarPlus" type="success" @click="toAdd" :aria-label="T('Add')"><span class="query-action-label">{{ T('Add') }}</span></el-button></el-tooltip>
+          <el-tooltip :content="T('ManageSharing')"><router-link class="query-navigation" :aria-label="T('ManageSharing')" to="/my/sharing?kind=address_book"><el-icon aria-hidden="true"><Share /></el-icon></router-link></el-tooltip>
         </el-form-item>
       </el-form>
-    </el-card>
+    </QueryToolbar>
     <el-card class="list-body" shadow="hover">
       <p class="collection-help">{{ T('AddressBookSharingGuide') }}</p>
       <el-table :data="list" v-loading="listRes.loading" border stripe scrollbar-always-on>
@@ -18,9 +19,9 @@
         <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="220" fixed="right">
           <template #default="{row}">
             <template v-if="row.id>0">
-              <el-button size="small" type="primary" plain :icon="Share" @click="showRules(row)">{{ T('Share') }}</el-button>
+              <el-tooltip :content="T('Share')"><el-button circle size="small" type="primary" plain :aria-label="T('Share')" @click="showRules(row)"><el-icon aria-hidden="true"><Share/></el-icon></el-button></el-tooltip>
               <el-tooltip :content="T('Edit')"><el-button circle size="small" :aria-label="T('Edit')" @click="toEdit(row)"><el-icon><Edit/></el-icon></el-button></el-tooltip>
-              <el-tooltip :content="T('Delete')"><el-button circle size="small" type="danger" plain :aria-label="T('Delete')" @click="del(row)"><el-icon><Delete/></el-icon></el-button></el-tooltip>
+              <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
             </template>
           </template>
         </el-table-column>
@@ -30,7 +31,6 @@
           </el-empty>
         </template>
       </el-table>
-      <router-link class="collection-help" to="/my/sharing?kind=address_book">{{ T('ManageSharing') }}</router-link>
     </el-card>
     <el-card class="list-page" shadow="hover">
       <el-pagination background
@@ -58,6 +58,9 @@
 </template>
 
 <script setup>
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import { Plus as ToolbarPlus } from '@element-plus/icons-vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
   import { T } from '@/utils/i18n'
   import { computed, ref } from 'vue'
   import { useRepositories } from '@/views/address_book/collection'

@@ -1,7 +1,8 @@
 <template>
   <main class="action-shell">
     <el-card class="action-card" shadow="never">
-      <img src="@/assets/logo.png" alt="RustDesk"/>
+      <img src="@/assets/solution-mark.svg" alt="" width="56" height="56"/>
+      <div class="action-brand"><BrandName :title="appStore.setting.title" /></div>
       <h1>{{ title }}</h1><p>{{ description }}</p>
       <el-form label-position="top">
 		<el-form-item v-if="mode==='request'" :label="T('Email')"><el-input v-model="email" type="email"/></el-form-item>
@@ -14,9 +15,13 @@
 </template>
 <script setup>
 import { computed, ref } from 'vue'; import { useRoute, useRouter } from 'vue-router'; import { notify as ElMessage } from '@/utils/notifications';
+import BrandName from '@/components/BrandName.vue'; import { useAppStore } from '@/store/app'
+const appStore = useAppStore()
  import { acceptInvite, confirmPasswordReset, requestPasswordReset } from '@/api/accountActions'; import { T } from '@/utils/i18n'
 const route=useRoute(),router=useRouter(),loading=ref(false),email=ref(''),password=ref(''),confirmation=ref('');const mode=computed(()=>route.name==='PasswordResetRequest'?'request':route.name==='InviteAccept'?'invite':'reset');const title=computed(()=>T(mode.value==='request'?'RequestPasswordReset':mode.value==='invite'?'AcceptInvitation':'ResetPassword'));const description=computed(()=>T(mode.value==='request'?'RequestPasswordResetDescription':mode.value==='invite'?'AcceptInvitationDescription':'ResetPasswordDescription'));const actionLabel=computed(()=>T(mode.value==='request'?'SendResetLink':mode.value==='invite'?'CreateAccount':'ChangePassword'))
 const submit=async()=>{if(mode.value!=='request'&&(password.value.length<8||password.value!==confirmation.value)){ElMessage.error(T('PasswordValidationGuide'));return}loading.value=true;try{if(mode.value==='request')await requestPasswordReset({email:email.value});else if(mode.value==='invite')await acceptInvite({token:route.query.token,password:password.value});else await confirmPasswordReset({token:route.query.token,password:password.value});ElMessage.success(T(mode.value==='request'?'ResetRequestAccepted':'Completed'));if(mode.value!=='request')router.push('/login')}catch(error){ElMessage.error(error?.message||T('OperationFailed'))}finally{loading.value=false}}
 </script>
+<style scoped>
+.action-brand { margin-top: 14px; color: var(--console-heading); font-size: 26px; }
+</style>
 <style scoped lang="scss">.action-shell{display:grid;min-height:100vh;place-items:center;padding:20px;background:var(--console-canvas)}.action-card{width:min(420px,100%);text-align:center}.action-card img{width:56px}.action-card h1{margin:14px 0 6px;color:var(--console-heading);font-size:22px}.action-card p{margin:0 0 22px;color:var(--console-muted)}.action-card .el-button{width:100%;margin:8px 0 0}</style>
-

@@ -1,7 +1,7 @@
 import { reactive, ref } from 'vue'
 import { create as admin_create, list as admin_list, remove as admin_remove, update as admin_update } from '@/api/address_book'
 import { batchUpdateTags, list as my_list, create as my_create, update as my_update, remove as my_remove } from '@/api/my/address_book'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { T } from '@/utils/i18n'
 import { useRepositories as useCollectionRepositories } from '@/views/address_book/collection'
 import { useRepositories as useTagRepositories } from '@/views/tag/index'
@@ -64,15 +64,6 @@ export function useRepositories (api_type = 'my') {
   }
 
   const del = async (row) => {
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('Delete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await apis[api_type].remove({ row_id: row.row_id }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))

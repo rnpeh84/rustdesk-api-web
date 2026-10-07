@@ -11,6 +11,15 @@
       <Fold v-else/>
     </el-icon>
   </el-button>
+  <div class="portainer-header-trail">
+    <el-icon aria-hidden="true"><House/></el-icon>
+    <el-icon aria-hidden="true"><ArrowRight/></el-icon>
+    <span>{{ sectionTitle }}</span>
+    <template v-if="sectionTitle !== pageTitle">
+      <el-icon aria-hidden="true"><ArrowRight/></el-icon>
+      <span>{{ pageTitle }}</span>
+    </template>
+  </div>
   <div class="header-status">
     <span class="status-dot" aria-hidden="true"></span>
     <span>{{ setting.title }}</span>
@@ -20,12 +29,14 @@
 
 <script setup>
   import { computed } from 'vue'
-  import { Expand, Fold, Menu } from '@element-plus/icons-vue'
+  import { ArrowRight, Expand, Fold, House, Menu } from '@element-plus/icons-vue'
   import Setting from '@/layout/components/setting/index.vue'
   import { useAppStore } from '@/store/app'
   import { T } from '@/utils/i18n'
 
   defineProps({
+    sectionTitle: String,
+    pageTitle: String,
     isMobile: {
       type: Boolean,
       default: false,
@@ -38,6 +49,7 @@
 </script>
 
 <style scoped lang="scss">
+  .portainer-header-trail { display: none; }
   .nav-toggle {
     width: 36px;
     height: 36px;

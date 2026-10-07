@@ -1,13 +1,13 @@
 <template>
   <div>
-    <el-card class="list-query" shadow="hover">
+    <QueryToolbar class="list-query" shadow="hover" :query="listQuery" fields="" @query="handlerQuery">
       <el-form inline label-width="80px">
         <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
+          <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+          <el-tooltip :content="T('Add')"><el-button :icon="ToolbarPlus" type="success" @click="toAdd" :aria-label="T('Add')"><span class="query-action-label">{{ T('Add') }}</span></el-button></el-tooltip>
         </el-form-item>
       </el-form>
-    </el-card>
+    </QueryToolbar>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border>
         <el-table-column prop="rule" :label="T('Rule')" align="center">
@@ -39,7 +39,7 @@
         <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="220" fixed="right">
           <template #default="{row}">
             <el-button @click="toEdit(row)">{{ T('Edit') }}</el-button>
-            <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
+            <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
           </template>
         </el-table-column>
       </el-table>
@@ -105,6 +105,9 @@
 </template>
 
 <script setup>
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import { Plus as ToolbarPlus } from '@element-plus/icons-vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 
   import { T } from '@/utils/i18n'
   import { useRepositories } from '@/views/address_book/rule'

@@ -26,7 +26,7 @@
         <div class="profile-actions">
           <el-button plain :disabled="!!deletingKey" @click="openEdit(profile)"><el-icon><Edit /></el-icon>{{ T('CreateNewRevision') }}</el-button>
           <el-tooltip :content="profile.is_default ? T('DeleteDefaultProfileHint') : T('Delete')">
-            <span><el-button type="danger" plain :disabled="profile.is_default || !!deletingKey" :loading="deletingKey===`profile-${profile.id}`" @click="removeSetting(`profile-${profile.id}`, profile.name, () => deleteEndpointProfile(profile.id), T('DeleteProfileHint'))"><el-icon aria-hidden="true"><Delete /></el-icon>{{ T('Delete') }}</el-button></span>
+            <span><InlineConfirmButton circle :disabled="profile.is_default || !!deletingKey" :loading="deletingKey===`profile-${profile.id}`" :label="T('Delete')" :confirm-key="`profile-${profile.id}`" :action="() => removeSetting(`profile-${profile.id}`, profile.name, () => deleteEndpointProfile(profile.id), T('DeleteProfileHint'))"/></span>
           </el-tooltip>
         </div>
       </article>
@@ -53,6 +53,7 @@
 </template>
 
 <script setup>
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { Delete, Edit, Key, Plus } from '@element-plus/icons'
 import { ElMessage } from 'element-plus'

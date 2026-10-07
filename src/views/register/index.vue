@@ -1,7 +1,8 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <img src="@/assets/logo.png" alt="logo" class="login-logo"/>
+      <img src="@/assets/solution-mark.svg" alt="" width="56" height="56" class="login-logo"/>
+      <h1><BrandName :title="appStore.setting.title" /></h1>
       <el-form ref="f" :model="form" label-position="top" class="login-form" :rules="rules">
         <el-form-item :label="T('Username')" prop="username">
           <el-input v-model="form.username" class="login-input"></el-input>
@@ -36,9 +37,11 @@
   import { register } from '@/api/user'
   import { useUserStore } from '@/store/user'
   import { useAppStore } from '@/store/app'
+  import BrandName from '@/components/BrandName.vue'
 
   const router = useRouter()
   const userStore = useUserStore()
+  const appStore = useAppStore()
   const form = reactive({
     username: '',
     email: '',
@@ -94,24 +97,27 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #2d3a4b;
+  min-height: 100vh;
+  background-color: var(--console-canvas);
   padding: 20px;
   box-sizing: border-box;
 }
 
 .login-card {
-  width: 360px;
-  background-color: #283342;
-  padding: 40px;
+  width: min(400px, 100%);
+  background-color: var(--console-surface);
+  border: 1px solid var(--console-border);
+  padding: 32px;
+  box-sizing: border-box;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
 h1 {
-  margin-bottom: 20px;
-  font-size: 24px;
+  margin: 14px 0 24px;
+  color: var(--console-heading);
+  font-size: 32px;
   font-weight: bold;
 }
 
@@ -132,25 +138,25 @@ h1 {
 }
 
 .login-logo {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 20px;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
   display: block;
 }
 
 .el-form-item {
   ::v-deep(.el-form-item__label) {
-    color: #fff;
+    color: var(--console-text);
   }
 
   .el-input {
     ::v-deep(.el-input__wrapper) {
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--console-border);
       background: transparent;
     }
 
     ::v-deep(input) {
-      color: #fff;
+      color: var(--console-heading);
     }
   }
 }

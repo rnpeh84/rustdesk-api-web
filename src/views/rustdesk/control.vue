@@ -30,16 +30,16 @@
 
       </el-tab-pane>
       <el-tab-pane :label="T('Advanced')" name="Advanced">
-        <el-card class="list-query" shadow="hover">
+        <QueryToolbar class="list-query" shadow="hover" :query="listQuery" fields="" @query="handlerQuery">
           <el-form inline label-width="80px">
             <el-form-item>
-              <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-              <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
-              <el-button type="success" :disabled="!canSendIdServerCmd" @click="showCmd({cmd:'',option:'',target:ID_TARGET})">{{ T('Send') }} To Id</el-button>
-              <el-button type="success" :disabled="!canSendRelayServerCmd" @click="showCmd({cmd:'',option:'',target:RELAY_TARGET})">{{ T('Send') }} To Relay</el-button>
+              <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+              <el-tooltip :content="T('Add')"><el-button :icon="ToolbarPlus" type="success" @click="toAdd" :aria-label="T('Add')"><span class="query-action-label">{{ T('Add') }}</span></el-button></el-tooltip>
+              <el-tooltip :content="`${T('Send')} · ID`"><el-button type="success" :disabled="!canSendIdServerCmd" @click="showCmd({cmd:'',option:'',target:ID_TARGET})" :icon="ToolbarPromotion" :aria-label="`${T('Send')} · ID`"><span class="query-action-label">{{ T('Send') }} To Id</span></el-button></el-tooltip>
+              <el-tooltip :content="`${T('Send')} · Relay`"><el-button type="success" :disabled="!canSendRelayServerCmd" @click="showCmd({cmd:'',option:'',target:RELAY_TARGET})" :icon="ToolbarPromotion" :aria-label="`${T('Send')} · Relay`"><span class="query-action-label">{{ T('Send') }} To Relay</span></el-button></el-tooltip>
             </el-form-item>
           </el-form>
-        </el-card>
+        </QueryToolbar>
         <el-card class="list-body" shadow="hover">
           <el-table :data="listRes.list" v-loading="listRes.loading" border>
             <el-table-column prop="cmd" label="cmd" align="center"></el-table-column>
@@ -50,7 +50,7 @@
               <template #default="{row}">
                 <el-button type="success" :disabled="!canSendCmd(row.target)" @click="showCmd(row)">{{ T('Send') }}</el-button>
                 <el-button v-if="row.id" type="primary" @click="toUpdate(row)">{{ T('Edit') }}</el-button>
-                <el-button v-if="row.id" type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
+                <InlineConfirmButton v-if="row.id" circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
               </template>
             </el-table-column>
           </el-table>
@@ -116,10 +116,14 @@
 
 
 <script setup>
+import { Promotion as ToolbarPromotion } from '@element-plus/icons-vue'
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import { Plus as ToolbarPlus } from '@element-plus/icons-vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
   import { create, list, remove, sendCmd, update } from '@/api/rustdesk'
   import { onMounted, reactive, ref } from 'vue'
   import { T } from '@/utils/i18n'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import { ID_TARGET, RELAY_TARGET } from '@/views/rustdesk/options'
   import blocklist from '@/views/rustdesk/blocklist.vue'
   import blacklist from '@/views/rustdesk/blacklist.vue'
@@ -198,15 +202,6 @@
   }
   onMounted(getList)
   const del = async (row) => {
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('Delete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await remove({ id: row.id }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))

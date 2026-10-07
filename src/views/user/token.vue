@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-card class="list-query" shadow="hover">
+    <QueryToolbar class="list-query" shadow="hover" :query="listQuery" fields="user_id" @query="handlerQuery">
       <el-form inline label-width="80px">
         <el-form-item :label="T('User')">
           <el-select v-model="listQuery.user_id" clearable>
@@ -13,11 +13,11 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="danger" @click="toBatchDelete">{{ T('BatchDelete') }}</el-button>
+          <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+          <InlineConfirmButton show-label :label="T('BatchDelete')" :confirm-key="multipleSelection.map(item => item.row_id || item.id).join(',')" :action="() => toBatchDelete()"/>
         </el-form-item>
       </el-form>
-    </el-card>
+    </QueryToolbar>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border @selection-change="handleSelectionChange">
         <el-table-column type="selection" align="center" width="50" fixed="left"/>
@@ -40,7 +40,7 @@
         </el-table-column>
         <el-table-column :label="T('Actions')" align="center" width="140" class-name="table-actions" fixed="right">
           <template #default="{row}">
-            <el-button type="danger" @click="del(row)">{{ T('Logout') }}</el-button>
+            <InlineConfirmButton circle size="small" :label="T('Logout')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
           </template>
         </el-table-column>
       </el-table>
@@ -58,6 +58,8 @@
 </template>
 
 <script setup>
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
   import { onActivated, onMounted, ref, watch } from 'vue'
   import { loadAllUsers } from '@/global'
   import { useRepositories } from '@/views/user/token.js'
@@ -97,7 +99,7 @@
     if (multipleSelection.value.length === 0) {
       return
     }
-    batchDelete(multipleSelection.value.map(v => v.id))
+    return batchDelete(multipleSelection.value.map(v => v.id))
   }
 </script>
 

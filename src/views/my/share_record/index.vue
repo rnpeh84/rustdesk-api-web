@@ -1,13 +1,13 @@
 <template>
   <div>
-    <el-card class="list-query" shadow="hover">
+    <QueryToolbar class="list-query" shadow="hover" :query="listQuery" fields="" @query="handlerQuery">
       <el-form inline label-width="80px">
         <el-form-item>
-          <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-button type="danger" @click="toBatchDelete">{{ T('BatchDelete') }}</el-button>
+          <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
+          <InlineConfirmButton show-label :label="T('BatchDelete')" :confirm-key="multipleSelection.map(item => item.row_id || item.id).join(',')" :action="() => toBatchDelete()"/>
         </el-form-item>
       </el-form>
-    </el-card>
+    </QueryToolbar>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border @selection-change="handleSelectionChange">
         <el-table-column type="selection" align="center" width="50" fixed="left"/>
@@ -21,7 +21,7 @@
         </el-table-column>
         <el-table-column :label="T('Actions')" align="center" width="120" class-name="table-actions" fixed="right">
           <template #default="{row}">
-            <el-button type="danger" @click="del(row)">{{ T('Delete') }}</el-button>
+            <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
           </template>
         </el-table-column>
       </el-table>
@@ -39,6 +39,8 @@
 </template>
 
 <script setup>
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
   import { onActivated, onMounted, watch } from 'vue'
   import { T } from '@/utils/i18n'
   import { useRepositories } from '@/views/share_record'

@@ -17,7 +17,7 @@
       ></button>
       <el-container class="app-container">
         <el-header class="app-header">
-          <g-header :is-mobile="isMobile" @toggle-menu="toggleMenu"></g-header>
+          <g-header :is-mobile="isMobile" :section-title="T(currentSectionTitle)" :page-title="T(currentPageTitle)" @toggle-menu="toggleMenu"></g-header>
         </el-header>
         <section class="page-context" aria-labelledby="current-page-title">
           <div class="page-context__trail">
@@ -59,7 +59,8 @@
   const appStore = useAppStore()
   const tagStore = useTagsStore()
   const route = useRoute()
-  const sideBarWidth = computed(() => appStore.setting.locale.sideBarWidth)
+  const portainerPreview = document.documentElement.classList.contains('portainer-ui')
+  const sideBarWidth = computed(() => portainerPreview ? '280px' : appStore.setting.locale.sideBarWidth)
   const isMobile = ref(false)
   const mobileMenuOpen = ref(false)
   const leftWidth = computed(() => {

@@ -13,9 +13,9 @@ const constantRoutes = [
     meta: { title: 'Register' },
     component: () => import('@/views/register/index.vue'),
   },
-	{ path: '/password-reset-request', name: 'PasswordResetRequest', component: () => import('@/views/account_action/index.vue'), hidden: true },
-	{ path: '/password-reset', name: 'PasswordReset', component: () => import('@/views/account_action/index.vue'), hidden: true },
-	{ path: '/invite', name: 'InviteAccept', component: () => import('@/views/account_action/index.vue'), hidden: true },
+	{ path: '/password-reset-request', name: 'PasswordResetRequest', meta: { title: 'RequestPasswordReset' }, component: () => import('@/views/account_action/index.vue'), hidden: true },
+	{ path: '/password-reset', name: 'PasswordReset', meta: { title: 'ResetPassword' }, component: () => import('@/views/account_action/index.vue'), hidden: true },
+	{ path: '/invite', name: 'InviteAccept', meta: { title: 'AcceptInvitation' }, component: () => import('@/views/account_action/index.vue'), hidden: true },
   {
     path: '/404',
     component: () => import('@/views/error-page/404.vue'),

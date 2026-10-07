@@ -5,19 +5,19 @@
 -->
 <template>
   <div class="peer-management">
-    <el-card class="device-filter-card" shadow="never">
+    <QueryToolbar class="device-filter-card" shadow="never" :query="listQuery" fields="id,hostname,time_ago,username,ip" @query="handlerQuery">
       <form class="device-filter-toolbar" role="search" @submit.prevent="handlerQuery">
         <div class="device-filter-primary">
           <el-input v-model="listQuery.id" clearable :placeholder="T('SearchDeviceId')" :aria-label="T('SearchDeviceId')"/>
           <el-input v-model="listQuery.hostname" clearable :placeholder="T('SearchHostname')" :aria-label="T('SearchHostname')"/>
-          <el-button native-type="submit" type="primary" :icon="Search">{{ T('Filter') }}</el-button>
-          <el-button :icon="RefreshLeft" @click="resetQuery">{{ T('Reset') }}</el-button>
-          <el-button :icon="Filter" :class="{ 'is-filter-active': advancedFilterCount }" @click="advancedFiltersVisible = !advancedFiltersVisible">
+          <el-button class="query-submit" native-type="submit" type="primary" :icon="Search">{{ T('Filter') }}</el-button>
+          <el-tooltip :content="T('Reset')"><el-button :icon="RefreshLeft" @click="resetQuery" :aria-label="T('Reset')"><span class="query-action-label">{{ T('Reset') }}</span></el-button></el-tooltip>
+          <el-tooltip :content="T('AdvancedFilters')"><el-button :icon="Filter" :class="{ 'is-filter-active': advancedFilterCount }" @click="advancedFiltersVisible = !advancedFiltersVisible" :aria-label="T('AdvancedFilters')"><span class="query-action-label">
             {{ T('AdvancedFilters') }}<span v-if="advancedFilterCount">({{ advancedFilterCount }})</span>
-          </el-button>
+          </span></el-button></el-tooltip>
         </div>
         <div class="device-filter-actions">
-          <el-button type="primary" :icon="Plus" @click="toAdd">{{ T('AddDevice') }}</el-button>
+          <el-tooltip :content="T('AddDevice')"><el-button class="query-action-create" type="primary" :icon="Plus" @click="toAdd" :aria-label="T('AddDevice')"><span class="query-action-label">{{ T('AddDevice') }}</span></el-button></el-tooltip>
           <el-popover :visible="showImport" placement="bottom-end" :width="600">
             <el-upload class="upload-demo" drag accept=".csv" :before-upload="parseCsv">
               <el-icon class="el-icon--upload"><UploadFilled/></el-icon>
@@ -30,12 +30,12 @@
                 </div>
               </template>
             </el-upload>
-            <div class="popover-actions"><el-button @click="showImport=false">{{ T('Cancel') }}</el-button></div>
+            <div class="popover-actions"><el-tooltip :content="T('Cancel')"><el-button @click="showImport=false" :icon="ToolbarClose" :aria-label="T('Cancel')"><span class="query-action-label">{{ T('Cancel') }}</span></el-button></el-tooltip></div>
             <template #reference>
-              <el-button :icon="Upload" @click="showImport=true">{{ T('Import') }}</el-button>
+              <el-tooltip :content="T('Import')"><el-button :icon="Upload" @click="showImport=true" :aria-label="T('Import')"><span class="query-action-label">{{ T('Import') }}</span></el-button></el-tooltip>
             </template>
           </el-popover>
-          <el-button :icon="Download" @click="toExport">{{ T('Export') }}</el-button>
+          <el-tooltip :content="T('Export')"><el-button :icon="Download" @click="toExport" :aria-label="T('Export')"><span class="query-action-label">{{ T('Export') }}</span></el-button></el-tooltip>
         </div>
       </form>
 
@@ -57,7 +57,7 @@
           </label>
         </div>
       </el-collapse-transition>
-    </el-card>
+    </QueryToolbar>
 
     <el-card class="list-body device-list-card" shadow="never">
       <div class="list-table-toolbar">
@@ -85,7 +85,7 @@
         <strong>{{ T('SelectedCount', { param: multipleSelection.length }) }}</strong>
         <div>
           <el-button type="primary" plain :icon="Notebook" @click="toBatchAddToAB">{{ T('BatchAddToAB') }}</el-button>
-          <el-button type="danger" plain :icon="Delete" @click="toBatchDelete">{{ T('BatchDelete') }}</el-button>
+          <InlineConfirmButton show-label :label="T('BatchDelete')" :confirm-key="multipleSelection.map(item => item.row_id || item.id).join(',')" :action="() => toBatchDelete()"/>
         </div>
       </div>
 
@@ -149,8 +149,9 @@
             <DeviceConnect :key="row.row_id" :peer="row"/>
           </template>
         </el-table-column>
-        <el-table-column :label="T('Actions')" align="center" width="64" class-name="table-actions" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" width="104" class-name="table-actions" fixed="right">
           <template #default="{row}">
+            <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
             <el-dropdown trigger="click" @click.stop>
               <el-button circle :icon="MoreFilled" :aria-label="T('DeviceActions', { param: row.id })" @click.stop/>
               <template #dropdown>
@@ -158,7 +159,7 @@
                   <el-dropdown-item :icon="View" @click="openDetails(row)">{{ T('ViewDetails') }}</el-dropdown-item>
                   <el-dropdown-item :icon="Notebook" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
                   <el-dropdown-item :icon="Edit" @click="toEdit(row)">{{ T('Edit') }}</el-dropdown-item>
-                  <el-dropdown-item :icon="Delete" class="dropdown-danger" divided @click="del(row)">{{ T('Delete') }}</el-dropdown-item>
+
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -300,11 +301,14 @@
 </template>
 
 <script setup>
+import { Close as ToolbarClose } from '@element-plus/icons-vue'
+import QueryToolbar from '@/components/QueryToolbar.vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
   import { computed, nextTick, onActivated, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { batchRemove, create, detail, list, remove, update } from '@/api/peer'
   import { list as groupList } from '@/api/device_group'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import { T } from '@/utils/i18n'
   import { timeAgo } from '@/utils/time'
   import { jsonToCsv, downBlob } from '@/utils/file'
@@ -485,15 +489,6 @@
   const getGroupName = (groupId) => groupListRes.list?.find(group => group.id === groupId)?.name || ''
 
   const del = async (row) => {
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('Delete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await remove({ row_id: row.row_id }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))
@@ -661,15 +656,6 @@
       ElMessage.warning(T('PleaseSelectData'))
       return false
     }
-    const cf = await ElMessageBox.confirm(T('Confirm?', { param: T('BatchDelete') }), {
-      confirmButtonText: T('Confirm'),
-      cancelButtonText: T('Cancel'),
-      type: 'warning',
-    }).catch(_ => false)
-    if (!cf) {
-      return false
-    }
-
     const res = await batchRemove({ row_ids: multipleSelection.value.map(i => i.row_id) }).catch(_ => false)
     if (res) {
       ElMessage.success(T('OperationSuccess'))
