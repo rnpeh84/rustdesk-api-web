@@ -48,6 +48,7 @@
 import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 import '@xterm/xterm/css/xterm.css'
 import { T } from '@/utils/i18n'
+import { isDark } from '@/utils/theme'
 import { prepareTerminal, terminalStatus, terminalPreferences, saveTerminalPreferences } from '@/api/terminal'
 import { FolderOpened, Search, MoreFilled, ArrowUp, ArrowDown, Close, Setting } from '@element-plus/icons-vue'
 import ResourceMeters from './ResourceMeters.vue'
@@ -88,6 +89,10 @@ watch(settingsVisible,value=>{if(value)idleDraft.value=idleMinutes.value})
 const checkIdle=()=>{if(visible.value&&state.value==='ready'&&!fileBusy.value&&!editorDirty.value&&!preferencesSaving.value&&idleMinutes.value>0&&Date.now()-lastActivity>=idleMinutes.value*60000){visible.value=false;ElMessage.info(T('TerminalIdleClosed'))}}
 let connectionAvailability = {}
 let terminal, fit, observer, expiry, attempt = 0, alive = true
+const terminalTheme = computed(() => isDark.value
+  ? { background: '#111111', foreground: '#e8e8e8', cursor: '#f5f5f5', selectionBackground: '#43b8df55' }
+  : { background: '#ffffff', foreground: '#242424', cursor: '#087ea4', selectionBackground: '#087ea433' })
+watch(terminalTheme, theme => { if (terminal) terminal.options.theme = theme })
 const states = new Set(['unknown', 'checking', 'allowed', 'ready', 'disabled', 'unsupported', 'auth_required', 'unavailable', 'configuration', 'pty_failed', 'busy', 'key_mismatch', 'offline', 'peer_not_found', 'server_rejected', 'signature_failed', 'id_server_unreachable', 'relay_unreachable', 'connection_timeout', 'connection_closed', 'protocol_error', 'browser_transport', 'request_failed', 'access_denied', 'browser_terminal_error', 'saved_password_unavailable'])
 const requestFailures = new Set(['busy', 'saved_password_unavailable', 'request_failed'])
 const stages = new Set(['configuration', 'id_server', 'server_verification', 'rendezvous', 'relay', 'device_verification', 'authentication', 'shell', 'session', 'browser', 'request'])
@@ -207,7 +212,7 @@ const setupTerminal = async current => {
   if (socket.value !== current || !screen.value) return
   const [{ Terminal }, { FitAddon }] = await Promise.all([import('@xterm/xterm'), import('@xterm/addon-fit')])
   if (socket.value !== current || !screen.value) return
-  terminal = new Terminal({ cursorBlink: true, disableStdin: true, screenReaderMode: true, scrollback: 2000, fontSize: fontSize.value, fontFamily: 'Consolas, "SFMono-Regular", Menlo, monospace', theme: { background: '#17202e', foreground: '#e4ebf5', cursor: '#c2d7eb', selectionBackground: '#496a8d88' } })
+  terminal = new Terminal({ cursorBlink: true, disableStdin: true, screenReaderMode: true, scrollback: 2000, fontSize: fontSize.value, fontFamily: 'Consolas, "SFMono-Regular", Menlo, monospace', theme: terminalTheme.value })
   fit = new FitAddon()
   terminal.loadAddon(fit)
   terminal.open(screen.value)
@@ -292,12 +297,12 @@ onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown
 .terminal-ready, .terminal-allowed { color: var(--el-color-success); }
 .terminal-disabled, .terminal-pty_failed { color: var(--el-color-danger); }
 .terminal-explanation { margin: 0 0 16px; color: var(--el-text-color-regular); line-height: 1.6; }
-.terminal-heading{display:flex;align-items:center;justify-content:flex-start;gap:16px;min-width:0;font-size:13px;color:#e4ebf5}.terminal-heading>span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.terminal-toolbar{display:flex;align-items:center;gap:4px;flex:none}.terminal-toolbar .el-button{width:30px;height:30px;padding:6px;border-color:#59677a;background:transparent;color:#e4ebf5}.terminal-toolbar .el-button:hover{background:#37465a;border-color:#91a4bc}.terminal-heading .el-button+.el-button{margin-left:0}
+.terminal-heading{display:flex;align-items:center;justify-content:flex-start;gap:16px;min-width:0;font-size:13px;color:var(--el-text-color-primary)}.terminal-heading>span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.terminal-toolbar{display:flex;align-items:center;gap:4px;flex:none}.terminal-toolbar .el-button{width:30px;height:30px;padding:6px;border-color:var(--el-border-color);background:transparent;color:var(--el-text-color-primary)}.terminal-toolbar .el-button:hover{background:var(--el-fill-color);border-color:var(--el-border-color)}.terminal-heading .el-button+.el-button{margin-left:0}
 .terminal-session-status { display: flex; flex-direction: column; gap: 4px; margin: 0; padding:7px 12px; border-bottom:1px solid var(--el-border-color);line-height:1.5;font-size:11px;flex:none;background:var(--el-bg-color); }
 .terminal-session-status span { color: var(--el-text-color-secondary); }
 .terminal-session-status strong{font-weight:500}.terminal-session-status strong:before{content:'';display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:var(--el-color-primary)}
-.terminal-workspace { display:flex; position:relative;flex:1 1 0;height:auto;min-height:0;min-width:0;overflow:hidden;background:#17202e; }
-.terminal-screen { flex:1; min-width:0; min-height:0; background: #17202e; padding: 12px; border-radius: 0; overflow: hidden; box-sizing:border-box; }
+.terminal-workspace { display:flex; position:relative;flex:1 1 0;height:auto;min-height:0;min-width:0;overflow:hidden;background:var(--el-bg-color); }
+.terminal-screen { flex:1; min-width:0; min-height:0; background: var(--el-bg-color); padding: 12px; border-radius: 0; overflow: hidden; box-sizing:border-box; }
 .terminal-files { flex:none; min-height:0; max-width:calc(100% - 200px); overflow:hidden; }
 .terminal-files-divider { flex:none; width:6px; cursor:col-resize; touch-action:none; position:relative;background:var(--el-bg-color); }
 .terminal-files-divider:after { content:''; position:absolute; left:2px; top:0; bottom:0; width:1px; background:var(--el-border-color); }
@@ -307,8 +312,8 @@ onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown
 .terminal-heading{width:100%}.terminal-session-status{flex-direction:row;align-items:center;flex-wrap:wrap}
 .terminal-session-status.is-connected{flex-wrap:nowrap}.terminal-session-status :deep(.resource-meters){margin-left:auto}.terminal-session-status.is-connected>strong{flex:none;white-space:nowrap}
 :global(.el-dialog.terminal-dialog){height:min(740px,86dvh);max-height:calc(100dvh - 24px);padding:0;border-radius:8px;overflow:hidden}
-:global(.terminal-dialog .el-dialog__header){padding:9px 48px 9px 14px;background:#263244;border-bottom:1px solid #3d4b60}
-:global(.terminal-dialog .el-dialog__headerbtn .el-dialog__close){color:#e4ebf5}
+:global(.terminal-dialog .el-dialog__header){padding:9px 48px 9px 14px;background:var(--el-fill-color-light);border-bottom:1px solid var(--el-border-color)}
+:global(.terminal-dialog .el-dialog__headerbtn .el-dialog__close){color:var(--el-text-color-primary)}
 :global(.terminal-dialog .el-dialog__body){display:flex;flex-direction:column;min-height:0;padding:0;overflow:hidden;background:var(--el-fill-color-light)}
 :global(.terminal-dialog .el-dialog__body>.el-form){padding:12px 16px;flex:none}
 :global(.terminal-dialog .el-dialog__footer){padding:8px 12px;background:var(--el-bg-color)}
@@ -321,9 +326,9 @@ onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown
 .terminal-screen :deep(.xterm) { height: 100%; }
 @media (max-width: 600px) { .terminal-screen { padding: 6px; } .terminal-heading{gap:8px;flex-wrap:wrap}.terminal-toolbar .el-button{width:28px;height:28px}.terminal-files{position:absolute;inset:0 auto 0 0;z-index:2;max-width:100%;width:100%!important;background:var(--el-bg-color);}.terminal-files-divider{display:none;}.terminal-footer{gap:6px;flex-wrap:wrap}.terminal-notification-host{flex-basis:100%}.terminal-footer-actions{margin-left:auto}.terminal-find{padding:6px;gap:4px} }
 /* 작업 공간만 어두운 팔레트를 적용하고 기존 대시보드 테마는 유지한다. */
-:global(.el-dialog.terminal-dialog){--el-bg-color:#171f2b;--el-bg-color-overlay:#202a39;--el-fill-color-light:#263346;--el-fill-color-blank:#171f2b;--el-border-color:#354255;--el-border-color-light:#354255;--el-border-color-lighter:#2a374a;--el-text-color-primary:#e5ecf6;--el-text-color-regular:#b8c6d9;--el-text-color-secondary:#95a6bd;--el-text-color-placeholder:#7b8ba2;--el-color-primary:#73b9f0;--el-color-primary-light-9:#25384d;background:#171f2b;border:1px solid #3a485d;box-shadow:0 16px 60px #080d1855}
-:global(.terminal-dialog .el-dialog__header){background:#202a39;border-bottom-color:#354255;position:relative}
-.terminal-heading{position:relative;min-height:34px}.terminal-hostname{position:absolute;left:calc(50% + 17px);transform:translateX(-50%);max-width:calc(100% - 770px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:600;color:#e7eef8;letter-spacing:.2px}.terminal-heading>span:first-child{font-size:12px;color:#bdcadb}.terminal-toolbar .el-button{background:#263244;border-color:#405069;color:#c6d7eb}.terminal-toolbar .el-button:hover{background:#344661;border-color:#739bc0}.terminal-session-status{background:#192331;color:#aebdd1;border-bottom:1px solid #354255;gap:24px;min-height:32px}.terminal-session-status strong:before{background:#69c4a7}.terminal-footer-actions .el-button{background:#263244;color:#d8e4f3}.terminal-files-divider,.terminal-find{background:#202a39}.terminal-settings-note{font-size:12px;color:var(--el-text-color-secondary);line-height:1.7}.terminal-screen{background:#111925}.terminal-find{color:#b8c6d9}
+:global(.el-dialog.terminal-dialog){background:var(--el-bg-color);border:1px solid var(--el-border-color);box-shadow:var(--el-box-shadow)}
+:global(.terminal-dialog .el-dialog__header){background:var(--el-bg-color-overlay);border-bottom-color:var(--el-border-color);position:relative}
+.terminal-heading{position:relative;min-height:34px}.terminal-hostname{position:absolute;left:calc(50% + 17px);transform:translateX(-50%);max-width:calc(100% - 770px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:600;color:var(--el-text-color-primary);letter-spacing:.2px}.terminal-heading>span:first-child{font-size:12px;color:var(--el-text-color-secondary)}.terminal-toolbar .el-button{background:var(--el-fill-color-light);border-color:var(--el-border-color);color:var(--el-text-color-regular)}.terminal-toolbar .el-button:hover{background:var(--el-fill-color);border-color:var(--el-color-primary)}.terminal-session-status{background:var(--el-bg-color-overlay);color:var(--el-text-color-regular);border-bottom:1px solid var(--el-border-color);gap:24px;min-height:32px}.terminal-session-status strong:before{background:var(--el-color-success)}.terminal-footer-actions .el-button{background:var(--el-fill-color-light);color:var(--el-text-color-primary)}.terminal-files-divider,.terminal-find{background:var(--el-bg-color-overlay)}.terminal-settings-note{font-size:12px;color:var(--el-text-color-secondary);line-height:1.7}.terminal-screen{background:var(--el-bg-color)}.terminal-find{color:var(--el-text-color-regular)}
 @media(max-width:1200px){.terminal-hostname{position:static;transform:none;margin-left:0;max-width:100%;flex-basis:100%;text-align:center}.terminal-heading{gap:6px;flex-wrap:wrap}}
 @media(max-width:600px){.terminal-hostname{flex-basis:100%;max-width:100%;text-align:center;margin-left:0;font-size:12px;padding:1px 0}.terminal-heading{gap:6px}.terminal-session-status{gap:10px;padding:5px 8px}.terminal-session-status strong{font-size:10px}.terminal-session-status strong:before{margin-right:4px}.terminal-workspace{isolation:isolate}.terminal-files{z-index:3}}
 </style>
@@ -331,27 +336,26 @@ onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown
 .terminal-dialog .el-dialog__body>.terminal-connect-form{display:flex;align-items:center;gap:8px 16px;padding:6px 16px}
 .terminal-connect-form>.el-checkbox{margin:0;min-width:0;flex:1;height:32px;align-items:center}.terminal-connect-form .el-checkbox__label{white-space:normal;line-height:1.4}.terminal-connect-form>.el-button{margin-left:auto;flex:none}.terminal-connect-form>.el-form-item{flex:1;min-width:180px;margin:0}.terminal-connect-form.has-password{flex-wrap:wrap}.terminal-connect-form.has-password>.el-checkbox{flex-basis:100%}
 @media(max-width:600px){.terminal-dialog .el-dialog__body>.terminal-connect-form{padding:6px 12px;gap:8px}.terminal-connect-form .el-checkbox__label{font-size:12px}.terminal-connect-form>.el-button{font-size:12px;padding:6px 8px}}
-.terminal-dialog .el-dialog__header .terminal-expand-button.el-button{position:absolute;right:48px;top:50%;transform:translateY(-50%);width:30px;height:30px;min-height:30px;padding:6px;margin:0;background:#263244;border-color:#405069;color:#c6d7eb}
-.terminal-dialog .el-dialog__header .el-dialog__headerbtn{top:50%;right:10px;width:30px;height:30px;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;padding:6px;background:#263244;border:1px solid #405069;border-radius:5px;color:#c6d7eb}
+.terminal-dialog .el-dialog__header .terminal-expand-button.el-button{position:absolute;right:48px;top:50%;transform:translateY(-50%);width:30px;height:30px;min-height:30px;padding:6px;margin:0;background:var(--el-fill-color-light);border-color:var(--el-border-color);color:var(--el-text-color-regular)}
+.terminal-dialog .el-dialog__header .el-dialog__headerbtn{top:50%;right:10px;width:30px;height:30px;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;padding:6px;background:var(--el-fill-color-light);border:1px solid var(--el-border-color);border-radius:5px;color:var(--el-text-color-regular)}
 .terminal-dialog .el-dialog__header .el-dialog__headerbtn .el-dialog__close{font-size:18px;color:inherit}
-.terminal-dialog .el-dialog__header .el-dialog__headerbtn:hover,.terminal-dialog .el-dialog__header .terminal-expand-button:hover{background:#344b66;border-color:#73a9d0;color:#e4ebf5}
-.terminal-dialog .el-dialog__header .el-dialog__headerbtn:focus-visible,.terminal-dialog .el-dialog__header .terminal-expand-button:focus-visible{outline:2px solid #73a9d0;outline-offset:2px}
+.terminal-dialog .el-dialog__header .el-dialog__headerbtn:hover,.terminal-dialog .el-dialog__header .terminal-expand-button:hover{background:var(--el-fill-color);border-color:var(--el-color-primary);color:var(--el-text-color-primary)}
+.terminal-dialog .el-dialog__header .el-dialog__headerbtn:focus-visible,.terminal-dialog .el-dialog__header .terminal-expand-button:focus-visible{outline:2px solid var(--el-color-primary);outline-offset:2px}
 .terminal-dialog .el-dialog__header .el-button:not(.is-link):not(.is-text){height:30px;min-height:30px;width:30px}
-/* 앱 공통 밝은 입력·표 스타일보다 작업 공간의 대비를 우선한다. */
-.terminal-dialog{--console-surface:#171f2b;--console-text:#bdcbe0;--console-border:#354255}
-.terminal-dialog .el-input.is-disabled .el-input__wrapper,.terminal-dialog .el-input__wrapper,.terminal-dialog .el-select__wrapper,.terminal-owned-dialog .el-input__wrapper,.terminal-owned-dialog .el-select__wrapper{background:#111925;box-shadow:0 0 0 1px #405069 inset}
-.terminal-dialog .el-input__inner,.terminal-dialog .el-select__selected-item,.terminal-owned-dialog .el-input__inner,.terminal-owned-dialog .el-select__selected-item{color:#d6e1ef}
-.terminal-dialog .el-input__inner::placeholder,.terminal-owned-dialog .el-input__inner::placeholder{color:#8fa2bc}
-.terminal-dialog .el-table__header .cell{color:#aabbd2}
-.terminal-dialog .el-table__body td .cell{color:#b8c6d9}
-.terminal-dialog .el-table td.el-table__cell,.terminal-dialog .el-table th.el-table__cell{border-bottom-color:#2e3b4f}
-.terminal-dialog .el-table__inner-wrapper::before{background:#354255}
-.terminal-dialog .notification-history strong{color:#d8e4f3}
-.terminal-owned-select.el-popper{--el-bg-color-overlay:#202a39;--el-fill-color-light:#344661;--el-text-color-regular:#d6e1ef;--el-border-color-light:#405069;--el-color-primary:#9acaed;background:#202a39;border-color:#405069}
-.terminal-owned-select .el-select-dropdown__item{color:#d6e1ef}.terminal-owned-select .el-select-dropdown__item.is-hovering{background:#344661}
-.terminal-owned-dialog{--el-bg-color:#171f2b;--el-bg-color-overlay:#202a39;--el-fill-color-light:#263346;--el-fill-color-blank:#171f2b;--el-border-color:#354255;--el-border-color-light:#354255;--el-border-color-lighter:#2a374a;--el-text-color-primary:#e5ecf6;--el-text-color-regular:#b8c6d9;--el-text-color-secondary:#95a6bd;--el-text-color-placeholder:#7b8ba2;--el-color-primary:#73b9f0;--el-color-primary-light-9:#25384d;background:#171f2b;border:1px solid #3a485d;border-radius:8px;color:#cbd8e9;box-shadow:0 16px 60px #080d1866}
-.terminal-owned-dialog.el-dialog{padding:0;overflow:hidden}.terminal-owned-dialog .el-dialog__header{padding:12px 44px 12px 16px;background:#202a39;border-bottom:1px solid #354255}.terminal-owned-dialog .el-dialog__title{font-size:14px;color:#e5ecf6}.terminal-owned-dialog .el-dialog__body{padding:14px 16px}.terminal-owned-dialog .el-dialog__footer{padding:10px 16px;border-top:1px solid #354255}.terminal-owned-dialog .el-dialog__close,.terminal-owned-dialog .el-message-box__title{color:#cbd8e9}.terminal-dialog .el-button:not(.is-link):not(.is-text),.terminal-owned-dialog .el-button:not(.is-link):not(.is-text){height:32px;border-radius:5px;background:#263244;color:#d8e4f3;border-color:#405069}.terminal-dialog .el-button--primary:not(.is-link),.terminal-owned-dialog .el-button--primary:not(.is-link){background:#416d94;border-color:#598eb9;color:#fff}.terminal-dialog .el-button:not(.is-disabled):not(.is-link):hover,.terminal-owned-dialog .el-button:not(.is-disabled):not(.is-link):hover{background:#344b66;border-color:#73a9d0}.terminal-dialog .terminal-toolbar .el-button,.terminal-dialog .files-toolbar .el-button{height:30px;min-height:30px;width:30px;padding:6px}.terminal-dialog .el-button.is-disabled,.terminal-owned-dialog .el-button.is-disabled{opacity:.5}.terminal-owned-dialog .el-message-box__content{color:#b8c6d9}.terminal-owned-dialog .el-textarea__inner,.terminal-owned-dialog .el-input__wrapper,.terminal-owned-dialog .el-select__wrapper{background:#111925}.terminal-owned-dialog .el-input__inner{color:#d6e1ef}
-/* 비활성화 중에도 작업 공간의 어두운 배경을 유지한다. */
-.terminal-dialog,.terminal-owned-dialog{--el-disabled-bg-color:#202a39;--el-fill-color:#263346;--el-fill-color-extra-light:#202a39;--el-disabled-text-color:#95a6bd}
-.terminal-dialog .el-input.is-disabled .el-input__inner,.terminal-owned-dialog .el-input.is-disabled .el-input__inner{background:transparent;color:#95a6bd;-webkit-text-fill-color:#95a6bd}
+/* 터미널과 별도 팝업도 앱의 라이트·다크 테마를 따른다. */
+
+.terminal-dialog .el-input.is-disabled .el-input__wrapper,.terminal-dialog .el-input__wrapper,.terminal-dialog .el-select__wrapper,.terminal-owned-dialog .el-input__wrapper,.terminal-owned-dialog .el-select__wrapper{background:var(--el-bg-color);box-shadow:0 0 0 1px var(--el-border-color) inset}
+.terminal-dialog .el-input__inner,.terminal-dialog .el-select__selected-item,.terminal-owned-dialog .el-input__inner,.terminal-owned-dialog .el-select__selected-item{color:var(--el-text-color-primary)}
+.terminal-dialog .el-input__inner::placeholder,.terminal-owned-dialog .el-input__inner::placeholder{color:var(--el-text-color-placeholder)}
+.terminal-dialog .el-table__header .cell{color:var(--el-text-color-secondary)}
+.terminal-dialog .el-table__body td .cell{color:var(--el-text-color-regular)}
+.terminal-dialog .el-table td.el-table__cell,.terminal-dialog .el-table th.el-table__cell{border-bottom-color:var(--el-border-color-light)}
+.terminal-dialog .el-table__inner-wrapper::before{background:var(--el-border-color)}
+.terminal-dialog .notification-history strong{color:var(--el-text-color-primary)}
+.terminal-owned-select.el-popper{background:var(--el-bg-color-overlay);border-color:var(--el-border-color)}
+.terminal-owned-select .el-select-dropdown__item{color:var(--el-text-color-primary)}.terminal-owned-select .el-select-dropdown__item.is-hovering{background:var(--el-fill-color)}
+.terminal-owned-dialog{background:var(--el-bg-color-overlay);border:1px solid var(--el-border-color);border-radius:8px;color:var(--el-text-color-regular);box-shadow:var(--el-box-shadow)}
+.terminal-owned-dialog.el-dialog{padding:0;overflow:hidden}.terminal-owned-dialog .el-dialog__header{padding:12px 44px 12px 16px;background:var(--el-bg-color-overlay);border-bottom:1px solid var(--el-border-color)}.terminal-owned-dialog .el-dialog__title{font-size:14px;color:var(--el-text-color-primary)}.terminal-owned-dialog .el-dialog__body{padding:14px 16px}.terminal-owned-dialog .el-dialog__footer{padding:10px 16px;border-top:1px solid var(--el-border-color)}.terminal-owned-dialog .el-dialog__close,.terminal-owned-dialog .el-message-box__title{color:var(--el-text-color-regular)}.terminal-dialog .el-button:not(.is-link):not(.is-text),.terminal-owned-dialog .el-button:not(.is-link):not(.is-text){height:32px;border-radius:5px;background:var(--el-fill-color-light);color:var(--el-text-color-primary);border-color:var(--el-border-color)}.terminal-dialog .el-button--primary:not(.is-link),.terminal-owned-dialog .el-button--primary:not(.is-link){background:var(--el-color-primary);border-color:var(--el-color-primary);color:#fff}.terminal-dialog .el-button:not(.is-disabled):not(.is-link):hover,.terminal-owned-dialog .el-button:not(.is-disabled):not(.is-link):hover{background:var(--el-fill-color);border-color:var(--el-color-primary)}.terminal-dialog .terminal-toolbar .el-button,.terminal-dialog .files-toolbar .el-button{height:30px;min-height:30px;width:30px;padding:6px}.terminal-dialog .el-button.is-disabled,.terminal-owned-dialog .el-button.is-disabled{opacity:.5}.terminal-owned-dialog .el-message-box__content{color:var(--el-text-color-regular)}.terminal-owned-dialog .el-textarea__inner,.terminal-owned-dialog .el-input__wrapper,.terminal-owned-dialog .el-select__wrapper{background:var(--el-bg-color)}.terminal-owned-dialog .el-input__inner{color:var(--el-text-color-primary)}
+
+.terminal-dialog .el-input.is-disabled .el-input__inner,.terminal-owned-dialog .el-input.is-disabled .el-input__inner{background:transparent;color:var(--el-disabled-text-color);-webkit-text-fill-color:var(--el-disabled-text-color)}
 </style>

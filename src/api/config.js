@@ -1,5 +1,7 @@
 import request from '@/utils/request'
 
+export const userConfig = () => request({ url: '/config/user' })
+
 export function server () {
   return request({
     url: '/config/server',

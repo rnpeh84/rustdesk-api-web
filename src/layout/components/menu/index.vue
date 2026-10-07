@@ -32,7 +32,7 @@
       return compact([
         find('MyDashboard'),
         groupRoutes(children, 'MyAccountMenu', 'MyAccountMenu', 'User', ['MyInfo', 'MyLoginLog']),
-        groupRoutes(children, 'MyDeviceMenu', 'DevicesMenu', 'Monitor', ['MyPeer', 'MyClient', 'MyTagList']),
+        groupRoutes(children, 'MyDeviceMenu', 'DevicesMenu', 'Monitor', ['MyPeer', 'MyClientInstall', 'MyTagList']),
         groupRoutes(children, 'MyAddressBookMenu', 'MyAddressBookMenu', 'Notebook', ['MyAddressBookCollection', 'MyAddressBookList']),
         groupRoutes(children, 'MySharingMenu', 'SharingMenu', 'Share', ['MyAddressBookSharing', 'MyShareRecordList']),
       ])

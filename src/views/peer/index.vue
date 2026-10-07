@@ -472,7 +472,8 @@ import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
     handlerQuery()
   }
 
-  const openDetails = (row, column) => {
+  const openDetails = (row, column, event) => {
+    if (event?.target?.closest('button, a, input, label, [role="button"], .el-dropdown')) return
     if (column?.type === 'selection') return
     selectedPeer.value = row
     detailVisible.value = true

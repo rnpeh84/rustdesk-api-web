@@ -1,6 +1,6 @@
 <template>
   <el-tooltip :content="armed ? T('InlineConfirmAction', { param: label }) : label">
-    <el-button v-bind="$attrs" type="danger" plain :icon="armed ? Check : icon" :loading="loading || pending" :disabled="disabled || loading || pending" :aria-label="armed ? T('InlineConfirmAction', { param: label }) : label" :aria-pressed="armed" @click="activate" @blur="reset" @keydown.esc.stop.prevent="reset"><span v-if="showLabel" class="query-action-label">{{ label }}</span></el-button>
+    <el-button v-bind="$attrs" type="danger" plain :icon="armed ? Check : icon" :loading="loading || pending" :disabled="disabled || loading || pending" :aria-label="armed ? T('InlineConfirmAction', { param: label }) : label" :aria-pressed="armed" @click.stop="activate" @blur="reset" @keydown.esc.stop.prevent="reset"><span v-if="showLabel" class="query-action-label">{{ label }}</span></el-button>
   </el-tooltip>
 </template>
 

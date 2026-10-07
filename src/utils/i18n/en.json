@@ -1,4 +1,9 @@
 {
+  "ShareLink": { "One": "Access link" },
+  "DeleteDeviceAndShares": { "One": "Unshare and delete" },
+  "SharedDeviceDeleteHint": { "One": "Remove this device from the shares below and delete it." },
+  "SharedDeviceDeleteTitle": { "One": "Delete shared device" },
+  "Client": { "One": "Client" },
 	"FilesError_sandbox": {"One": "The Linux kernel cannot isolate the file helper. Landlock ABI 3 or newer is required."},
 	"TerminalExpand": { "One": "Expand terminal" }, "TerminalRestore": { "One": "Restore terminal size" },
 	"DeviceFiles": { "One": "File transfer" }, "FilesParent": { "One": "Parent folder" }, "FilesUpload": { "One": "Upload" }, "FilesDownload": { "One": "Download" }, "FilesSize": { "One": "Size" }, "FilesMore": { "One": "Show more" }, "FilesEmpty": { "One": "No files." }, "FilesBlocked": { "One": "Links and special files cannot be accessed." },
@@ -16,13 +21,13 @@
 	"ViewDeploymentString": { "One": "View the deployment string" },
 	"OfficialInstallShortHint": { "One": "Copy an installation command to add a new device to your account." },
 	"OfficialInstallSettingsTitle": { "One": "Installation settings" },
-	"OfficialInstallSettingsApplyHint": { "One": "Clicking a copy icon saves these settings and applies them to that installation command." },
+	"OfficialInstallSettingsApplyHint": { "One": "Save settings and copy command" },
 	"OfficialInstallSettingsSummary": { "One": "{mode} · Shell account: {account}" },
-	"OfficialInstallKeepExisting": { "One": "Keep the existing device's password, server and client" },
+	"OfficialInstallKeepExisting": { "One": "Keep existing settings" },
 	"OfficialInstallOverridesSelected": { "One": "{count} existing-device changes selected" },
 	"OfficialInstallReinstallOptions": { "One": "When reinstalling on an existing device" },
 	"OfficialInstallChooseTarget": { "One": "Click the copy icon beside the target OS and CPU." },
-	"OfficialInstallBeforeRun": { "One": "Before running · Supported platforms and preserving settings" },
+	"OfficialInstallBeforeRun": { "One": "Before installation" },
 	"DeviceConnectionChoose":{"One":"Choose connection"},
 	"ClientConnectionChoose":{"One":"Choose client connection"},
 	"ClientConnectionTerminal":{"One":"Terminal in client"},
@@ -131,13 +136,13 @@
 	"OfficialInstallGenerate": { "One": "Generate 8 characters" },
 	"OfficialInstallShowSaved": { "One": "Load saved password" },
 	"OfficialInstallPasswordHelp": { "One": "Used for new devices and saved when you click a copy icon. Existing device passwords are preserved by default." },
-	"OfficialInstallAdvanced": { "One": "Change connection and reinstall settings" },
+	"OfficialInstallAdvanced": { "One": "Connection and reinstall options" },
 	"OfficialInstallMode": { "One": "Connection mode" },
 	"OfficialInstallMode_auto": { "One": "Detect automatically" },
 	"OfficialInstallMode_desktop": { "One": "Desktop" },
 	"OfficialInstallMode_terminal": { "One": "Terminal · Experimental" },
 	"OfficialInstallShellUser": { "One": "Terminal shell account" },
-	"OfficialInstallShellDefault": { "One": "OS user running the script" },
+	"OfficialInstallShellDefault": { "One": "Current OS user" },
 	"OfficialInstallShellHint": { "One": "Defaults to the OS user running the script, or the original sudo user. Use an existing regular account. Windows follows the client's OS login session." },
 	"OfficialInstallReplacePassword": { "One": "Enable unattended access with this password on an existing device" },
 	"OfficialInstallReplaceServer": { "One": "Allow switching a device connected to another server" },
@@ -488,7 +493,7 @@
     "One": "Only admins can see group members and their devices"
   },
   "SharedGroup": {
-    "One": "Shared Group"
+    "One": "Automatic sharing group"
   },
   "SharedGroupNote": {
     "One": "All users can see group members and their devices"

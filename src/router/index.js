@@ -80,8 +80,14 @@ export const asyncRoutes = [
       {
         path: 'client',
         name: 'MyClient',
-        meta: { title: 'ClientCenter', icon: 'Download' },
+        meta: { title: 'ClientCenter', icon: 'Download', hide: true },
         component: () => import('@/views/my/client/index.vue'),
+      },
+      {
+        path: 'client-install',
+        name: 'MyClientInstall',
+        meta: { title: 'Client', icon: 'Download', inheritAccess: true },
+        component: () => import('@/views/my/client/install.vue'),
       },
       {
         path: 'address_book_collection',

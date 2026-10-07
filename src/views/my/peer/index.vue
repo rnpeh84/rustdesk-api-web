@@ -1,8 +1,8 @@
 <template>
   <div class="peer-management">
     <el-tabs v-model="listQuery.scope" @tab-change="changeScope">
-      <el-tab-pane :label="T('OwnDevices')" name="mine"/>
-      <el-tab-pane :label="T('ReceivedDevices')" name="received"/>
+      <el-tab-pane :label="`${T('OwnDevices')} (${deviceCounts.mine ?? '—'})`" name="mine"/>
+      <el-tab-pane :label="`${T('ReceivedDevices')} (${deviceCounts.received ?? '—'})`" name="received"/>
     </el-tabs>
     <QueryToolbar class="device-filter-card" shadow="never" :query="listQuery" fields="id,hostname,time_ago" @query="handlerQuery">
       <form class="device-filter-toolbar" role="search" @submit.prevent="handlerQuery">
@@ -57,8 +57,9 @@
         <el-table-column :label="T('QuickConnect')" align="center" width="136" fixed="right">
           <template #default="{row}"><DeviceConnect :key="row.row_id" :peer="row" show-client/></template>
         </el-table-column>
-        <el-table-column :label="T('Actions')" align="center" width="64" class-name="table-actions" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" width="104" class-name="table-actions" fixed="right">
           <template #default="{row}">
+            <OwnedDeviceDelete v-if="listQuery.scope === 'mine'" :peer="row" @deleted="deviceDeleted"/>
             <el-dropdown trigger="click" @click.stop>
               <el-button circle :icon="MoreFilled" :aria-label="T('DeviceActions', { param: row.id })" @click.stop/>
               <template #dropdown>
@@ -166,7 +167,8 @@
 <script setup>
 import QueryToolbar from '@/components/QueryToolbar.vue'
   import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
-  import { list } from '@/api/my/peer'
+  import { list, counts } from '@/api/my/peer'
+  import OwnedDeviceDelete from '@/components/device/OwnedDeviceDelete.vue'
   import { ElMessage } from 'element-plus'
   import { T } from '@/utils/i18n'
   import { timeAgo } from '@/utils/time'
@@ -184,6 +186,19 @@ import QueryToolbar from '@/components/QueryToolbar.vue'
   import AddressBookShareDialog from '@/components/device/AddressBookShareDialog.vue'
 
   const appStore = useAppStore()
+  const deviceCounts = reactive({ mine: null, received: null })
+  let countsGeneration = 0
+  const getCounts = async () => {
+    const current = ++countsGeneration
+    try { const res = await counts(); if (current === countsGeneration) Object.assign(deviceCounts, res.data) }
+    catch { if (current === countsGeneration) Object.assign(deviceCounts, { mine: null, received: null }) }
+  }
+  const deviceDeleted = async id => {
+    if (selectedPeer.value?.row_id === id) detailVisible.value = false
+    multipleSelection.value = []
+    if (listRes.list.length === 1 && listQuery.page > 1) listQuery.page -= 1
+    else await getList()
+  }
   const listRes = reactive({
     list: [], total: 0, loading: false, failed: false,
   })
@@ -204,6 +219,7 @@ import QueryToolbar from '@/components/QueryToolbar.vue'
 
   let listRequestGeneration = 0
   const getList = async () => {
+    getCounts()
     const generation = ++listRequestGeneration
     listRes.loading = true
     listRes.failed = false
@@ -252,7 +268,8 @@ import QueryToolbar from '@/components/QueryToolbar.vue'
 
   watch(() => listQuery.page_size, handlerQuery)
 
-  const openDetails = (row, column) => {
+  const openDetails = (row, column, event) => {
+    if (event?.target?.closest('button, a, input, label, [role="button"], .el-dropdown')) return
     if (column?.type === 'selection') return
     selectedPeer.value = row
     detailVisible.value = true

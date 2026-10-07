@@ -1,6 +1,5 @@
 <template>
   <section class="release-page" v-loading="loading" aria-live="polite">
-    <h1 class="sr-only">{{ T('ClientReleaseManagement') }}</h1>
     <el-alert v-if="error" type="error" :title="T('ClientReleaseAdminLoadFailed')" :closable="false" show-icon />
     <el-card shadow="never">
       <template #header>

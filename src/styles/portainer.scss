@@ -200,7 +200,11 @@ html.portainer-ui {
   .el-form-item__label { font-size: 13px; font-weight: 500; }
   .el-input__inner, .el-select__placeholder, .el-textarea__inner { font-size: 13px; }
   .el-checkbox__inner { width: 16px; height: 16px; border-radius: 5px; }
-  .el-checkbox__inner::after { left: 5px; top: 2px; }
+  .el-checkbox__input.is-checked:not(.is-indeterminate) .el-checkbox__inner::after { left: 50%; top: 50%; width: 4px; height: 8px; transform: translate(-50%, -60%) rotate(45deg); transform-origin: center; }
+  .el-button--info.is-plain {
+    color: var(--console-text); background: var(--console-neutral-soft); border-color: var(--console-border-strong);
+    &:hover, &:focus-visible { color: var(--console-heading); background: var(--console-neutral-soft); border-color: var(--console-muted); }
+  }
   .el-switch { --el-switch-on-color: var(--console-primary); }
   .el-tag { height: 21px; padding: 0 7px; border: 0; border-radius: 12px; font-size: 12px; font-weight: 600; }
   .el-table {

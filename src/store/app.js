@@ -7,7 +7,7 @@ import ru from 'element-plus/es/locale/lang/ru'
 import fr from 'element-plus/es/locale/lang/fr'
 import es from 'element-plus/es/locale/lang/es'
 import zhTw from 'element-plus/es/locale/lang/zh-tw'
-import { admin, app, server } from '@/api/config'
+import { admin, app, server, userConfig } from '@/api/config'
 
 const langs = {
   'zh-CN': { name: '中文', value: zhCn, sideBarWidth: '210px' },
@@ -77,10 +77,20 @@ export const useAppStore = defineStore({
     changeLang (v) {
       this.setLang(v)
     },
-    loadConfig () {
-      this.getAppConfig()
-      this.getAdminConfig()
-      this.loadRustdeskConfig()
+    async loadConfig () {
+      // 화면용 설정은 인증된 사용자 API로 조회하고 관리 API의 권한을 유지한다.
+      await Promise.allSettled([this.getAdminConfig(), this.getUserConfig()])
+    },
+    async getUserConfig () {
+      const res = await userConfig()
+      this.setting.appConfig = res.data.app
+      this.applyRustdeskConfig(res.data.server)
+    },
+    applyRustdeskConfig (serverConfig) {
+      this.setting.rustdeskConfig = serverConfig
+      localStorage.setItem('wc-custom-rendezvous-server', serverConfig.id_server)
+      localStorage.setItem('wc-key', serverConfig.key)
+      localStorage.setItem('wc-api-server', serverConfig.api_server)
     },
     getAppConfig () {
       console.log('getAppConfig')

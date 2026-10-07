@@ -1,6 +1,5 @@
 <template>
   <section class="client-center" v-loading="loading" aria-live="polite">
-    <h1 class="sr-only">{{ T('ClientCenter') }}</h1>
     <el-alert v-if="error" class="client-release-error" type="error" :closable="false" show-icon>
       <template #title>
         <span class="release-error-message">{{ T('ClientReleaseLoadFailed') }}</span>
