@@ -21,6 +21,7 @@
           <el-button type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
           <el-button type="success" @click="toAdd">{{ T('Add') }}</el-button>
           <el-button type="primary" @click="showBatchEditTags">{{ T('BatchEditTags') }}</el-button>
+          <el-button v-if="selectedBook" type="primary" plain :icon="Share" @click="bookShareVisible = true">{{ T('ShareAddressBook') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -29,12 +30,10 @@
         <el-table-column type="selection" width="50" align="center" fixed="left"></el-table-column>
         <el-table-column prop="id" label="ID" align="center" width="200" fixed="left" sortable>
           <template #default="{row}">
-            <div>
-              <PlatformIcons :name="platformList.find(p=>p.label===row.platform)?.icon" style="width: 20px;height: 20px;display: inline-block" color="var(--basicBlack)"/>
+            <div class="peer-id-column">
+              <PeerOs :os="row.peer?.os || row.platform"/>
               {{ row.id }}
-              <el-icon @click="handleClipboard(row.id, $event)">
-                <CopyDocument/>
-              </el-icon>
+              <el-button class="table-copy-button" link :aria-label="T('CopyId')" @click="handleClipboard(row.id, $event)"><el-icon aria-hidden="true"><CopyDocument/></el-icon></el-button>
             </div>
           </template>
         </el-table-column>
@@ -53,10 +52,9 @@
         <el-table-column prop="alias" :label="T('Alias')" width="150" sortable/>
         <el-table-column prop="peer.version" :label="T('Version')" align="center" width="100" sortable/>
         <el-table-column prop="hash" :label="T('Hash')" align="center" width="150" show-overflow-tooltip/>
-        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="142" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="220" fixed="right">
           <template #default="{row}">
-            <el-tooltip :content="T('Link')"><el-button circle size="small" type="primary" plain :aria-label="T('Link')" @click="connectByClient(row.id)"><el-icon><Connection/></el-icon></el-button></el-tooltip>
-            <el-tooltip v-if="appStore.setting.appConfig.web_client" content="Web Client"><el-button circle size="small" type="primary" plain aria-label="Web Client" @click="toWebClientLink(row)"><el-icon><Monitor/></el-icon></el-button></el-tooltip>
+            <DeviceConnect :key="`${row.row_id}-${row.peer?.row_id || 0}`" :peer="{...row.peer, id:row.id, hash:row.hash}" show-client/>
             <el-dropdown trigger="click">
               <el-button circle size="small" :aria-label="T('More')"><el-icon><MoreFilled/></el-icon></el-button>
               <template #dropdown><el-dropdown-menu>
@@ -156,6 +154,7 @@
         </el-form-item>
       </el-form>
     </el-dialog>
+    <AddressBookShareDialog v-model="bookShareVisible" :collection="selectedBook"/>
     <el-dialog v-model="shareToWebClientVisible" width="900" :close-on-click-modal="false">
       <shareByWebClient :id="shareToWebClientForm.id"
                         :hash="shareToWebClientForm.hash"
@@ -184,17 +183,19 @@
 </template>
 
 <script setup>
-  import { onActivated, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import AddressBookShareDialog from '@/components/device/AddressBookShareDialog.vue'
   import { useBatchUpdateTagsRepositories, useRepositories } from '@/views/address_book'
-  import { toWebClientLink } from '@/utils/webclient'
+  import DeviceConnect from '@/components/device/DeviceConnect.vue'
   import { T } from '@/utils/i18n'
   import shareByWebClient from '@/views/address_book/components/shareByWebClient.vue'
   import { useAppStore } from '@/store/app'
-  import { connectByClient } from '@/utils/peer'
+
   import { handleClipboard } from '@/utils/clipboard'
   import { CopyDocument } from '@element-plus/icons'
-  import PlatformIcons from '@/components/icons/platform.vue'
-  import { Connection, Delete, Edit, Monitor, MoreFilled, Share } from '@element-plus/icons-vue'
+  import PeerOs from '@/components/icons/peerOs.vue'
+  import { Delete, Edit, MoreFilled, Share } from '@element-plus/icons-vue'
 
   const appStore = useAppStore()
   const {
@@ -220,6 +221,11 @@
     // collectionListQuery,
 
   } = useRepositories('my')
+
+  const route = useRoute()
+  const bookShareVisible = ref(false)
+  const selectedBook = computed(() => collectionListRes.list.find(book => book.id === listQuery.collection_id))
+  if (route.query.collection_id) listQuery.collection_id = Number(route.query.collection_id)
 
   onMounted(getCollectionList)
   onMounted(getCollectionListForUpdate)

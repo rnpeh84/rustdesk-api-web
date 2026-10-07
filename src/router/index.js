@@ -92,7 +92,7 @@ export const asyncRoutes = [
       {
         path: 'sharing',
         name: 'MyAddressBookSharing',
-        meta: { title: 'AddressBookSharing', icon: 'Share' },
+        meta: { title: 'SharingCenter', icon: 'Share' },
         component: () => import('@/views/my/address_book/sharing.vue'),
       },
       {
@@ -110,7 +110,7 @@ export const asyncRoutes = [
       {
         path: 'shareRecord',
         name: 'MyShareRecordList',
-        meta: { title: 'ShareRecord', icon: 'Share' /*keepAlive: true*/ },
+        meta: { title: 'WebLinkHistory', icon: 'Link' /*keepAlive: true*/ },
         component: () => import('@/views/my/share_record/index.vue'),
       },
       {

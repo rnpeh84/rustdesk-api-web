@@ -836,7 +836,8 @@ html.dark .el-table {
   opacity: 0.55;
 }
 
-.table-actions .el-button--primary.is-plain {
+.table-actions .el-button--primary.is-plain,
+.device-connect .connection-icon-button:not(:disabled) {
   color: var(--console-primary);
   background: var(--console-primary-soft);
   border-color: var(--console-primary-border);

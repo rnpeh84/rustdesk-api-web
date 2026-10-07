@@ -57,8 +57,8 @@
         <el-table-column prop="last_online_time" :label="T('LastOnlineTime')" min-width="150" sortable>
           <template #default="{row}">{{ row.last_online_time ? timeAgo(row.last_online_time * 1000) : T('NeverConnected') }}</template>
         </el-table-column>
-        <el-table-column :label="T('QuickConnect')" align="center" width="220">
-          <template #default="{row}"><DeviceConnect :key="row.row_id" :peer="row"/></template>
+        <el-table-column :label="T('QuickConnect')" align="center" width="136" fixed="right">
+          <template #default="{row}"><DeviceConnect :key="row.row_id" :peer="row" show-client/></template>
         </el-table-column>
         <el-table-column :label="T('Actions')" align="center" width="64" class-name="table-actions" fixed="right">
           <template #default="{row}">
@@ -87,7 +87,7 @@
       </el-pagination>
     </el-card>
     <DeviceDetailDrawer v-model="detailVisible" :peer="selectedPeer" @connect="connectByClient">
-      <template #connect><DeviceConnect v-if="selectedPeer" :key="selectedPeer.row_id" :peer="selectedPeer"/></template>
+      <template #connect><DeviceConnect v-if="selectedPeer" :key="selectedPeer.row_id" :peer="selectedPeer" show-client/></template>
     </DeviceDetailDrawer>
     <AddressBookShareDialog v-model="shareVisible" :peer-ids="sharePeerIDs" @saved="getList"/>
 
@@ -429,6 +429,9 @@
 }
 
 @media (max-width: 620px) {
+  .device-table :deep(.el-table-fixed-column--left) {
+    position: static !important;
+  }
   .device-filter-primary .el-input,
   .device-filter-primary .el-select {
     width: 100%;

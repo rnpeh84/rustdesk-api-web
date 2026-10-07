@@ -43,12 +43,10 @@
       <el-table :data="listRes.list" v-loading="listRes.loading" border stripe scrollbar-always-on>
         <el-table-column prop="id" label="ID" align="center" width="200" fixed="left" sortable>
           <template #default="{row}">
-            <div>
-              <PlatformIcons :name="platformList.find(p=>p.label===row.platform)?.icon" style="width: 20px;height: 20px;display: inline-block" color="var(--basicBlack)"/>
+            <div class="peer-id-column">
+              <PeerOs :os="row.peer?.os || row.platform"/>
               {{ row.id }}
-              <el-icon @click="handleClipboard(row.id, $event)">
-                <CopyDocument/>
-              </el-icon>
+              <el-button class="table-copy-button" link :aria-label="T('CopyId')" @click="handleClipboard(row.id, $event)"><el-icon aria-hidden="true"><CopyDocument/></el-icon></el-button>
             </div>
           </template>
         </el-table-column>
@@ -71,10 +69,9 @@
         <el-table-column prop="alias" :label="T('Alias')" width="150" sortable/>
         <el-table-column prop="peer.version" :label="T('Version')" align="center" width="100" sortable/>
         <el-table-column prop="hash" :label="T('Hash')" align="center" width="150" show-overflow-tooltip/>
-        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="142" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="220" fixed="right">
           <template #default="{row}">
-            <el-tooltip :content="T('Link')"><el-button circle size="small" type="primary" plain :aria-label="T('Link')" @click="connectByClient(row.id)"><el-icon><Connection/></el-icon></el-button></el-tooltip>
-            <el-tooltip v-if="appStore.setting.appConfig.web_client" content="Web Client"><el-button circle size="small" type="primary" plain aria-label="Web Client" @click="toWebClientLink(row)"><el-icon><Monitor/></el-icon></el-button></el-tooltip>
+            <DeviceConnect :key="`${row.row_id}-${row.peer?.row_id || 0}`" :peer="{...row.peer, id:row.id, hash:row.hash}" show-client/>
             <el-dropdown trigger="click">
               <el-button circle size="small" :aria-label="T('More')"><el-icon><MoreFilled/></el-icon></el-button>
               <template #dropdown><el-dropdown-menu>
@@ -194,15 +191,15 @@
 <script setup>
   import { onActivated, onMounted, watch } from 'vue'
   import { useRepositories } from '@/views/address_book/index'
-  import { toWebClientLink } from '@/utils/webclient'
+  import DeviceConnect from '@/components/device/DeviceConnect.vue'
   import { T } from '@/utils/i18n'
   import { useRoute } from 'vue-router'
-  import { connectByClient } from '@/utils/peer'
+
   import { useAppStore } from '@/store/app'
   import { handleClipboard } from '@/utils/clipboard'
   import { CopyDocument } from '@element-plus/icons'
-  import PlatformIcons from '@/components/icons/platform.vue'
-  import { Connection, Delete, Edit, Monitor, MoreFilled } from '@element-plus/icons-vue'
+  import PeerOs from '@/components/icons/peerOs.vue'
+  import { Delete, Edit, MoreFilled } from '@element-plus/icons-vue'
   import { loadAllUsers } from '@/global'
 
   const appStore = useAppStore()

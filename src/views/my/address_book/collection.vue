@@ -9,16 +9,16 @@
       </el-form>
     </el-card>
     <el-card class="list-body" shadow="hover">
-      <el-tag type="danger" effect="light" style="margin-bottom: 10px">{{ T('MyAddressBookTips') }}</el-tag>
+      <p class="collection-help">{{ T('AddressBookSharingGuide') }}</p>
       <el-table :data="list" v-loading="listRes.loading" border stripe scrollbar-always-on>
         <!--        <el-table-column prop="id" label="ID" align="center"/>-->
         <el-table-column prop="name" :label="T('Name')" sortable/>
         <el-table-column prop="created_at" :label="T('CreatedAt')" align="center" sortable/>
         <!--        <el-table-column prop="updated_at" label="更新时间" align="center"/>-->
-        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="152" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" class-name="table-actions" width="220" fixed="right">
           <template #default="{row}">
             <template v-if="row.id>0">
-              <el-tooltip :content="T('ShareRules')"><el-button circle size="small" type="primary" plain :aria-label="T('ShareRules')" @click="showRules(row)"><el-icon><Share/></el-icon></el-button></el-tooltip>
+              <el-button size="small" type="primary" plain :icon="Share" @click="showRules(row)">{{ T('Share') }}</el-button>
               <el-tooltip :content="T('Edit')"><el-button circle size="small" :aria-label="T('Edit')" @click="toEdit(row)"><el-icon><Edit/></el-icon></el-button></el-tooltip>
               <el-tooltip :content="T('Delete')"><el-button circle size="small" type="danger" plain :aria-label="T('Delete')" @click="del(row)"><el-icon><Delete/></el-icon></el-button></el-tooltip>
             </template>
@@ -30,6 +30,7 @@
           </el-empty>
         </template>
       </el-table>
+      <router-link class="collection-help" to="/my/sharing?kind=address_book">{{ T('ManageSharing') }}</router-link>
     </el-card>
     <el-card class="list-page" shadow="hover">
       <el-pagination background
@@ -102,5 +103,5 @@
 </script>
 
 <style scoped lang="scss">
-
+.collection-help { display: block; color: var(--el-text-color-secondary); line-height: 1.6; margin: 8px 0 16px; }
 </style>

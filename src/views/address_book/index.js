@@ -45,7 +45,7 @@ export function useRepositories (api_type = 'my') {
           res.data.list.forEach(item => {
             const peer = peer_data.data.list.find(peer => peer.id === item.id)
             if (peer) {
-              item.peer = peer
+              item.peer = { ...peer, ...item.peer }
             }
           })
         }
