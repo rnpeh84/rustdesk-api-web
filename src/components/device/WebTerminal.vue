@@ -10,7 +10,7 @@
         <el-button :disabled="!active" :icon="Search" :aria-label="T('TerminalFind')" :title="T('TerminalFind')" :aria-pressed="findVisible" @click="openFind"/>
         <el-button :icon="MoreFilled" :aria-label="T('TerminalActions')" :title="T('TerminalActions')" @click="toolbarMenu"/>
         <el-button :icon="Setting" :aria-label="T('TerminalSettings')" :title="T('TerminalSettings')" @click="settingsVisible = true"/>
-      </div><span class="terminal-hostname" :title="hostname">{{ hostname }}</span></div><el-button class="terminal-expand-button" :icon="expanded ? ScaleToOriginal : FullScreen" :aria-label="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :title="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :aria-pressed="expanded" @click="expanded = !expanded"/></template>
+      </div><span class="terminal-hostname" :title="hostname">{{ hostname }}</span></div><el-button class="terminal-expand-button" :aria-label="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :title="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :aria-pressed="expanded" @click="expanded = !expanded"><WindowSizeIcon :restore="expanded"/></el-button></template>
       <el-form v-if="!active" class="terminal-connect-form" :class="{'has-password':!useSaved}" @submit.prevent="connect">
         <el-checkbox v-if="hasSaved" v-model="useSaved" :disabled="busy">{{ T('WebTerminalSavedPassword') }}</el-checkbox>
         <el-form-item v-if="!useSaved" :label="T('WebTerminalPassword')">
@@ -49,8 +49,9 @@ import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, ref, wat
 import '@xterm/xterm/css/xterm.css'
 import { T } from '@/utils/i18n'
 import { prepareTerminal, terminalStatus, terminalPreferences, saveTerminalPreferences } from '@/api/terminal'
-import { FullScreen, ScaleToOriginal, FolderOpened, Search, MoreFilled, ArrowUp, ArrowDown, Close, Setting } from '@element-plus/icons-vue'
+import { FolderOpened, Search, MoreFilled, ArrowUp, ArrowDown, Close, Setting } from '@element-plus/icons-vue'
 import ResourceMeters from './ResourceMeters.vue'
+import WindowSizeIcon from './WindowSizeIcon.vue'
 import DeviceFiles from './DeviceFiles.vue'
 import WorkspaceMenu from './WorkspaceMenu.vue'
 import { notifyTerminal as ElMessage, attachNotificationHost, releaseNotificationHost, showNotifications } from '@/utils/notifications'
@@ -249,12 +250,17 @@ const connect = async () => {
       if (msg.type === 'ping') { send({ type: 'pong' }); return }
       if (msg.type === 'status') {
         setState(msg.state)
-        if (msg.state === 'allowed') setupTerminal(current).catch(() => { disconnect(); setState('browser_terminal_error', 'browser') })
+        if (msg.state === 'allowed') {
+          if (msg.credential_saved) { hasSaved.value = useSaved.value = true; connectionAvailability.has_saved_password = true }
+          else ElMessage.warning(T('WebTerminalPasswordSaveFailed'))
+          setupTerminal(current).catch(() => { disconnect(); setState('browser_terminal_error', 'browser') })
+        }
       } else if (msg.type === 'opened') {
         busy.value = false; setState('ready');recordActivity();refreshResources(); if (terminal) { terminal.options.disableStdin = false; terminal.focus() }
       } else if (msg.type === 'output' && terminal && typeof msg.data === 'string') {
         try { terminal.write(Uint8Array.from(atob(msg.data), c => c.charCodeAt(0))) } catch { disconnect(); setState('protocol_error', 'session') }
       } else if (msg.type === 'error') {
+        if (msg.state === 'auth_required' || msg.state === 'saved_password_unavailable') useSaved.value = false
         disconnect(); setState(msg.state, msg.stage)
       } else if (msg.type === 'closed') disconnect()
     }
@@ -328,7 +334,7 @@ onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown
 .terminal-dialog .el-dialog__header .terminal-expand-button.el-button{position:absolute;right:48px;top:10px;width:30px;height:30px;padding:6px;margin:0;background:#263244;border-color:#405069;color:#c6d7eb}
 /* 앱 공통 밝은 입력·표 스타일보다 작업 공간의 대비를 우선한다. */
 .terminal-dialog{--console-surface:#171f2b;--console-text:#bdcbe0;--console-border:#354255}
-.terminal-dialog .el-input__wrapper,.terminal-dialog .el-select__wrapper,.terminal-owned-dialog .el-input__wrapper,.terminal-owned-dialog .el-select__wrapper{background:#111925;box-shadow:0 0 0 1px #405069 inset}
+.terminal-dialog .el-input.is-disabled .el-input__wrapper,.terminal-dialog .el-input__wrapper,.terminal-dialog .el-select__wrapper,.terminal-owned-dialog .el-input__wrapper,.terminal-owned-dialog .el-select__wrapper{background:#111925;box-shadow:0 0 0 1px #405069 inset}
 .terminal-dialog .el-input__inner,.terminal-dialog .el-select__selected-item,.terminal-owned-dialog .el-input__inner,.terminal-owned-dialog .el-select__selected-item{color:#d6e1ef}
 .terminal-dialog .el-input__inner::placeholder,.terminal-owned-dialog .el-input__inner::placeholder{color:#8fa2bc}
 .terminal-dialog .el-table__header .cell{color:#aabbd2}
@@ -340,4 +346,7 @@ onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown
 .terminal-owned-select .el-select-dropdown__item{color:#d6e1ef}.terminal-owned-select .el-select-dropdown__item.is-hovering{background:#344661}
 .terminal-owned-dialog{--el-bg-color:#171f2b;--el-bg-color-overlay:#202a39;--el-fill-color-light:#263346;--el-fill-color-blank:#171f2b;--el-border-color:#354255;--el-border-color-light:#354255;--el-border-color-lighter:#2a374a;--el-text-color-primary:#e5ecf6;--el-text-color-regular:#b8c6d9;--el-text-color-secondary:#95a6bd;--el-text-color-placeholder:#7b8ba2;--el-color-primary:#73b9f0;--el-color-primary-light-9:#25384d;background:#171f2b;border:1px solid #3a485d;border-radius:8px;color:#cbd8e9;box-shadow:0 16px 60px #080d1866}
 .terminal-owned-dialog.el-dialog{padding:0;overflow:hidden}.terminal-owned-dialog .el-dialog__header{padding:12px 44px 12px 16px;background:#202a39;border-bottom:1px solid #354255}.terminal-owned-dialog .el-dialog__title{font-size:14px;color:#e5ecf6}.terminal-owned-dialog .el-dialog__body{padding:14px 16px}.terminal-owned-dialog .el-dialog__footer{padding:10px 16px;border-top:1px solid #354255}.terminal-owned-dialog .el-dialog__close,.terminal-owned-dialog .el-message-box__title{color:#cbd8e9}.terminal-dialog .el-button:not(.is-link):not(.is-text),.terminal-owned-dialog .el-button:not(.is-link):not(.is-text){height:32px;border-radius:5px;background:#263244;color:#d8e4f3;border-color:#405069}.terminal-dialog .el-button--primary:not(.is-link),.terminal-owned-dialog .el-button--primary:not(.is-link){background:#416d94;border-color:#598eb9;color:#fff}.terminal-dialog .el-button:not(.is-disabled):not(.is-link):hover,.terminal-owned-dialog .el-button:not(.is-disabled):not(.is-link):hover{background:#344b66;border-color:#73a9d0}.terminal-dialog .terminal-toolbar .el-button,.terminal-dialog .files-toolbar .el-button{height:30px;width:30px;padding:6px}.terminal-dialog .el-button.is-disabled,.terminal-owned-dialog .el-button.is-disabled{opacity:.5}.terminal-owned-dialog .el-message-box__content{color:#b8c6d9}.terminal-owned-dialog .el-textarea__inner,.terminal-owned-dialog .el-input__wrapper,.terminal-owned-dialog .el-select__wrapper{background:#111925}.terminal-owned-dialog .el-input__inner{color:#d6e1ef}
+/* 비활성화 중에도 작업 공간의 어두운 배경을 유지한다. */
+.terminal-dialog,.terminal-owned-dialog{--el-disabled-bg-color:#202a39;--el-fill-color:#263346;--el-fill-color-extra-light:#202a39;--el-disabled-text-color:#95a6bd}
+.terminal-dialog .el-input.is-disabled .el-input__inner,.terminal-owned-dialog .el-input.is-disabled .el-input__inner{background:transparent;color:#95a6bd;-webkit-text-fill-color:#95a6bd}
 </style>

@@ -17,7 +17,7 @@
         <el-button type="primary" :disabled="busy || !writable" :icon="Upload" :aria-label="T('FilesUpload')" :title="T('FilesUpload')" @click="picker?.click()"/>
         <input ref="picker" type="file" multiple hidden @change="selectFiles"/>
       </div>
-      <form class="files-location" @submit.prevent="navigate(location)"><el-input v-model="location" :disabled="busy" :aria-label="T('FilesPath')" autocomplete="off" :spellcheck="false"/><el-button native-type="submit" :disabled="busy" :icon="Top" :aria-label="T('FilesGo')" :title="T('FilesGo')"/></form>
+      <form class="files-location" @submit.prevent="navigate(location)"><el-input v-model="location" :disabled="busy" :aria-label="T('FilesPath')" autocomplete="off" :spellcheck="false"/><el-button native-type="submit" :disabled="busy" :icon="Right" :aria-label="T('FilesGo')" :title="T('FilesGo')"/></form>
       <el-input v-model="filter" class="files-filter" :prefix-icon="Search" clearable :placeholder="T('FilesSearch')" :aria-label="T('FilesSearch')" maxlength="256"/>
       <span v-if="!writable" class="files-readonly">{{ T('FilesReadOnly') }}</span>
       <el-table :data="displayEntries" height="100%" :empty-text="T('FilesEmpty')" row-key="name" :row-class-name="({row}) => row.name === selectedName ? 'is-selected' : ''" :default-sort="{prop:'name',order:'ascending'}" @sort-change="sortEntries" @row-click="selectRow" @row-dblclick="openRow" @row-contextmenu="showMenu" @wheel.passive="menu = null" @touchmove.passive="menu = null">
@@ -53,7 +53,8 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
-import { Back, Refresh, Upload, Download, Folder, Lock, Close, House, FolderAdd, Top, Document, MoreFilled, Search } from '@element-plus/icons-vue'
+import { terminalStatus } from '@/api/terminal'
+import { Back, Refresh, Upload, Download, Folder, Lock, Close, House, FolderAdd, Right, Document, MoreFilled, Search } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 import WorkspaceMenu from './WorkspaceMenu.vue'
 import FileTextEditor from './FileTextEditor.vue'
@@ -115,10 +116,12 @@ const connect = async (files = queued) => {
   try {
     const ready = await current.connect(value, useSaved.value)
     if (version !== generation || !visible.value) return
+    if (ready.credential_saved) hasSaved.value = useSaved.value = true
+    else notify.warning(T('WebTerminalPasswordSaveFailed'))
     connected.value = true; user.value = ready.user; home.value = ready.home || ''; limit = ready.limit; busy.value = false
     await navigate(home.value)
     if (files?.length) await upload(files)
-  } catch (e) { if (client === current) { busy.value = false; showError(e) } }
+  } catch (e) { if (client === current) { if (['auth_required', 'saved_password_unavailable'].includes(e?.message)) useSaved.value = false; busy.value = false; showError(e) } }
 }
 const cancelledTransfer = async current => { if (cancelled.value) { await current.request('cancel'); throw new Error('cancelled') } }
 const digest = async data => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), value => value.toString(16).padStart(2, '0')).join('')
@@ -301,7 +304,7 @@ const applyEdit = async () => {
   finally { if (client === current) busy.value = false }
 }
 const confirmClose=async()=>{if(!editorDirty.value)return true;try{await ElMessageBox.confirm(T('FilesEditorDiscard'),T('FilesEditor'),{customClass:'terminal-owned-dialog',type:'warning',confirmButtonText:T('FilesEditorDiscardButton'),cancelButtonText:T('Cancel')});return true}catch{return false}}
-defineExpose({ close, confirmClose, open: async (availability, files = []) => { if (visible.value && connected.value) { if (files.length) await upload(files); return }; queued = files; hasSaved.value = !!availability.has_saved_password; useSaved.value = hasSaved.value; error.value = notice.value = ''; visible.value = true; await nextTick(); if (hasSaved.value) await connect(files) } })
+defineExpose({ close, confirmClose, open: async (availability, files = []) => { if (visible.value && connected.value) { if (files.length) await upload(files); return }; queued = files; hasSaved.value = !!availability.has_saved_password; useSaved.value = hasSaved.value; error.value = notice.value = ''; visible.value = true; const version = generation; try { const result = await terminalStatus(props.peer.row_id); if (version !== generation || !visible.value) return; hasSaved.value = !!result.data.has_saved_password; useSaved.value = hasSaved.value } catch { /* 조회 실패 시 전달받은 상태를 유지한다. */ }; await nextTick(); if (hasSaved.value && visible.value) await connect(files) } })
 onDeactivated(() => { visible.value = false; dispose() })
 onBeforeUnmount(dispose)
 </script>
