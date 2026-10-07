@@ -1,4 +1,5 @@
 {
+  "AllDevices": { "One": "All" },
   "ShareLink": { "One": "Access link" },
   "DeleteDeviceAndShares": { "One": "Unshare and delete" },
   "SharedDeviceDeleteHint": { "One": "Remove this device from the shares below and delete it." },

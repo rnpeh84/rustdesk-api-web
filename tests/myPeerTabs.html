@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko" class="portainer-ui dark">
+  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>장치 탭 검증</title></head>
+  <body style="margin:0;padding:16px"><div id="app"></div>
+    <script type="module">
+      import { createApp } from 'vue'
+      import ElementPlus from 'element-plus'
+      import ko from 'element-plus/es/locale/lang/ko'
+      import { createRouter, createWebHashHistory } from 'vue-router'
+      import { pinia } from '@/store'
+      import { setActivePinia } from 'pinia'
+      import 'element-plus/dist/index.css'
+      import 'element-plus/theme-chalk/dark/css-vars.css'
+      import '@/styles/style.scss'
+      import '@/styles/portainer.scss'
+      setActivePinia(pinia)
+      const { default: Peer } = await import('@/views/my/peer/index.vue')
+      const router = createRouter({ history: createWebHashHistory(), routes: [{ path: '/', component: Peer }] })
+      createApp(Peer).use(pinia).use(router).use(ElementPlus, { locale: ko }).mount('#app')
+    </script>
+  </body>
+</html>

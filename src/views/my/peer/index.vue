@@ -1,6 +1,7 @@
 <template>
   <div class="peer-management">
     <el-tabs v-model="listQuery.scope" @tab-change="changeScope">
+      <el-tab-pane :label="`${T('AllDevices')} (${allDeviceCount})`" name="all"/>
       <el-tab-pane :label="`${T('OwnDevices')} (${deviceCounts.mine ?? '—'})`" name="mine"/>
       <el-tab-pane :label="`${T('ReceivedDevices')} (${deviceCounts.received ?? '—'})`" name="received"/>
     </el-tabs>
@@ -28,13 +29,13 @@
           </span>
         </div>
       </div>
-      <div v-if="multipleSelection.length && listQuery.scope === 'mine'" class="batch-action-bar" aria-live="polite">
+      <div v-if="multipleSelection.length" class="batch-action-bar" aria-live="polite">
         <strong>{{ T('SelectedCount', { param: multipleSelection.length }) }}</strong>
         <el-button type="primary" plain :icon="Notebook" @click="toBatchAddToAB">{{ T('BatchAddToAB') }}</el-button>
         <el-button :icon="Share" @click="shareDevices(multipleSelection)">{{ T('ShareDevices') }}</el-button>
       </div>
       <el-table class="device-table" :data="listRes.list" v-loading="listRes.loading" row-key="row_id" border stripe scrollbar-always-on @selection-change="handleSelectionChange" @row-click="openDetails">
-        <el-table-column v-if="listQuery.scope === 'mine'" type="selection" width="48" align="center" fixed="left"/>
+        <el-table-column v-if="listQuery.scope !== 'received'" type="selection" :selectable="isOwnedDevice" width="48" align="center" fixed="left"/>
         <el-table-column prop="last_online_time" :label="T('Status')" width="72" align="center" fixed="left" sortable>
           <template #default="{row}">
             <DevicePresence :online="!!isPeerOnline(row)"/>
@@ -50,7 +51,7 @@
         </el-table-column>
         <el-table-column prop="hostname" :label="T('Hostname')" min-width="160" sortable show-overflow-tooltip/>
         <el-table-column prop="owner_name" :label="T('DeviceOwner')" min-width="130" show-overflow-tooltip/>
-        <el-table-column v-if="listQuery.scope === 'received'" :label="T('ShareSource')" min-width="180" show-overflow-tooltip><template #default="{row}">{{ row.share_sources?.join(', ') }}</template></el-table-column>
+        <el-table-column v-if="listQuery.scope !== 'mine'" :label="T('ShareSource')" min-width="180" show-overflow-tooltip><template #default="{row}">{{ row.share_sources?.join(', ') || '—' }}</template></el-table-column>
         <el-table-column prop="last_online_time" :label="T('LastOnlineTime')" min-width="150" sortable>
           <template #default="{row}">{{ row.last_online_time ? timeAgo(row.last_online_time * 1000) : T('NeverConnected') }}</template>
         </el-table-column>
@@ -59,14 +60,14 @@
         </el-table-column>
         <el-table-column :label="T('Actions')" align="center" width="104" class-name="table-actions" fixed="right">
           <template #default="{row}">
-            <OwnedDeviceDelete v-if="listQuery.scope === 'mine'" :peer="row" @deleted="deviceDeleted"/>
+            <OwnedDeviceDelete v-if="isOwnedDevice(row)" :peer="row" @deleted="deviceDeleted"/>
             <el-dropdown trigger="click" @click.stop>
               <el-button circle :icon="MoreFilled" :aria-label="T('DeviceActions', { param: row.id })" @click.stop/>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item :icon="View" @click="openDetails(row)">{{ T('ViewDetails') }}</el-dropdown-item>
-                  <el-dropdown-item v-if="listQuery.scope === 'mine'" :icon="Notebook" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
-                  <el-dropdown-item v-if="listQuery.scope === 'mine'" :icon="Share" @click="shareDevices([row])">{{ T('ShareDevices') }}</el-dropdown-item>
+                  <el-dropdown-item v-if="isOwnedDevice(row)" :icon="Notebook" @click="toAddressBook(row)">{{ T('AddToAddressBook') }}</el-dropdown-item>
+                  <el-dropdown-item v-if="isOwnedDevice(row)" :icon="Share" @click="shareDevices([row])">{{ T('ShareDevices') }}</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -187,6 +188,8 @@ import QueryToolbar from '@/components/QueryToolbar.vue'
 
   const appStore = useAppStore()
   const deviceCounts = reactive({ mine: null, received: null })
+  const allDeviceCount = computed(() => deviceCounts.mine == null || deviceCounts.received == null ? '—' : deviceCounts.mine + deviceCounts.received)
+  const isOwnedDevice = peer => peer.is_owned === true
   let countsGeneration = 0
   const getCounts = async () => {
     const current = ++countsGeneration
@@ -203,7 +206,7 @@ import QueryToolbar from '@/components/QueryToolbar.vue'
     list: [], total: 0, loading: false, failed: false,
   })
   const listQuery = reactive({
-    scope: 'mine',
+    scope: 'all',
     page: 1,
     page_size: 10,
     time_ago: null,
@@ -330,7 +333,7 @@ import QueryToolbar from '@/components/QueryToolbar.vue'
 
   const multipleSelection = ref([])
   const handleSelectionChange = (val) => {
-    multipleSelection.value = val
+    multipleSelection.value = val.filter(isOwnedDevice)
   }
   /*const toBatchDelete = async () => {
     if (!multipleSelection.value.length) {
