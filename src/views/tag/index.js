@@ -4,6 +4,7 @@ import { create as my_create, list as my_list, remove as my_remove, update as my
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { T } from '@/utils/i18n'
+import { cssToFlutterColor, flutterColorToCss } from '@/utils/tagColor'
 import { useRepositories as useCollectionRepositories } from '@/views/address_book/collection'
 
 const apis = {
@@ -26,50 +27,13 @@ export function useRepositories (api_type = 'my') {
     collection_id: null,
   })
 
-  const flutterColor2rgba = (color) => {
-    // color 是十进制的数字,先转成16进制
-    let hex = color.toString(16)
-    if (hex.length < 8) {
-      //前面补0
-      hex = '0'.repeat(8 - hex.length) + hex
-    }
-    //前两位是透明度
-    let alpha = hex.slice(0, 2)
-    //后六位是颜色
-    let rgba = hex.slice(2)
-    return `rgba(${parseInt(rgba.slice(0, 2), 16)}, ${parseInt(rgba.slice(2, 4), 16)}, ${parseInt(rgba.slice(4, 6), 16)}, ${parseInt(alpha, 16) / 255})`
-  }
-
-  const rgba2flutterColor = (color) => {
-    //rgba(133, 33, 33, 0.81)
-    let rgba = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*(\d+(\.\d+)?)\)/)
-    let alpha = Math.round(parseFloat(rgba[4]) * 255).toString(16)
-    let r = parseInt(rgba[1]).toString(16)
-    let g = parseInt(rgba[2]).toString(16)
-    let b = parseInt(rgba[3]).toString(16)
-    //如果是1位要补位
-    if (alpha.length === 1) {
-      alpha = '0' + alpha
-    }
-    if (r.length === 1) {
-      r = '0' + r
-    }
-    if (g.length === 1) {
-      g = '0' + g
-    }
-    if (b.length === 1) {
-      b = '0' + b
-    }
-    return parseInt(alpha + r + g + b, 16)
-  }
-
   const getList = async () => {
     listRes.loading = true
     const res = await apis[api_type].list(listQuery).catch(_ => false)
     listRes.loading = false
     if (res) {
       listRes.list = res.data.list.map(item => {
-        item.color = flutterColor2rgba(item.color)
+        item.color = flutterColorToCss(item.color)
         return item
       })
       listRes.total = res.data.total
@@ -92,6 +56,7 @@ export function useRepositories (api_type = 'my') {
   }
 
   const formVisible = ref(false)
+  const submitting = ref(false)
   const formData = reactive({
     id: 0,
     name: '',
@@ -108,6 +73,7 @@ export function useRepositories (api_type = 'my') {
     formData.id = row.id
     formData.name = row.name
     formData.color = row.color
+    currentColor.value = row.color
     formData.user_id = row.user_id
     formData.collection_id = row.collection_id
     collectionListQuery.user_id = row.user_id
@@ -118,20 +84,26 @@ export function useRepositories (api_type = 'my') {
     formData.id = 0
     formData.name = ''
     formData.color = ''
+    currentColor.value = ''
     formData.user_id = null
-    formData.collection_id = null
+    formData.collection_id = listQuery.collection_id ?? 0
   }
   const submit = async () => {
-    if (!formData.color) {
+    if (submitting.value) return
+    const color = cssToFlutterColor(formData.color)
+    if (color === null || color === 0) {
       ElMessage.error(T('PleaseSelectColor'))
       return
     }
     const api = formData.id ? apis[api_type].update : apis[api_type].create
     const data = {
       ...formData,
-      color: rgba2flutterColor(formData.color),
+      color,
+      collection_id: formData.collection_id || 0,
     }
+    submitting.value = true
     const res = await api(data).catch(_ => false)
+    submitting.value = false
     if (res) {
       ElMessage.success(T('OperationSuccess'))
       formVisible.value = false
@@ -179,6 +151,7 @@ export function useRepositories (api_type = 'my') {
     handlerQuery,
     del,
     formVisible,
+    submitting,
     formData,
     toEdit,
     toAdd,

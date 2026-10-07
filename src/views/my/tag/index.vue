@@ -65,7 +65,7 @@
           <el-input v-model="formData.name"></el-input>
         </el-form-item>
         <el-form-item :label="T('Color')" prop="color" required>
-          <el-color-picker v-model="formData.color" show-alpha @active-change="activeChange"></el-color-picker>
+          <el-color-picker v-model="formData.color" color-format="rgb" show-alpha @active-change="activeChange"></el-color-picker>
           <div class="colors">
             <div style="background-color: var(--tag-bg-color)" class="colorbox">
               <div :style="{backgroundColor: currentColor}" class="dot">
@@ -75,7 +75,7 @@
         </el-form-item>
         <el-form-item>
           <el-button @click="formVisible = false">{{ T('Cancel') }}</el-button>
-          <el-button @click="submit" type="primary">{{ T('Submit') }}</el-button>
+          <el-button @click="submit" type="primary" :loading="submitting">{{ T('Submit') }}</el-button>
         </el-form-item>
       </el-form>
     </el-dialog>
@@ -98,6 +98,7 @@ import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
     handlerQuery,
     del,
     formVisible,
+    submitting,
     formData,
     toEdit,
     toAdd,
