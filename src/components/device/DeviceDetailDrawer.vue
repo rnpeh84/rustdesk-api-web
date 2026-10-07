@@ -22,10 +22,7 @@
     <div v-if="peer" class="device-detail-content">
       <section class="device-detail-status" :class="isOnline ? 'is-online' : 'is-offline'">
         <div class="device-presence">
-          <span class="device-status-label">
-            <el-icon aria-hidden="true"><CircleCheck v-if="isOnline"/><Warning v-else/></el-icon>
-            {{ isOnline ? T('Online') : T('Offline') }}
-          </span>
+          <DevicePresence :online="isOnline"/>
           <strong>{{ onlineTime ? timeAgo(onlineTime * 1000) : T('NeverConnected') }}</strong>
         </div>
         <slot name="connect"><el-button type="primary" :icon="Connection" @click="emit('connect', peer.id)">
@@ -115,7 +112,8 @@
 
 <script setup>
 import { computed, reactive, ref, watch, onBeforeUnmount, onDeactivated } from 'vue'
-import { CircleCheck, Connection, Warning, Refresh } from '@element-plus/icons-vue'
+import DevicePresence from './DevicePresence.vue'
+import { Connection, Refresh } from '@element-plus/icons-vue'
 import { list as auditList } from '@/api/audit'
 import DeviceActivityList from './DeviceActivityList.vue'
 import PeerOs from '@/components/icons/peerOs.vue'

@@ -182,7 +182,7 @@
                 <small>{{ device.id }} · {{ device.os || T('UnknownPlatform') }}</small>
               </span>
               <span class="dashboard-status" :class="{ 'is-online': isOnline(device.last_online_time) }">
-                <i></i>{{ relativePeerTime(device.last_online_time) }}
+                <DevicePresence :online="isOnline(device.last_online_time)" :focusable="false"/>{{ relativePeerTime(device.last_online_time) }}
               </span>
             </button>
           </div>
@@ -271,6 +271,7 @@
 <script setup>
 import { computed, defineComponent, h, markRaw, onActivated, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import DevicePresence from '@/components/device/DevicePresence.vue'
 import {
   ArrowRight,
   Connection,

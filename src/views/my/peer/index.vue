@@ -35,12 +35,9 @@
       </div>
       <el-table class="device-table" :data="listRes.list" v-loading="listRes.loading" row-key="row_id" border stripe scrollbar-always-on @selection-change="handleSelectionChange" @row-click="openDetails">
         <el-table-column v-if="listQuery.scope === 'mine'" type="selection" width="48" align="center" fixed="left"/>
-        <el-table-column prop="last_online_time" :label="T('Status')" width="106" fixed="left" sortable>
+        <el-table-column prop="last_online_time" :label="T('Status')" width="72" align="center" fixed="left" sortable>
           <template #default="{row}">
-            <span class="device-status" :class="isPeerOnline(row) ? 'is-online' : 'is-offline'">
-              <el-icon aria-hidden="true"><CircleCheck v-if="isPeerOnline(row)"/><Warning v-else/></el-icon>
-              {{ isPeerOnline(row) ? T('Online') : T('Offline') }}
-            </span>
+            <DevicePresence :online="!!isPeerOnline(row)"/>
           </template>
         </el-table-column>
         <el-table-column prop="id" :label="T('DeviceIdAndOs')" min-width="190" fixed="left" sortable show-overflow-tooltip>
@@ -176,11 +173,12 @@
   import { useRepositories as useABRepositories } from '@/views/address_book/index'
   import { useAppStore } from '@/store/app'
   import { connectByClient } from '@/utils/peer'
-  import { CircleCheck, Connection, CopyDocument, Download, Monitor, MoreFilled, Notebook, RefreshLeft, Search, Share, View, Warning } from '@element-plus/icons-vue'
+  import { Connection, CopyDocument, Download, Monitor, MoreFilled, Notebook, RefreshLeft, Search, Share, View } from '@element-plus/icons-vue'
   import { handleClipboard } from '@/utils/clipboard'
   import { batchCreateFromPeers } from '@/api/my/address_book'
   import PeerOs from '@/components/icons/peerOs.vue'
   import DeviceDetailDrawer from '@/components/device/DeviceDetailDrawer.vue'
+  import DevicePresence from '@/components/device/DevicePresence.vue'
   import DeviceConnect from '@/components/device/DeviceConnect.vue'
   import AddressBookShareDialog from '@/components/device/AddressBookShareDialog.vue'
 

@@ -104,12 +104,9 @@
           @row-click="openDetails"
       >
         <el-table-column type="selection" width="48" align="center" fixed="left"/>
-        <el-table-column prop="last_online_time" :label="T('Status')" width="106" fixed="left" sortable>
+        <el-table-column prop="last_online_time" :label="T('Status')" width="72" align="center" fixed="left" sortable>
           <template #default="{row}">
-            <span class="device-status" :class="isPeerOnline(row) ? 'is-online' : 'is-offline'">
-              <el-icon aria-hidden="true"><CircleCheck v-if="isPeerOnline(row)"/><Warning v-else/></el-icon>
-              {{ isPeerOnline(row) ? T('Online') : T('Offline') }}
-            </span>
+            <DevicePresence :online="!!isPeerOnline(row)"/>
           </template>
         </el-table-column>
         <el-table-column prop="id" :label="T('DeviceIdAndOs')" min-width="190" fixed="left" sortable show-overflow-tooltip>
@@ -319,12 +316,13 @@
   import { useRepositories as useCollectionRepositories } from '@/views/address_book/collection'
   import createABForm from '@/views/peer/createABForm.vue'
   import {
-    ArrowDown, ArrowUp, CircleCheck, CollectionTag, Connection, CopyDocument, Delete,
+    ArrowDown, ArrowUp, CollectionTag, Connection, CopyDocument, Delete,
     Download, Edit, Filter, Monitor, MoreFilled, Notebook, Plus, RefreshLeft, Search,
-    Setting, Upload, UploadFilled, View, Warning,
+    Setting, Upload, UploadFilled, View,
   } from '@element-plus/icons-vue'
   import PeerOs from '@/components/icons/peerOs.vue'
   import DeviceDetailDrawer from '@/components/device/DeviceDetailDrawer.vue'
+  import DevicePresence from '@/components/device/DevicePresence.vue'
   import DeviceConnect from '@/components/device/DeviceConnect.vue'
   import { useUserStore } from '@/store/user'
 
