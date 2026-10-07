@@ -8,7 +8,7 @@
       <el-checkbox v-if="hasSaved" v-model="useSaved" :disabled="busy">{{ T('WebTerminalSavedPassword') }}</el-checkbox>
       <el-button type="primary" native-type="submit" :loading="busy">{{ T('WebTerminalCheckConnect') }}</el-button>
     </el-form>
-    <div v-if="connected" class="files-workspace" :class="{ 'is-dragging': dragging }" @dragover.prevent="dragging = true" @dragleave="dragging = false" @drop.prevent="drop">
+    <div v-if="connected" class="files-workspace" :class="{ 'is-dragging': dragging, 'is-busy': busy }" :aria-busy="busy" @dragover.prevent="dragging = true" @dragleave="dragging = false" @drop.prevent="drop">
       <div class="files-toolbar">
         <el-button :disabled="busy || path === '/'" :icon="Back" :aria-label="T('FilesParent')" :title="T('FilesParent')" @click="navigate(parent)"/>
         <el-button :disabled="busy" :icon="House" :aria-label="T('FilesHome')" :title="T('FilesHome')" @click="navigate(home)"/>
@@ -17,7 +17,7 @@
         <el-button type="primary" :disabled="busy || !writable" :icon="Upload" :aria-label="T('FilesUpload')" :title="T('FilesUpload')" @click="picker?.click()"/>
         <input ref="picker" type="file" multiple hidden @change="selectFiles"/>
       </div>
-      <form class="files-location" @submit.prevent="navigate(location)"><el-input v-model="location" :disabled="busy" :aria-label="T('FilesPath')" autocomplete="off" :spellcheck="false"/><el-button native-type="submit" :disabled="busy" :icon="Right" :aria-label="T('FilesGo')" :title="T('FilesGo')"/></form>
+      <form class="files-location" @submit.prevent="navigate(location)"><el-input v-model="location" :readonly="busy" :aria-label="T('FilesPath')" autocomplete="off" :spellcheck="false"/><el-button native-type="submit" :disabled="busy" :icon="Right" :aria-label="T('FilesGo')" :title="T('FilesGo')"/></form>
       <el-input v-model="filter" class="files-filter" :prefix-icon="Search" clearable :placeholder="T('FilesSearch')" :aria-label="T('FilesSearch')" maxlength="256"/>
       <span v-if="!writable" class="files-readonly">{{ T('FilesReadOnly') }}</span>
       <el-table :data="displayEntries" height="100%" :empty-text="T('FilesEmpty')" row-key="name" :row-class-name="({row}) => row.name === selectedName ? 'is-selected' : ''" :default-sort="{prop:'name',order:'ascending'}" @sort-change="sortEntries" @row-click="selectRow" @row-dblclick="openRow" @row-contextmenu="showMenu" @wheel.passive="menu = null" @touchmove.passive="menu = null">
@@ -323,6 +323,10 @@ onBeforeUnmount(dispose)
 @media(max-height:500px) and (max-width:600px){.terminal-dialog .device-files-panel .files-location{--files-location-height:28px}.terminal-dialog .device-files-panel .files-location .el-button{width:24px}}
 </style>
 <style>
+/* 짧은 목록 조회마다 패널 전체가 흐려졌다 밝아지는 현상을 방지한다. 중복 작업은 disabled와 busy 검사로 막는다. */
+.terminal-dialog .device-files-panel .files-workspace.is-busy .el-button.is-disabled{opacity:1;transition:none}
+.terminal-dialog .device-files-panel .files-workspace.is-busy .el-button.is-link.is-disabled{color:#d6e1ef}
+.terminal-dialog .device-files-panel .files-workspace.is-busy .el-button.is-disabled{cursor:wait}
 .terminal-dialog .device-files-panel .el-table__body{border-collapse:separate;border-spacing:0 4px}
 .terminal-dialog .device-files-panel .el-table__body td.el-table__cell{height:32px;padding:3px 0;border-top:1px solid #344255;border-bottom:1px solid #344255}
 .terminal-dialog .device-files-panel .el-table__body td.el-table__cell:first-child{border-radius:5px 0 0 5px}.terminal-dialog .device-files-panel .el-table__body td.el-table__cell:last-child{border-right:1px solid #344255;border-radius:0 5px 5px 0}

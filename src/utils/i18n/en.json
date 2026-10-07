@@ -1343,6 +1343,7 @@
   "ChooseShareDevices": {"One": "Select your devices"},
   "SelectedDeviceLabel": {"One": "Selected device {param}"},
   "StopSharing": {"One": "Stop sharing"},
+  "InlineConfirmAction": {"One": "Press the check again to confirm {param}"},
   "StopSharingConfirm": {"One": "Stop sharing this list? Original devices and address books will be kept."},
   "SharingStopped": {"One": "Sharing stopped."},
   "Select": {"One": "Select"},

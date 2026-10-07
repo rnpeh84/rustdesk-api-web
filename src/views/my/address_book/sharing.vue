@@ -13,8 +13,8 @@
         <article v-for="book in shownBooks" :key="book.id" class="sharing-card">
           <h2>{{ book.name }}</h2>
           <p class="card-owner">{{ T('DeviceOwner') }}: {{ book.owner }} · {{ T('DeviceCount') }}: {{ book.device_count }}</p>
-          <div v-for="recipient in book.recipients" :key="recipient.type + '-' + recipient.to_id" class="recipient-line"><span>{{ T(recipient.type === 1 ? 'User' : 'Group') }}: {{ recipient.name }}</span><span class="expiry" :class="{ expired: isExpired(recipient) }">{{ expiryLabel(recipient) }}</span></div>
-          <div class="card-actions"><el-button link type="primary" @click="openEntries(book)">{{ T('ViewItems') }}</el-button><template v-if="scope === 'sent'"><el-button link type="primary" @click="manage(book)">{{ T('Edit') }}</el-button><el-button link type="danger" @click="removeShare(book)">{{ T('StopSharing') }}</el-button></template></div>
+          <div v-for="recipient in book.recipients" :key="recipient.type + '-' + recipient.to_id" class="recipient-line"><el-icon :aria-label="T(recipient.type === 1 ? 'User' : 'Group')" role="img" :title="T(recipient.type === 1 ? 'User' : 'Group')"><User v-if="recipient.type === 1"/><UserFilled v-else/></el-icon><span class="recipient-name" :title="recipient.name">{{ recipient.name }}</span><span class="expiry" :class="{ expired: isExpired(recipient) }">{{ expiryLabel(recipient) }}</span></div>
+          <div class="card-actions"><el-tooltip :content="T('ViewItems')"><el-button type="primary" plain :icon="List" :aria-label="T('ViewItems') + ' ' + book.name" @click="openEntries(book)"/></el-tooltip><template v-if="scope === 'sent'"><el-tooltip :content="T('Edit')"><el-button type="primary" plain :icon="Edit" :aria-label="T('Edit') + ' ' + book.name" @click="manage(book)"/></el-tooltip><InlineConfirmButton :label="T('StopSharing') + ' ' + book.name" :loading="removingID === book.id" @confirm="removeShare(book)"/></template></div>
         </article>
         <el-empty v-if="!loading && !shownBooks.length" :description="T(scope === 'sent' ? 'NoSentShares' : 'NoReceivedShares')"/>
       </div>
@@ -23,15 +23,15 @@
         <el-table-column prop="owner" :label="T('DeviceOwner')" min-width="130" show-overflow-tooltip/>
         <el-table-column prop="device_count" :label="T('DeviceCount')" width="100"/>
         <el-table-column :label="T(scope === 'sent' ? 'ShareRecipients' : 'ShareSource')" min-width="260"><template #default="{row}">
-          <div v-for="r in row.recipients" :key="r.type + '-' + r.to_id" class="recipient-line"><span>{{ T(r.type === 1 ? 'User' : 'Group') }}: {{ r.name }}</span><span class="expiry" :class="{ expired: isExpired(r) }">{{ expiryLabel(r) }}</span></div>
+          <div v-for="r in row.recipients" :key="r.type + '-' + r.to_id" class="recipient-line"><el-icon :aria-label="T(r.type === 1 ? 'User' : 'Group')" role="img" :title="T(r.type === 1 ? 'User' : 'Group')"><User v-if="r.type === 1"/><UserFilled v-else/></el-icon><span class="recipient-name" :title="r.name">{{ r.name }}</span><span class="expiry" :class="{ expired: isExpired(r) }">{{ expiryLabel(r) }}</span></div>
         </template></el-table-column>
-        <el-table-column :label="T('Actions')" width="240" fixed="right"><template #default="{row}"><el-button link type="primary" @click="openEntries(row)">{{ T('ViewItems') }}</el-button><template v-if="scope === 'sent'"><el-button link type="primary" @click="manage(row)">{{ T('Edit') }}</el-button><el-button link type="danger" @click="removeShare(row)">{{ T('StopSharing') }}</el-button></template></template></el-table-column>
+        <el-table-column :label="T('Actions')" width="160" fixed="right"><template #default="{row}"><div class="row-actions"><el-tooltip :content="T('ViewItems')"><el-button type="primary" plain :icon="List" :aria-label="T('ViewItems') + ' ' + row.name" @click="openEntries(row)"/></el-tooltip><template v-if="scope === 'sent'"><el-tooltip :content="T('Edit')"><el-button type="primary" plain :icon="Edit" :aria-label="T('Edit') + ' ' + row.name" @click="manage(row)"/></el-tooltip><InlineConfirmButton :label="T('StopSharing') + ' ' + row.name" :loading="removingID === row.id" @confirm="removeShare(row)"/></template></div></template></el-table-column>
         <template #empty><el-empty :description="T(scope === 'sent' ? 'NoSentShares' : 'NoReceivedShares')"/></template>
       </el-table>
       </div>
     </el-card>
     <AddressBookShareDialog v-model="shareVisible" :collection="shareBook" :share-kind="kind" @saved="load"/>
-    <el-dialog v-model="entriesVisible" append-to-body :title="entryBook?.name || T('AddressBooks')" width="min(800px, calc(100vw - 24px))" destroy-on-close @closed="entryVersion++">
+    <el-dialog v-model="entriesVisible" append-to-body :title="entryBook?.name || T('AddressBooks')" width="clamp(560px, 50vw, 800px)" destroy-on-close @closed="entryVersion++">
       <el-alert v-if="entriesFailed" :title="T('ShareLoadFailed')" type="error" :closable="false"><el-button @click="loadEntries">{{ T('Retry') }}</el-button></el-alert>
       <el-table v-else :data="bookEntries" v-loading="entriesLoading" stripe>
         <el-table-column :label="T('DeviceId')" min-width="160"><template #default="{row}"><div class="entry-id"><PeerOs :os="row.peer?.os || row.platform"/><span>{{ row.id }}</span></div></template></el-table-column>
@@ -47,12 +47,13 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Refresh, Share } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh, Share, List, Edit, User, UserFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { T } from '@/utils/i18n'
 import { books, entries, remove } from '@/api/my/sharing'
 import AddressBookShareDialog from '@/components/device/AddressBookShareDialog.vue'
 import DeviceConnect from '@/components/device/DeviceConnect.vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 import PeerOs from '@/components/icons/peerOs.vue'
 const route = useRoute(), router = useRouter()
 const kind = ref(route.query.kind === 'address_book' ? 'address_book' : 'device')
@@ -66,10 +67,11 @@ let version = 0
 const load = async () => { const current = ++version; loading.value = true; failed.value = false; try { const res = await books({ scope: scope.value }); if (current === version) allBooks.value = res.data.list } catch { if (current === version) { allBooks.value = []; failed.value = true } } finally { if (current === version) loading.value = false } }
 const manage = row => { shareBook.value = row; shareVisible.value = true }
 const createShare = () => { shareBook.value = null; shareVisible.value = true }
+const removingID = ref(null)
 const removeShare = async row => {
-  const confirmed = await ElMessageBox.confirm(T('StopSharingConfirm', { param: row.name }), T('StopSharing'), { confirmButtonText: T('StopSharing'), cancelButtonText: T('Cancel'), type: 'warning' }).catch(() => false)
-  if (!confirmed) return
-  try { await remove({ collection_id: row.id }); ElMessage.success(T('SharingStopped')); load() } catch { /* 실패한 목록을 유지한다. */ }
+  if (removingID.value !== null) return
+  removingID.value = row.id
+  try { await remove({ collection_id: row.id }); ElMessage.success(T('SharingStopped')); await load() } catch { /* 실패한 목록을 유지한다. */ } finally { removingID.value = null }
 }
 const entriesVisible = ref(false), entryBook = ref(null), bookEntries = ref([]), entryPage = ref(1), entryTotal = ref(0), entriesLoading = ref(false), entriesFailed = ref(false)
 const openEntries = row => { entryBook.value = row; entryPage.value = 1; bookEntries.value = []; entryTotal.value = 0; entriesVisible.value = true; loadEntries() }
@@ -84,7 +86,9 @@ onBeforeUnmount(() => { clearInterval(timer); version++; entryVersion++ })
 .sharing-actions { display: flex; gap: 8px; }
 .sharing-actions > .el-button { margin: 0; }
 .sharing-help, .expiry { color: var(--el-text-color-secondary); line-height: 1.6; }
-.recipient-line { display: flex; flex-direction: column; padding: 4px 0; }
+.recipient-line { display: flex; align-items: center; gap: 8px; padding: 4px 0; min-width: 0; white-space: nowrap; }
+.recipient-line > .el-icon, .expiry { flex-shrink: 0; }
+.recipient-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .expiry { font-size: 12px; }
 .expired { color: var(--el-color-danger); }
 .entry-id { display: inline-flex; align-items: center; gap: 8px; }
@@ -93,8 +97,9 @@ onBeforeUnmount(() => { clearInterval(timer); version++; entryVersion++ })
 .sharing-card { border-top: 1px solid var(--el-border-color-lighter); padding: 16px 0; overflow-wrap: anywhere; }
 .sharing-card h2 { font-size: 15px; margin: 0 0 8px; }
 .card-owner { color: var(--el-text-color-secondary); font-size: 12px; margin: 0 0 8px; }
-.card-actions { display: flex; gap: 16px; margin-top: 12px; }
-.card-actions > .el-button { margin: 0; }
+.card-actions { display: flex; gap: 8px; margin-top: 12px; }
+.row-actions { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.row-actions :deep(.el-button), .card-actions :deep(.el-button) { margin: 0; width: 32px; height: 32px; padding: 6px; }
 @media (max-width: 899px) { .sharing-table { display: none; } .sharing-cards { display: block; } }
 @media (max-width: 600px) { .sharing-toolbar { flex-wrap: wrap; } .sharing-actions { width: 100%; justify-content: flex-end; } }
 </style>

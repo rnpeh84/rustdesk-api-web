@@ -1,6 +1,11 @@
 <template>
   <div class="device-connect" @click.stop>
-    <el-dropdown v-if="showClient && clientModes.length === 2" trigger="click">
+    <el-tooltip v-if="showClient && !clientAvailable" :content="T('Offline')">
+      <span tabindex="0" :aria-label="T('Offline')">
+        <el-button class="connection-icon-button" type="primary" plain disabled :aria-label="`${clientLabel} ${peer.id}`"><el-icon aria-hidden="true"><Link/></el-icon></el-button>
+      </span>
+    </el-tooltip>
+    <el-dropdown v-else-if="showClient && clientModes.length === 2" trigger="click">
       <el-button class="connection-icon-button is-multiple" type="primary" plain :aria-label="`${T('ClientConnectionChoose')} ${peer.id}`" :title="T('ClientConnectionChoose')"><el-icon aria-hidden="true"><Link/></el-icon><el-icon class="connection-chevron" aria-hidden="true"><ArrowDown/></el-icon></el-button>
       <template #dropdown><el-dropdown-menu>
         <el-dropdown-item v-for="mode in clientModes" :key="mode"><a class="client-mode-link" :href="clientConnectionUrl(peer.id, mode)"><TerminalModeIcon v-if="mode === 'terminal'"/><el-icon v-else aria-hidden="true"><Monitor/></el-icon>{{ T(mode === 'terminal' ? 'ClientConnectionTerminal' : 'ClientConnectionDesktop') }}</a></el-dropdown-item>
@@ -61,6 +66,13 @@ const clientModes=computed(()=>{
   return result.length?result:['desktop']
 })
 const clientLabel=computed(()=>T(clientModes.value[0]==='terminal'?'ClientConnectionTerminal':'ClientConnectionDesktop'))
+const clientAvailable=computed(()=>{
+  // 서버에 등록되지 않은 외부 주소록 항목은 온라인 상태를 알 수 없어 기존 링크를 유지한다.
+  if(!props.peer.row_id)return true
+  if(fresh.value)return !!availability.value.service_running
+  const lastOnline=Number(availability.value.device?.last_online_time ?? props.peer.last_online_time)||0
+  return lastOnline>0&&now.value/1000-lastOnline<60
+})
 const unavailableReason=computed(()=>T(!availability.value.reported_at?'DeviceConnectionReportNeeded':!fresh.value?'DeviceConnectionUnknown':!availability.value.service_running?'DeviceConnectionOffline':availability.value.terminal_state==='permission_required'?'DeviceConnectionLoginNeeded':['disabled','unsupported'].includes(availability.value.terminal_state)?`DeviceConnectionTerminal_${availability.value.terminal_state}`:availability.value.desktop_state==='available'&&!availability.value.desktop_web_enabled?'DeviceConnectionWebDisabled':'DeviceConnectionUnavailable'))
 const refresh=async()=>{
   now.value=Date.now()

@@ -1483,6 +1483,7 @@
   "ChooseShareDevices": {"One": "공유할 내 장치 선택"},
   "SelectedDeviceLabel": {"One": "선택 장치 {param}"},
   "StopSharing": {"One": "공유 해제"},
+  "InlineConfirmAction": {"One": "체크를 다시 눌러 {param} 확인"},
   "StopSharingConfirm": {"One": "이 목록의 공유를 해제할까요? 원본 장치와 주소록은 유지됩니다."},
   "SharingStopped": {"One": "공유를 해제했습니다."},
   "Select": {"One": "선택"},

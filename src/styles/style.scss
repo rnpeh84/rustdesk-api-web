@@ -576,6 +576,10 @@ html.dark .el-table {
 }
 
 .el-dialog__headerbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   top: 50%;
   right: 12px;
   width: 32px;

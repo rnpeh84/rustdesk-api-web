@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" append-to-body :title="T(deviceMode ? 'ShareDevices' : 'ShareAddressBook')" width="min(680px, calc(100vw - 24px))" destroy-on-close @open="load" :close-on-click-modal="false">
+  <el-dialog v-model="visible" append-to-body :title="T(deviceMode ? 'ShareDevices' : 'ShareAddressBook')" width="clamp(560px, 50vw, 760px)" destroy-on-close @open="load" :close-on-click-modal="false">
     <div v-loading="loading" class="share-form">
       <el-alert v-if="failed" type="error" :closable="false" :title="T('ShareLoadFailed')"><el-button @click="load">{{ T('Retry') }}</el-button></el-alert>
       <el-form v-else label-position="top" @submit.prevent="submit">
