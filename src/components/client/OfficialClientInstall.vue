@@ -99,7 +99,7 @@ import { T } from '@/utils/i18n'
 import { newInstallPassword, beginInstallCommandCopy } from '@/utils/officialInstall'
 
 const props = defineProps({ server: { type: Object, default: () => ({}) }, compact: Boolean })
-const form = reactive({ password: '', shell_user: '', mode: 'auto', replace_password: false, replace_server: false, switch_official: false })
+const form = reactive({ password: '', shell_user: '', mode: 'auto', replace_password: true, replace_server: true, switch_official: false })
 const platforms = [
   { id: 'linux', label: 'Linux', icon: 'linux', hint: 'OfficialInstallLinuxHint', architectures: [{ id: 'x64', detail: 'Intel / AMD' }, { id: 'ARM64' }] },
   { id: 'windows', label: 'Windows', icon: 'windows', hint: 'OfficialInstallWindowsHint', architectures: [{ id: 'x64', detail: 'Intel / AMD' }, { id: 'ARM64' }] },
