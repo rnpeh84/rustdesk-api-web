@@ -128,8 +128,8 @@ try {
   assert.equal(issued.length, 1)
   assert.equal(issued[0].shell_user, 'shelluser')
   assert.equal(issued[0].platform, 'linux')
-  assert.equal(issued[0].replace_password, false)
-  assert.equal(issued[0].replace_server, false)
+  assert.equal(issued[0].replace_password, true)
+  assert.equal(issued[0].replace_server, true)
   assert.equal(issued[0].switch_official, false)
   assert.equal(await commandBox.inputValue(), await page.evaluate(() => window.fixtureCopies.at(-1)), '클립보드와 표시 명령 불일치')
   assert.ok(!(await commandBox.inputValue()).includes(issued[0].password))
@@ -171,7 +171,7 @@ try {
   await page.locator('#official-install-mode').press('ArrowDown')
   await page.getByRole('option', { name: '화면 연결', exact: true }).click()
   for (const label of ['기존 장치에도 이 비밀번호로 무인 접속 적용', '다른 서버에 연결된 장치의 서버 전환 허용', '사내 클라이언트를 공식 버전으로 교체 허용']) {
-    await install.locator('label.el-checkbox').filter({ hasText: label }).click()
+    if (!await install.getByRole('checkbox', { name: label, exact: true }).isChecked()) await install.locator('label.el-checkbox').filter({ hasText: label }).click()
     assert.equal(await install.getByRole('checkbox', { name: label, exact: true }).isChecked(), true)
   }
   assert.equal(issued.length, beforeSettings, '설정 편집만으로 명령 발급')
