@@ -68,6 +68,7 @@
 	"TerminalState_auth_required": { "One": "Authentication required" },
 	"TerminalState_unavailable": { "One": "Connection check failed" },
 	"TerminalState_configuration": { "One": "Check server settings" },
+	"DeviceConnectionCheckOnConnect": { "One": "Online · check capabilities and permissions when connecting" },
 	"TerminalState_pty_failed": { "One": "Shell failed to open" },
 	"TerminalState_busy": { "One": "Connection limit" },
 	"TerminalState_key_mismatch": { "One": "Server public key mismatch" },

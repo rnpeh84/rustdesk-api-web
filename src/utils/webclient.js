@@ -10,8 +10,8 @@ import { useAppStore } from '@/store/app'
 const app = useAppStore()
 
 export const toWebClientLink = (row) => {
-  //v2
-  const url=new URL(`${app.setting.rustdeskConfig.api_server.replace(/\/$/,'')}/webclient2/#/${encodeURIComponent(row.id)}`)
+  // 콘솔과 같은 출처에서 웹 클라이언트를 열어 설치 프로필의 API 주소와 분리한다.
+  const url=new URL(`/webclient2/#/${encodeURIComponent(row.id)}`,window.location.origin)
   if(url.protocol!=='https:'&&!(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)))return
   window.open(url.href,'_blank','noopener,noreferrer')
 }

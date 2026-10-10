@@ -37,7 +37,7 @@ try{
   await refresh({desktop_state:'available',terminal_state:'disabled'})
   const desktop=entry.getByRole('button',{name:'화면 접속 123456789',exact:true})
   await desktop.waitFor();await desktop.click()
-  assert.deepEqual(await page.evaluate(()=>window.fixtureOpened),['https://api.example.test/webclient2/#/123456789'])
+  assert.deepEqual(await page.evaluate(()=>window.fixtureOpened),[`${origin}/webclient2/#/123456789`])
   assert.equal(sessions.length,0,'화면 접속이 터미널을 시작함')
   await refresh({terminal_state:'available'})
   const choose=entry.getByRole('button',{name:'접속 방식 선택 123456789',exact:true})
@@ -48,6 +48,13 @@ try{
   await dialog.getByText('인증 필요',{exact:true}).waitFor()
   assert.equal(sessions.length,1);assert.equal(sessions[0].use_saved,true)
   await dialog.getByRole('button',{name:'닫기',exact:true}).click();await dialog.waitFor({state:'hidden'})
+  // 설치 helper가 없는 온라인 장치도 기능을 확정하지 않은 채 접속 시 검사를 허용한다.
+  await refresh({reported_at:0,device:{last_online_time:Math.floor(Date.now()/1000)}})
+  await choose.waitFor()
+  assert.equal(await choose.isEnabled(),true)
+  assert.ok((await choose.getAttribute('title')).includes('접속 시'))
+  assert.equal(sessions.length,1,'수동 설치 상태 조회가 장치 인증/셸을 시작함')
+  await refresh({device:{last_online_time:0},reported_at:Math.floor(Date.now()/1000)})
   for(const patch of [
     {service_running:false},
     {service_running:true,reported_at:Math.floor(Date.now()/1000)-91},
