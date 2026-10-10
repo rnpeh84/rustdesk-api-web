@@ -46,7 +46,7 @@
 	"DeviceConnectionOffline":{"One":"클라이언트 실행 중지"},
 	"DeviceConnectionUnavailable":{"One":"접속 대기"},
 	"DeviceConnectionWebDisabled":{"One":"화면의 웹 접속은 관리자가 Web Client를 활성화해야 사용할 수 있습니다."},
-	"DeviceConnectionReportNeeded":{"One":"공식 설치 명령을 다시 실행하면 장치 상태가 자동으로 표시됩니다."},
+	"DeviceConnectionReportNeeded":{"One":"클라이언트 실행과 API 서버 설정을 확인해 주세요."},
 	"OfficialInstallRegistrationHint": { "One": "현재 계정에 장치를 등록합니다. 소유자가 다르면 등록을 중단합니다." },
 	"OfficialInstallMyDevices": { "One": "내 장치에서 확인 및 웹 터미널 연결" },
 	"WebTerminal": { "One": "웹 터미널" },

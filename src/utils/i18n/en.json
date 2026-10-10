@@ -46,7 +46,7 @@
 	"DeviceConnectionOffline":{"One":"Client stopped"},
 	"DeviceConnectionUnavailable":{"One":"Waiting for connection"},
 	"DeviceConnectionWebDisabled":{"One":"An administrator must enable Web Client for desktop connections in the browser."},
-	"DeviceConnectionReportNeeded":{"One":"Run the official install command again to enable automatic device state reports."},
+	"DeviceConnectionReportNeeded":{"One":"Check that the client is running and the API server is configured."},
 	"OfficialInstallRegistrationHint": { "One": "Registers the device to your account. Different ownership stops registration." },
 	"OfficialInstallMyDevices": { "One": "View My Devices and connect to the web terminal" },
 	"WebTerminal": { "One": "Web terminal" },

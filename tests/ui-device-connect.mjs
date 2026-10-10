@@ -67,6 +67,11 @@ try{
     await entry.getByRole('button',{name:'접속 대기 123456789',exact:true}).waitFor()
     assert.equal(await entry.getByRole('button',{name:'접속 대기 123456789',exact:true}).isDisabled(),true)
     assert.equal(sessions.length,1,'비활성 상태에서 연결 시도')
+    if(patch.reported_at===0){
+      const reason=await entry.locator('span[tabindex="0"]:has(button[aria-label="접속 대기 123456789"])').getAttribute('aria-label')
+      assert.ok(reason.includes('API 서버'))
+      assert.equal(reason.includes('설치 명령'),false,'수동 설치 장치에 스크립트 재실행 요구')
+    }
     if(patch.terminal_state==='disabled')assert.ok((await entry.locator('span[tabindex="0"]').getAttribute('aria-label')).includes('터미널 비활성'))
     if(patch.terminal_state==='unsupported')assert.ok((await entry.locator('span[tabindex="0"]').getAttribute('aria-label')).includes('터미널 미지원'))
   }
