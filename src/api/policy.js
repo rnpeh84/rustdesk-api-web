@@ -9,3 +9,7 @@ export const publish = data => request({ url: '/policy/publish', method: 'post',
 export const assign = data => request({ url: '/policy/assign', method: 'post', data })
 export const preview = id => request({ url: `/policy/preview/${id}` })
 export const history = id => request({ url: `/policy/history/${id}` })
+
+export const options = () => request({ url: '/policy/options' })
+export const assignments = id => request({ url: `/policy/assignments/${id}` })
+export const unassign = data => request({ url: '/policy/unassign', method: 'post', data })

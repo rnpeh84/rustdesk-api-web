@@ -7,6 +7,8 @@
       <el-button type="primary" @click="openCreate"><el-icon><Plus /></el-icon>{{ T('AddEndpointProfile') }}</el-button>
     </header>
 
+    <ConnectionSecuritySettings />
+
     <el-alert type="info" :closable="false" show-icon :title="T('EndpointRevisionGuide')" />
 
     <div v-if="profiles.length" class="profile-grid">
@@ -52,6 +54,7 @@
 </template>
 
 <script setup>
+import ConnectionSecuritySettings from '@/components/client/ConnectionSecuritySettings.vue'
 import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 import { onMounted, reactive, ref } from 'vue'
 import { Delete, Edit, Key, Plus } from '@element-plus/icons'

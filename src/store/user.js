@@ -13,6 +13,7 @@ export const useUserStore = defineStore({
     email: '',
     token: '',
     role: '',
+    permissions: [],
     avatar: '',
     route_names: [],
   }),
@@ -22,8 +23,7 @@ export const useUserStore = defineStore({
       removeToken()
       removeCode()
       this.$patch({
-        name: '',
-        role: {},
+        nickname: '', username: '', email: '', token: '', role: '', permissions: [], route_names: [], avatar: '',
       })
     },
 

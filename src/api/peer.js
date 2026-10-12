@@ -52,3 +52,8 @@ export function simpleData (data) {
     data,
   })
 }
+
+export const deviceAccess = id => request({ url: `/device-access/${id}` })
+export const blockDeviceAccess = (id, data) => request({ url: `/device-access/${id}`, method: 'post', data })
+
+export const devicePolicySync = id => request({ url: `/device-policy-sync/${id}` })

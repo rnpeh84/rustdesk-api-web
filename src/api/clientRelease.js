@@ -55,3 +55,7 @@ export async function downloadClientArtifact (artifact) {
   downBlob(await response.blob(), artifact.filename)
   return true
 }
+
+export const prepareManualRegistration = data => request({url:'/client/official-install/registration',method:'post',data,silentError:true})
+export const manualRegistrationStatus = token => request({url:'/client/official-install/registration-status',headers:{'X-Registration-Token':token},silentError:true})
+export const revokeManualRegistration = token => request({url:'/client/official-install/registration-revoke',method:'post',headers:{'X-Registration-Token':token},silentError:true})

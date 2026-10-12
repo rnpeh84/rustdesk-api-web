@@ -34,13 +34,14 @@
         <el-table-column prop="role" :label="T('Role')" min-width="150" sortable>
           <template #default="{ row }"><el-tag effect="plain">{{ T(roleLabels[row.role] || 'UserRole') }}</el-tag></template>
         </el-table-column>
-        <el-table-column prop="status" :label="T('Status')" align="center" width="96" sortable>
+        <el-table-column prop="status" :label="T('Status')" align="center" width="130" sortable>
           <template #default="{row}">
+            <el-tag v-if="row.approval_pending" type="warning" effect="plain">{{ T('AccountApprovalPending') }}</el-tag>
             <el-switch
               v-model="row.status"
               :active-value="ENABLE_STATUS"
               :inactive-value="DISABLE_STATUS"
-              :aria-label="`${row.username} ${T('Status')}`"
+              :aria-label="`${row.username} ${T(row.approval_pending ? 'ApproveAccount' : 'Status')}`"
               @change="changeStatus(row)"
             />
           </template>
@@ -140,7 +141,7 @@ const remove = async row => {
 }
 const changeStatus = async row => {
   const res = await update(row).catch(() => false)
-  if (!res) return
+  if (!res) { await getList(); return }
   ElMessage.success(T('OperationSuccess'))
   getList()
 }

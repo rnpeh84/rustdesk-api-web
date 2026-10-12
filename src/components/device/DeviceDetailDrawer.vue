@@ -31,6 +31,8 @@
       </section>
 
       <slot name="terminal"/>
+      <DeviceAccessPanel :key="peer.row_id" :row-id="peer.row_id"/>
+      <DevicePolicySyncPanel :key="`policy-${peer.row_id}`" :row-id="peer.row_id"/>
 
       <section class="device-detail-section">
         <h3>{{ T('DeviceIdentity') }}</h3>
@@ -113,6 +115,8 @@
 <script setup>
 import { computed, reactive, ref, watch, onBeforeUnmount, onDeactivated } from 'vue'
 import DevicePresence from './DevicePresence.vue'
+import DevicePolicySyncPanel from './DevicePolicySyncPanel.vue'
+import DeviceAccessPanel from './DeviceAccessPanel.vue'
 import { Connection, Refresh } from '@element-plus/icons-vue'
 import { list as auditList } from '@/api/audit'
 import DeviceActivityList from './DeviceActivityList.vue'

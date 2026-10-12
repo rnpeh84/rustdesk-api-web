@@ -22,3 +22,6 @@ export function admin () {
     method: 'get',
   })
 }
+
+export const connectionSecurity = () => request({ url: '/config/connection-security' })
+export const saveConnectionSecurity = data => request({ url: '/config/connection-security', method: 'post', data })

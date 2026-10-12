@@ -2,7 +2,7 @@
   <section class="client-installation" v-loading="loading">
     <el-alert v-if="failed" :title="T('OfficialInstallLoadError')" type="error" :closable="false"><el-button @click="load">{{ T('Retry') }}</el-button></el-alert>
     <template v-else-if="!loading">
-      <el-card shadow="never"><OfficialClientInstall :server="server" compact/></el-card>
+      <el-card shadow="never"><div class="install-method"><el-radio-group v-model="method" :aria-label="T('InstallMethod')"><el-radio-button value="auto">{{ T('AutomaticInstall') }}</el-radio-button><el-radio-button value="manual">{{ T('ManualInstall') }}</el-radio-button></el-radio-group></div><OfficialClientInstall v-if="method==='auto'" :server="server" compact/><ManualClientEnrollment v-else :server="server"/></el-card>
       <el-card shadow="never">
         <template #header><div class="connection-heading"><h2>{{ T('DashboardServerInfo') }}</h2><span>{{ T('DashboardReadOnly') }}</span></div></template>
         <dl class="connection-facts">
@@ -22,8 +22,10 @@ import { onActivated, onBeforeUnmount, ref } from 'vue'
 import { ArrowRight } from '@element-plus/icons-vue'
 import { clientReleases } from '@/api/clientRelease'
 import OfficialClientInstall from '@/components/client/OfficialClientInstall.vue'
+import ManualClientEnrollment from '@/components/client/ManualClientEnrollment.vue'
 import ServerConfigShare from '@/components/client/ServerConfigShare.vue'
 import { T } from '@/utils/i18n'
+const method=ref('auto')
 const server = ref({}), loading = ref(true), failed = ref(false)
 let generation = 0, loadedAt = 0
 const load = async () => {
@@ -38,6 +40,7 @@ onActivated(() => { if (loadedAt && Date.now() - loadedAt > 30000) load() })
 onBeforeUnmount(() => { generation += 1 })
 </script>
 <style scoped>
+.install-method{margin-bottom:14px}
 .client-installation { display: grid; gap: 12px; }
 .connection-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .connection-heading h2 { margin: 0; font-size: 14px; }

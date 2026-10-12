@@ -1,0 +1,12 @@
+{
+  "series": "authenticated-access",
+  "version": "2.0.0-dev.1",
+  "branch": "codex/authenticated-access",
+  "status": "production-candidate",
+  "official_client_required_changes": false,
+  "production_deployment_enabled": true,
+  "component": "web",
+  "base_commit": "0c1f4a0d68fb12e4ab7e41ec94e1facf438e5a83",
+  "base_component_version": "0.0.0",
+  "production_deployment_mode": "manual-approved-branch"
+}
