@@ -12,7 +12,7 @@
             <el-form-item :label="T('ClientVersion')">
               <div class="version-preview" :aria-busy="versionLoading">
                 <el-input :model-value="versionPreview?.version || ''" readonly :aria-label="T('ClientVersion')" name="calculated_version" :placeholder="T('AutomaticBuildVersion')">
-                  <template #suffix><el-icon v-if="versionLoading" class="is-loading" aria-hidden="true"><Loading /></el-icon><el-button v-else link :aria-label="T('RefreshBuildVersion')" @click="refreshVersion"><el-icon aria-hidden="true"><Refresh /></el-icon></el-button></template>
+                  <template #suffix><el-icon v-if="versionLoading" class="is-loading" aria-hidden="true"><Loading /></el-icon><el-button v-else class="console-icon-action" link :aria-label="T('RefreshBuildVersion')" @click="refreshVersion"><el-icon aria-hidden="true"><Refresh /></el-icon></el-button></template>
                 </el-input>
                 <div class="version-evidence" aria-live="polite">
                   <span v-if="versionPreview?.official_version">{{ T('SourceVersion') }}: {{ versionPreview.official_version }}</span>

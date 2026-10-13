@@ -15,3 +15,6 @@ export const assignments = id => request({ url: `/policy/assignments/${id}` })
 export const unassign = data => request({ url: '/policy/unassign', method: 'post', data })
 
 export const targets = params => request({ url: '/policy/targets', params })
+
+export const archive = data => request({ url: '/policy/archive', method: 'post', data })
+export const restore = data => request({ url: '/policy/restore', method: 'post', data })

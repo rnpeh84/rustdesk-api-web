@@ -1,7 +1,8 @@
 <template>
-  <el-tooltip :content="armed ? T('InlineConfirmAction', { param: T('Delete') }) : T('Delete')">
-    <el-button circle type="danger" plain :icon="armed ? Check : Delete" :loading="pending" :aria-label="armed ? T('InlineConfirmAction', { param: T('Delete') }) : T('Delete')" :aria-pressed="armed" @click.stop="activate" @blur="armed && reset()" @keydown.esc.stop.prevent="reset"/>
+  <el-tooltip :content="T('Delete')" :disabled="armed || pending" :persistent="false">
+    <el-button ref="button" class="inline-confirm-button console-delete-action" circle type="danger" plain :icon="armed ? Check : Delete" :loading="pending" :data-confirming="armed" :aria-label="armed ? T('InlineConfirmAction', { param: T('Delete') }) : T('Delete')" :aria-pressed="armed" @click.stop="activate" @blur="armed && reset()" @keydown.enter.stop.prevent="activateKey" @keydown.space.stop.prevent="activateKey" @keydown.esc.stop.prevent="reset"/>
   </el-tooltip>
+  <span class="inline-confirm-status" role="status" aria-live="polite">{{ armed ? T('InlineConfirmAction', { param: T('Delete') }) : '' }}</span>
   <el-dialog v-model="visible" :title="T('SharedDeviceDeleteTitle')" width="520px" class="shared-device-delete" append-to-body :close-on-click-modal="!pending" :close-on-press-escape="!pending" :show-close="!pending" @closed="reset">
     <p>{{ peer.hostname || peer.id }} · {{ peer.id }}</p>
     <p>{{ T('SharedDeviceDeleteHint') }}</p>
@@ -28,6 +29,7 @@ import { T } from '@/utils/i18n'
 const props = defineProps({ peer: { type: Object, required: true } })
 const emit = defineEmits(['deleted'])
 const armed = ref(false), pending = ref(false), visible = ref(false), preview = ref(null)
+const button = ref(null)
 let timer, generation = 0
 const reset = () => { clearTimeout(timer); armed.value = false; generation += 1 }
 const fetchPreview = async () => { preview.value = (await deletePreview(props.peer.row_id)).data }
@@ -44,6 +46,7 @@ const activate = async () => {
   } catch { reset() }
   finally { pending.value = false }
 }
+const activateKey = event => { if (!event.repeat) activate() }
 const confirmDelete = async () => {
   if (pending.value) return
   pending.value = true
@@ -59,11 +62,20 @@ const confirmDelete = async () => {
   } finally { pending.value = false; reset() }
 }
 watch(() => props.peer.row_id, () => { reset(); visible.value = false; preview.value = null })
+watch(armed, (value, _, cleanup) => {
+  if (!value) return
+  const outside = event => { if (!button.value?.$el.contains(event.target)) reset() }
+  const escape = event => { if (event.key === 'Escape') reset() }
+  document.addEventListener('pointerdown', outside, true)
+  document.addEventListener('keydown', escape, true)
+  cleanup(() => { document.removeEventListener('pointerdown', outside, true); document.removeEventListener('keydown', escape, true) })
+})
 onBeforeUnmount(reset)
 onDeactivated(() => { reset(); visible.value = false })
 </script>
 
 <style scoped>
+.inline-confirm-status { position: fixed; top: 0; left: 0; width: 1px; height: 1px; padding: 0; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; pointer-events: none; }
 .delete-share-list { display: grid; gap: 8px; padding: 0; margin: 16px 0; list-style: none; max-height: 300px; overflow: auto; }
 .delete-share-list li { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--el-border-color); border-radius: 6px; overflow-wrap: anywhere; }
 .delete-share-list strong { color: var(--el-text-color-primary); }

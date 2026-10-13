@@ -1,8 +1,9 @@
 <template>
   <div>
     <el-card class="list-query" shadow="never">
-      <div class="list-filter-row">
+      <div class="list-filter-row policy-toolbar">
         <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreate">{{ T('AddPolicy') }}</el-button>
+        <el-checkbox v-model="query.include_archived">{{ T('ShowArchivedPolicies') }}</el-checkbox>
       </div>
     </el-card>
 
@@ -15,12 +16,14 @@
           <template #default="{ row }"><el-tag :type="statusType[row.status]">{{ T(statusLabel[row.status] || 'Draft') }}</el-tag></template>
         </el-table-column>
         <el-table-column prop="current_version" :label="T('Version')" width="100" align="center" sortable />
-        <el-table-column :label="T('Actions')" width="240" align="center" fixed="right">
+        <el-table-column :label="T('Actions')" width="280" align="center" fixed="right">
           <template #default="{ row }">
-            <el-tooltip v-if="canWrite" :content="T('Edit')"><el-button circle :aria-label="T('Edit')" :icon="Edit" @click="openEdit(row)" /></el-tooltip>
-            <el-tooltip v-if="canWrite" :content="T('AssignPolicy')"><el-button circle :aria-label="T('AssignPolicy')" :icon="Connection" @click="openAssign(row)" /></el-tooltip>
+            <el-tooltip v-if="canWrite && row.status !== 'archived'" :content="T('Edit')"><el-button circle :aria-label="T('Edit')" :icon="Edit" @click="openEdit(row)" /></el-tooltip>
+            <el-tooltip v-if="canWrite && row.status !== 'archived'" :content="T('AssignPolicy')"><el-button circle :aria-label="T('AssignPolicy')" :icon="Connection" @click="openAssign(row)" /></el-tooltip>
             <el-tooltip :content="T('Preview')"><el-button circle :aria-label="T('Preview')" :icon="View" @click="openPreview(row)" /></el-tooltip>
             <el-tooltip :content="T('History')"><el-button circle :aria-label="T('History')" :icon="Clock" @click="openHistory(row)" /></el-tooltip>
+            <InlineConfirmButton v-if="canWrite && row.status !== 'archived'" circle :label="T('RemovePolicy')" :confirm-key="row.id" :action="() => archivePolicy(row)" />
+            <el-tooltip v-if="canWrite && row.status === 'archived'" :content="T('RestorePolicy')"><el-button circle :icon="RefreshLeft" :aria-label="T('RestorePolicy')" :loading="restoring === row.id" :disabled="restoring !== 0" @click="restorePolicy(row)" /></el-tooltip>
             <el-tooltip v-if="canWrite && row.status === 'draft'" :content="T('ValidatePolicy')"><el-button circle type="primary" :aria-label="T('ValidatePolicy')" :icon="CircleCheck" @click="validatePolicy(row)" /></el-tooltip>
             <el-tooltip v-if="canPublish && row.status === 'validated'" :content="T('Publish')"><el-button circle type="success" :aria-label="T('Publish')" :icon="Upload" @click="publishPolicy(row)" /></el-tooltip>
           </template>
@@ -71,7 +74,7 @@
       <el-alert v-if="assignment.failed" :title="T('PolicyAssignmentsFailed')" type="error" :closable="false"/>
       <el-table :data="assignment.list" v-loading="assignment.loading" border size="small">
        <el-table-column :label="T('AssignmentScope')" min-width="130"><template #default="{row}">{{ T(scopes.find(scope=>scope.value===row.scope_type)?.label || 'Unknown') }}</template></el-table-column><el-table-column :label="T('PolicyTarget')" min-width="200"><template #default="{row}"><span>{{ row.target_missing ? T('PolicyTargetMissing') : policyTargetLabel({name:row.target_name,detail:row.target_detail}) }}</span></template></el-table-column><el-table-column prop="priority" :label="T('Priority')" width="100"/>
-       <el-table-column :label="T('Actions')" width="80" fixed="right"><template #default="{row}"><el-tooltip :content="T(armed===row.id ? 'PolicyUnassignConfirm' : 'PolicyUnassign')"><el-button circle :icon="armed===row.id ? Check : Delete" :aria-label="T(armed===row.id ? 'PolicyUnassignConfirm' : 'PolicyUnassign')" :disabled="assignment.saving" @click="removeAssignment(row)" @blur="cancelRemove" @keydown.esc.stop.prevent="cancelRemove"/></el-tooltip></template></el-table-column>
+       <el-table-column :label="T('Actions')" width="80" fixed="right"><template #default="{row}"><InlineConfirmButton circle :label="T('PolicyUnassign')" :confirm-key="row.id" :disabled="assignment.saving" :action="() => removeAssignment(row)"/></template></el-table-column>
       </el-table>
       <template #footer><el-button @click="assignment.visible = false">{{ T('Cancel') }}</el-button><el-button type="primary" :loading="assignment.saving" :disabled="!assignment.target_id || targetSearch.loading || targetSearch.failed" @click="saveAssignment">{{ T('Assign') }}</el-button></template>
     </el-dialog>
@@ -85,7 +88,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { Check, Delete, CircleCheck, Clock, Connection, Edit, Plus, Upload, View } from '@element-plus/icons-vue'
+import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
+import { RefreshLeft, CircleCheck, Clock, Connection, Edit, Plus, Upload, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as policyApi from '@/api/policy'
 import { createPolicyTargetSearch, policyTargetLabel } from '@/utils/policyTargets'
@@ -96,13 +100,13 @@ import { T } from '@/utils/i18n'
 const userStore=useUserStore()
 const canWrite=computed(()=>userStore.permissions?.includes('*') || userStore.permissions?.includes('policy.write'))
 const canPublish=computed(()=>userStore.permissions?.includes('*') || userStore.permissions?.includes('policy.publish'))
-const catalog=ref([]),catalogFailed=ref(false),armed=ref(0)
-let removeTimer, editorGeneration=0
-const cancelRemove=()=>{armed.value=0;clearTimeout(removeTimer)}
+const catalog=ref([]),catalogFailed=ref(false)
+let editorGeneration=0
 const loadCatalog=async()=>{catalogFailed.value=false;try{catalog.value=(await policyApi.options()).data}catch{catalogFailed.value=true}}
 const optionValue=key=>{try{return JSON.parse(editor.configText).options?.[key] ?? '__unmanaged'}catch{return '__unmanaged'}}
 const setOption=(key,value)=>{try{editor.configText=changePolicyOption(editor.configText,key,value)}catch{ElMessage.error(T('InvalidJson'))}}
-const query = reactive({ page: 1, page_size: 10 })
+const query = reactive({ page: 1, page_size: 10, include_archived: false })
+const restoring = ref(0)
 const result = reactive({ list: [], total: 0, loading: false })
 const editor = reactive({ visible: false, saving: false, loading:false, failed:false, id: 0, name: '', description: '', change_summary: '', configText: JSON.stringify({options:{"direct-server":"N"}},null,2) })
 const assignment = reactive({ visible: false, policy_id: 0, scope_type: 'device', target_id: null, priority: 0, list: [], loading: false, saving: false, failed: false })
@@ -117,9 +121,13 @@ watch(() => assignment.visible, visible => { if (!visible) { targetLoader.reset(
 onBeforeUnmount(() => targetLoader.reset())
 const inspector = reactive({ visible: false, mode: 'preview', data: {} })
 const scopes = [{ value: 'user_group', label: 'UserGroupScope' }, { value: 'user', label: 'UserScope' }, { value: 'device_group', label: 'DeviceGroupScope' }, { value: 'device', label: 'DeviceScope' }]
-const statusLabel = { draft: 'Draft', validated: 'Validated', published: 'Published' }
-const statusType = { draft: 'warning', validated: 'primary', published: 'success' }
-const load = async () => { result.loading = true; const res = await policyApi.list(query).catch(() => false); result.loading = false; if (res) Object.assign(result, res.data) }
+const statusLabel = { archived: 'ArchivedPolicy', draft: 'Draft', validated: 'Validated', published: 'Published' }
+const statusType = { archived: 'info', draft: 'warning', validated: 'primary', published: 'success' }
+let listGeneration = 0
+const load = async () => { const generation = ++listGeneration; result.loading = true; const res = await policyApi.list(query).catch(() => false); if(generation!==listGeneration)return;result.loading = false; if (res) {Object.assign(result, res.data);if(!result.list.length && query.page>1){query.page--;}} }
+const archivePolicy = async row => { const res=await policyApi.archive({id:row.id}).catch(()=>false);if(res){ElMessage.success(T('OperationSuccess'));await load()} }
+const restorePolicy = async row => {if(restoring.value)return;restoring.value=row.id;try{await policyApi.restore({id:row.id});ElMessage.success(T('PolicyRestoredDraft'));await load()}catch{}finally{restoring.value=0}}
+watch(()=>query.include_archived,()=>{if(query.page!==1)query.page=1;else load()})
 const resetEditor = () => {editorGeneration++;return Object.assign(editor, { id: 0, loading:false,failed:false, name: '', description: '', change_summary: '', configText: JSON.stringify({options:{"direct-server":"N"}},null,2) })}
 const openCreate = () => { resetEditor(); editor.visible = true }
 const openEdit = async row => { resetEditor();Object.assign(editor,{id:row.id,name:row.name,visible:true,loading:true,failed:false});const current=editorGeneration;try{const {policy,version}=(await policyApi.detail(row.id)).data;if(current!==editorGeneration || !editor.visible)return;Object.assign(editor,policy,{configText:JSON.stringify(JSON.parse(version.config),null,2)})}catch{if(current===editorGeneration)editor.failed=true}finally{if(current===editorGeneration)editor.loading=false} }
@@ -127,17 +135,16 @@ const save = async () => { if(editor.saving || editor.loading || editor.failed)r
 const publishPolicy = async row => { const ok = await ElMessageBox.confirm(T('PublishConfirm'), { type: 'warning' }).catch(() => false); if (!ok) return; const res = await policyApi.publish({ id: row.id }).catch(() => false); if (res) { ElMessage.success(T('OperationSuccess')); load() } }
 const validatePolicy = async row => { const res = await policyApi.validate({ id: row.id }).catch(() => false); if (res) { ElMessage.success(T('PolicyValidated')); load() } }
 const loadAssignments=async()=>{assignment.loading=true;assignment.failed=false;const id=assignment.policy_id;try{const res=await policyApi.assignments(id);if(id===assignment.policy_id)assignment.list=res.data}catch{assignment.failed=true}finally{assignment.loading=false}}
-const openAssign = row => { cancelRemove();targetLoader.reset();selectedTarget.value=null;Object.assign(assignment, { visible: true, policy_id: row.id, scope_type: 'device', target_id: null, priority: 0,list:[] });loadAssignments();searchTargets('') }
-const removeAssignment=async row=>{if(assignment.saving)return;if(armed.value!==row.id){cancelRemove();armed.value=row.id;removeTimer=setTimeout(cancelRemove,5000);return}cancelRemove();assignment.saving=true;try{await policyApi.unassign({policy_id:assignment.policy_id,assignment_id:row.id});await loadAssignments();ElMessage.success(T('OperationSuccess'))}catch{}finally{assignment.saving=false}}
+const openAssign = row => { targetLoader.reset();selectedTarget.value=null;Object.assign(assignment, { visible: true, policy_id: row.id, scope_type: 'device', target_id: null, priority: 0,list:[] });loadAssignments();searchTargets('') }
+const removeAssignment=async row=>{if(assignment.saving)return;assignment.saving=true;try{await policyApi.unassign({policy_id:assignment.policy_id,assignment_id:row.id});await loadAssignments();ElMessage.success(T('OperationSuccess'))}catch{}finally{assignment.saving=false}}
 const saveAssignment = async () => { if(assignment.saving || !assignment.target_id || targetSearch.loading || targetSearch.failed)return;assignment.saving=true;const res = await policyApi.assign({ policy_id:assignment.policy_id,scope_type:assignment.scope_type,target_id:assignment.target_id,priority:assignment.priority }).catch(() => false);assignment.saving=false; if (res) { ElMessage.success(T('OperationSuccess')); await loadAssignments() } }
 const openPreview = async row => { const res = await policyApi.preview(row.id).catch(() => false); if (res) Object.assign(inspector, { visible: true, mode: 'preview', data: res.data }) }
 const openHistory = async row => { const res = await policyApi.history(row.id).catch(() => false); if (res) Object.assign(inspector, { visible: true, mode: 'history', data: res.data }) }
 watch(() => [query.page, query.page_size], load)
-watch(()=>assignment.visible,cancelRemove)
-onBeforeUnmount(cancelRemove)
 onMounted(()=>{load();loadCatalog()})
 </script>
 
 <style scoped>
+.policy-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
 .console-dialog :deep(.el-select){width:100%}.el-option .el-tag{margin-left:8px}.policy-guidance{display:grid;gap:10px}.policy-guidance p,.policy-note{color:var(--console-muted);line-height:1.6;margin:0}.policy-guidance small{display:block;color:var(--console-muted);overflow-wrap:anywhere}.policy-guidance :deep(.el-select){width:100%}.policy-note{margin:12px 0}.policy-options-mobile{display:none}.policy-option-mobile{display:grid;gap:6px;border-bottom:1px solid var(--console-border);padding-bottom:10px}@media(max-width:600px){.policy-options-table{display:none}.policy-options-mobile{display:grid;gap:12px}}
 </style>

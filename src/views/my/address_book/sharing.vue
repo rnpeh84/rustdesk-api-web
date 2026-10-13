@@ -14,7 +14,7 @@
           <h2>{{ book.name }}</h2>
           <p class="card-owner">{{ T('DeviceOwner') }}: {{ book.owner }} · {{ T('DeviceCount') }}: {{ book.device_count }}</p>
           <div v-for="recipient in book.recipients" :key="recipient.type + '-' + recipient.to_id" class="recipient-line"><el-icon :aria-label="T(recipient.type === 1 ? 'User' : 'Group')" role="img" :title="T(recipient.type === 1 ? 'User' : 'Group')"><User v-if="recipient.type === 1"/><UserFilled v-else/></el-icon><span class="recipient-name" :title="recipient.name">{{ recipient.name }}</span><span class="expiry" :class="{ expired: isExpired(recipient) }">{{ expiryLabel(recipient) }}</span></div>
-          <div class="card-actions"><el-tooltip :content="T('ViewItems')"><el-button type="primary" plain :icon="List" :aria-label="T('ViewItems') + ' ' + book.name" @click="openEntries(book)"/></el-tooltip><template v-if="scope === 'sent'"><el-tooltip :content="T('Edit')"><el-button type="primary" plain :icon="Edit" :aria-label="T('Edit') + ' ' + book.name" @click="manage(book)"/></el-tooltip><InlineConfirmButton :label="T('StopSharing') + ' ' + book.name" :loading="removingID === book.id" :confirm-key="book.id" :action="() => removeShare(book)"/></template></div>
+          <div class="card-actions"><el-tooltip :content="T('ViewItems')"><el-button type="primary" plain :icon="List" :aria-label="T('ViewItems') + ' ' + book.name" @click="openEntries(book)"/></el-tooltip><template v-if="scope === 'sent'"><el-tooltip :content="T('Edit')"><el-button type="primary" plain :icon="Edit" :aria-label="T('Edit') + ' ' + book.name" @click="manage(book)"/></el-tooltip><InlineConfirmButton :icon="Remove" :label="T('StopSharing') + ' ' + book.name" :loading="removingID === book.id" :confirm-key="book.id" :action="() => removeShare(book)"/></template></div>
         </article>
         <el-empty v-if="!loading && !shownBooks.length" :description="T(scope === 'sent' ? 'NoSentShares' : 'NoReceivedShares')"/>
       </div>
@@ -25,7 +25,7 @@
         <el-table-column :label="T(scope === 'sent' ? 'ShareRecipients' : 'ShareSource')" min-width="260"><template #default="{row}">
           <div v-for="r in row.recipients" :key="r.type + '-' + r.to_id" class="recipient-line"><el-icon :aria-label="T(r.type === 1 ? 'User' : 'Group')" role="img" :title="T(r.type === 1 ? 'User' : 'Group')"><User v-if="r.type === 1"/><UserFilled v-else/></el-icon><span class="recipient-name" :title="r.name">{{ r.name }}</span><span class="expiry" :class="{ expired: isExpired(r) }">{{ expiryLabel(r) }}</span></div>
         </template></el-table-column>
-        <el-table-column :label="T('Actions')" width="160" fixed="right"><template #default="{row}"><div class="row-actions"><el-tooltip :content="T('ViewItems')"><el-button type="primary" plain :icon="List" :aria-label="T('ViewItems') + ' ' + row.name" @click="openEntries(row)"/></el-tooltip><template v-if="scope === 'sent'"><el-tooltip :content="T('Edit')"><el-button type="primary" plain :icon="Edit" :aria-label="T('Edit') + ' ' + row.name" @click="manage(row)"/></el-tooltip><InlineConfirmButton :label="T('StopSharing') + ' ' + row.name" :loading="removingID === row.id" :confirm-key="row.id" :action="() => removeShare(row)"/></template></div></template></el-table-column>
+        <el-table-column :label="T('Actions')" width="160" fixed="right"><template #default="{row}"><div class="row-actions"><el-tooltip :content="T('ViewItems')"><el-button type="primary" plain :icon="List" :aria-label="T('ViewItems') + ' ' + row.name" @click="openEntries(row)"/></el-tooltip><template v-if="scope === 'sent'"><el-tooltip :content="T('Edit')"><el-button type="primary" plain :icon="Edit" :aria-label="T('Edit') + ' ' + row.name" @click="manage(row)"/></el-tooltip><InlineConfirmButton :icon="Remove" :label="T('StopSharing') + ' ' + row.name" :loading="removingID === row.id" :confirm-key="row.id" :action="() => removeShare(row)"/></template></div></template></el-table-column>
         <template #empty><el-empty :description="T(scope === 'sent' ? 'NoSentShares' : 'NoReceivedShares')"/></template>
       </el-table>
       </div>
@@ -47,7 +47,7 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Refresh, Share, List, Edit, User, UserFilled } from '@element-plus/icons-vue'
+import { Refresh, Share, List, Edit, Remove, User, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { T } from '@/utils/i18n'
 import { books, entries, remove } from '@/api/my/sharing'
@@ -99,7 +99,6 @@ onBeforeUnmount(() => { clearInterval(timer); version++; entryVersion++ })
 .card-owner { color: var(--el-text-color-secondary); font-size: 12px; margin: 0 0 8px; }
 .card-actions { display: flex; gap: 8px; margin-top: 12px; }
 .row-actions { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.row-actions :deep(.el-button), .card-actions :deep(.el-button) { margin: 0; width: 32px; height: 32px; padding: 6px; }
 @media (max-width: 899px) { .sharing-table { display: none; } .sharing-cards { display: block; } }
 @media (max-width: 600px) { .sharing-toolbar { flex-wrap: wrap; } .sharing-actions { width: 100%; justify-content: flex-end; } }
 </style>

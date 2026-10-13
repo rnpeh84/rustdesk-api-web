@@ -285,8 +285,8 @@
           <span class="column-settings-order">{{ key + 1 }}</span>
           <el-checkbox v-model="row.visible">{{ T(row.label) }}</el-checkbox>
           <div class="column-settings-actions">
-            <el-button :disabled="key === 0" :aria-label="`${T(row.label)} ${T('MoveUp')}`" @click="upColumn(key)"><el-icon><ArrowUp/></el-icon></el-button>
-            <el-button :disabled="key === visibleColumns.length - 1" :aria-label="`${T(row.label)} ${T('MoveDown')}`" @click="downColumn(key)"><el-icon><ArrowDown/></el-icon></el-button>
+            <el-button class="console-icon-action" :disabled="key === 0" :aria-label="`${T(row.label)} ${T('MoveUp')}`" @click="upColumn(key)"><el-icon><ArrowUp/></el-icon></el-button>
+            <el-button class="console-icon-action" :disabled="key === visibleColumns.length - 1" :aria-label="`${T(row.label)} ${T('MoveDown')}`" @click="downColumn(key)"><el-icon><ArrowDown/></el-icon></el-button>
           </div>
         </div>
       </div>
