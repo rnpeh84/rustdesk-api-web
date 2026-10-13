@@ -13,3 +13,5 @@ export const history = id => request({ url: `/policy/history/${id}` })
 export const options = () => request({ url: '/policy/options' })
 export const assignments = id => request({ url: `/policy/assignments/${id}` })
 export const unassign = data => request({ url: '/policy/unassign', method: 'post', data })
+
+export const targets = params => request({ url: '/policy/targets', params })

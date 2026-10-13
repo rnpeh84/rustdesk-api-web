@@ -36,3 +36,5 @@ export function remove (data) {
     data,
   })
 }
+
+export const setDefault = data => request({ url: '/device_group/default', method: 'post', data })

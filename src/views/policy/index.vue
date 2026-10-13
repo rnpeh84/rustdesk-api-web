@@ -59,16 +59,21 @@
     <el-dialog v-model="assignment.visible" class="console-dialog" :title="T('AssignPolicy')" width="min(680px, calc(100vw - 24px))">
       <el-form label-position="top">
         <el-form-item :label="T('AssignmentScope')"><el-select v-model="assignment.scope_type"><el-option v-for="scope in scopes" :key="scope.value" :label="T(scope.label)" :value="scope.value" /></el-select></el-form-item>
-        <el-form-item :label="T('TargetId')"><el-input-number v-model="assignment.target_id" :min="1" controls-position="right" /></el-form-item>
+        <el-form-item :label="T('PolicyTarget')">
+          <el-select v-model="assignment.target_id" filterable remote clearable :remote-method="searchTargets" :loading="targetSearch.loading" :placeholder="T(assignment.scope_type === 'device' ? 'PolicyTargetSearch' : 'PolicyTargetNameSearch')" :aria-label="T('PolicyTarget')" @change="selectTarget">
+            <el-option v-for="target in targetChoices" :key="target.id" :value="target.id" :label="policyTargetLabel(target)"><span>{{ policyTargetLabel(target) }}</span><el-tag v-if="target.is_default" size="small" effect="plain">{{ T('DefaultDeviceGroup') }}</el-tag></el-option>
+          </el-select>
+          <small v-if="targetSearch.failed" role="alert">{{ T('PolicyTargetLoadFailed') }}</small>
+        </el-form-item>
         <el-form-item :label="T('Priority')"><el-input-number v-model="assignment.priority" controls-position="right" /></el-form-item>
       </el-form>
       <p class="policy-note">{{ T('PolicyUnassignGuide') }}</p>
       <el-alert v-if="assignment.failed" :title="T('PolicyAssignmentsFailed')" type="error" :closable="false"/>
       <el-table :data="assignment.list" v-loading="assignment.loading" border size="small">
-       <el-table-column :label="T('AssignmentScope')" min-width="130"><template #default="{row}">{{ T(scopes.find(scope=>scope.value===row.scope_type)?.label || 'Unknown') }}</template></el-table-column><el-table-column prop="target_id" :label="T('TargetId')" width="100"/><el-table-column prop="priority" :label="T('Priority')" width="100"/>
+       <el-table-column :label="T('AssignmentScope')" min-width="130"><template #default="{row}">{{ T(scopes.find(scope=>scope.value===row.scope_type)?.label || 'Unknown') }}</template></el-table-column><el-table-column :label="T('PolicyTarget')" min-width="200"><template #default="{row}"><span>{{ row.target_missing ? T('PolicyTargetMissing') : policyTargetLabel({name:row.target_name,detail:row.target_detail}) }}</span></template></el-table-column><el-table-column prop="priority" :label="T('Priority')" width="100"/>
        <el-table-column :label="T('Actions')" width="80" fixed="right"><template #default="{row}"><el-tooltip :content="T(armed===row.id ? 'PolicyUnassignConfirm' : 'PolicyUnassign')"><el-button circle :icon="armed===row.id ? Check : Delete" :aria-label="T(armed===row.id ? 'PolicyUnassignConfirm' : 'PolicyUnassign')" :disabled="assignment.saving" @click="removeAssignment(row)" @blur="cancelRemove" @keydown.esc.stop.prevent="cancelRemove"/></el-tooltip></template></el-table-column>
       </el-table>
-      <template #footer><el-button @click="assignment.visible = false">{{ T('Cancel') }}</el-button><el-button type="primary" :loading="assignment.saving" @click="saveAssignment">{{ T('Assign') }}</el-button></template>
+      <template #footer><el-button @click="assignment.visible = false">{{ T('Cancel') }}</el-button><el-button type="primary" :loading="assignment.saving" :disabled="!assignment.target_id || targetSearch.loading || targetSearch.failed" @click="saveAssignment">{{ T('Assign') }}</el-button></template>
     </el-dialog>
 
     <el-dialog v-model="inspector.visible" class="console-dialog" :title="T(inspector.mode === 'history' ? 'PolicyHistory' : 'PolicyPreview')" width="min(680px, calc(100vw - 24px))">
@@ -83,6 +88,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { Check, Delete, CircleCheck, Clock, Connection, Edit, Plus, Upload, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as policyApi from '@/api/policy'
+import { createPolicyTargetSearch, policyTargetLabel } from '@/utils/policyTargets'
 import { useUserStore } from '@/store/user'
 import { changePolicyOption, policyOptionKey } from '@/utils/policySync'
 import { T } from '@/utils/i18n'
@@ -99,7 +105,16 @@ const setOption=(key,value)=>{try{editor.configText=changePolicyOption(editor.co
 const query = reactive({ page: 1, page_size: 10 })
 const result = reactive({ list: [], total: 0, loading: false })
 const editor = reactive({ visible: false, saving: false, loading:false, failed:false, id: 0, name: '', description: '', change_summary: '', configText: JSON.stringify({options:{"direct-server":"N"}},null,2) })
-const assignment = reactive({ visible: false, policy_id: 0, scope_type: 'device', target_id: 1, priority: 0, list: [], loading: false, saving: false, failed: false })
+const assignment = reactive({ visible: false, policy_id: 0, scope_type: 'device', target_id: null, priority: 0, list: [], loading: false, saving: false, failed: false })
+const targetSearch = reactive({ items: [], loading: false, failed: false })
+const selectedTarget = ref(null)
+const targetLoader = createPolicyTargetSearch(async params => (await policyApi.targets(params)).data, state => Object.assign(targetSearch, state))
+const targetChoices = computed(() => selectedTarget.value ? [selectedTarget.value, ...targetSearch.items.filter(item => item.id !== selectedTarget.value.id)] : targetSearch.items)
+const searchTargets = q => targetLoader.search(assignment.scope_type, q)
+const selectTarget = id => { selectedTarget.value = targetChoices.value.find(item => item.id === id) || null }
+watch(() => assignment.scope_type, () => { assignment.target_id = null; selectedTarget.value = null; targetLoader.reset(); if (assignment.visible) searchTargets('') })
+watch(() => assignment.visible, visible => { if (!visible) { targetLoader.reset(); selectedTarget.value = null } })
+onBeforeUnmount(() => targetLoader.reset())
 const inspector = reactive({ visible: false, mode: 'preview', data: {} })
 const scopes = [{ value: 'user_group', label: 'UserGroupScope' }, { value: 'user', label: 'UserScope' }, { value: 'device_group', label: 'DeviceGroupScope' }, { value: 'device', label: 'DeviceScope' }]
 const statusLabel = { draft: 'Draft', validated: 'Validated', published: 'Published' }
@@ -112,9 +127,9 @@ const save = async () => { if(editor.saving || editor.loading || editor.failed)r
 const publishPolicy = async row => { const ok = await ElMessageBox.confirm(T('PublishConfirm'), { type: 'warning' }).catch(() => false); if (!ok) return; const res = await policyApi.publish({ id: row.id }).catch(() => false); if (res) { ElMessage.success(T('OperationSuccess')); load() } }
 const validatePolicy = async row => { const res = await policyApi.validate({ id: row.id }).catch(() => false); if (res) { ElMessage.success(T('PolicyValidated')); load() } }
 const loadAssignments=async()=>{assignment.loading=true;assignment.failed=false;const id=assignment.policy_id;try{const res=await policyApi.assignments(id);if(id===assignment.policy_id)assignment.list=res.data}catch{assignment.failed=true}finally{assignment.loading=false}}
-const openAssign = row => { cancelRemove();Object.assign(assignment, { visible: true, policy_id: row.id, scope_type: 'device', target_id: 1, priority: 0,list:[] });loadAssignments() }
+const openAssign = row => { cancelRemove();targetLoader.reset();selectedTarget.value=null;Object.assign(assignment, { visible: true, policy_id: row.id, scope_type: 'device', target_id: null, priority: 0,list:[] });loadAssignments();searchTargets('') }
 const removeAssignment=async row=>{if(assignment.saving)return;if(armed.value!==row.id){cancelRemove();armed.value=row.id;removeTimer=setTimeout(cancelRemove,5000);return}cancelRemove();assignment.saving=true;try{await policyApi.unassign({policy_id:assignment.policy_id,assignment_id:row.id});await loadAssignments();ElMessage.success(T('OperationSuccess'))}catch{}finally{assignment.saving=false}}
-const saveAssignment = async () => { if(assignment.saving)return;assignment.saving=true;const res = await policyApi.assign({ policy_id:assignment.policy_id,scope_type:assignment.scope_type,target_id:assignment.target_id,priority:assignment.priority }).catch(() => false);assignment.saving=false; if (res) { ElMessage.success(T('OperationSuccess')); await loadAssignments() } }
+const saveAssignment = async () => { if(assignment.saving || !assignment.target_id || targetSearch.loading || targetSearch.failed)return;assignment.saving=true;const res = await policyApi.assign({ policy_id:assignment.policy_id,scope_type:assignment.scope_type,target_id:assignment.target_id,priority:assignment.priority }).catch(() => false);assignment.saving=false; if (res) { ElMessage.success(T('OperationSuccess')); await loadAssignments() } }
 const openPreview = async row => { const res = await policyApi.preview(row.id).catch(() => false); if (res) Object.assign(inspector, { visible: true, mode: 'preview', data: res.data }) }
 const openHistory = async row => { const res = await policyApi.history(row.id).catch(() => false); if (res) Object.assign(inspector, { visible: true, mode: 'history', data: res.data }) }
 watch(() => [query.page, query.page_size], load)
@@ -124,5 +139,5 @@ onMounted(()=>{load();loadCatalog()})
 </script>
 
 <style scoped>
-.policy-guidance{display:grid;gap:10px}.policy-guidance p,.policy-note{color:var(--console-muted);line-height:1.6;margin:0}.policy-guidance small{display:block;color:var(--console-muted);overflow-wrap:anywhere}.policy-guidance :deep(.el-select){width:100%}.policy-note{margin:12px 0}.policy-options-mobile{display:none}.policy-option-mobile{display:grid;gap:6px;border-bottom:1px solid var(--console-border);padding-bottom:10px}@media(max-width:600px){.policy-options-table{display:none}.policy-options-mobile{display:grid;gap:12px}}
+.console-dialog :deep(.el-select){width:100%}.el-option .el-tag{margin-left:8px}.policy-guidance{display:grid;gap:10px}.policy-guidance p,.policy-note{color:var(--console-muted);line-height:1.6;margin:0}.policy-guidance small{display:block;color:var(--console-muted);overflow-wrap:anywhere}.policy-guidance :deep(.el-select){width:100%}.policy-note{margin:12px 0}.policy-options-mobile{display:none}.policy-option-mobile{display:grid;gap:6px;border-bottom:1px solid var(--console-border);padding-bottom:10px}@media(max-width:600px){.policy-options-table{display:none}.policy-options-mobile{display:grid;gap:12px}}
 </style>

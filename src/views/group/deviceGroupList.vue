@@ -7,20 +7,21 @@
                 </el-form-item>-->
         <el-form-item>
           <el-button class="query-submit" type="primary" @click="handlerQuery">{{ T('Filter') }}</el-button>
-          <el-tooltip :content="T('Add')"><el-button :icon="ToolbarPlus" type="success" @click="toAdd" :aria-label="T('Add')"><span class="query-action-label">{{ T('Add') }}</span></el-button></el-tooltip>
+          <el-tooltip v-if="canWrite" :content="T('Add')"><el-button :icon="ToolbarPlus" type="success" @click="toAdd" :aria-label="T('Add')"><span class="query-action-label">{{ T('Add') }}</span></el-button></el-tooltip>
         </el-form-item>
       </el-form>
     </QueryToolbar>
     <el-card class="list-body" shadow="hover">
       <el-table :data="listRes.list" v-loading="listRes.loading" border stripe scrollbar-always-on>
         <el-table-column prop="id" label="ID" align="center" width="90" fixed="left" sortable/>
-        <el-table-column prop="name" :label="T('Name')" sortable/>
+        <el-table-column prop="name" :label="T('Name')" sortable><template #default="{row}"><span>{{ row.name }}</span><el-tag v-if="row.is_default" size="small" effect="plain" class="group-default">{{ T('DefaultDeviceGroup') }}</el-tag></template></el-table-column>
         <el-table-column prop="created_at" :label="T('CreatedAt')" align="center" sortable/>
         <el-table-column prop="updated_at" :label="T('UpdatedAt')" align="center" sortable/>
-        <el-table-column :label="T('Actions')" align="center" width="112" class-name="table-actions" fixed="right">
+        <el-table-column :label="T('Actions')" align="center" width="152" class-name="table-actions" fixed="right">
           <template #default="{row}">
-            <el-tooltip :content="T('Edit')"><el-button circle size="small" :aria-label="T('Edit')" @click="toEdit(row)"><el-icon><Edit/></el-icon></el-button></el-tooltip>
-            <InlineConfirmButton circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
+            <el-tooltip v-if="canWrite && !row.is_default" :content="T('SetDefaultDeviceGroup')"><el-button circle size="small" :icon="Star" :aria-label="T('SetDefaultDeviceGroup')" :disabled="defaultSaving" @click="makeDefault(row)" /></el-tooltip>
+            <el-tooltip v-if="canWrite" :content="T('Edit')"><el-button circle size="small" :aria-label="T('Edit')" @click="toEdit(row)"><el-icon><Edit/></el-icon></el-button></el-tooltip>
+            <InlineConfirmButton v-if="canWrite" :disabled="row.is_default || defaultSaving" circle size="small" :label="T('Delete')" :confirm-key="row.row_id || row.id" :action="() => del(row)"/>
           </template>
         </el-table-column>
       </el-table>
@@ -50,14 +51,24 @@
 
 <script setup>
 import QueryToolbar from '@/components/QueryToolbar.vue'
+import { useUserStore } from '@/store/user'
 import { Plus as ToolbarPlus } from '@element-plus/icons-vue'
 import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
-  import { onMounted, reactive, watch, ref, onActivated } from 'vue'
-  import { list, create, update, detail, remove } from '@/api/device_group'
+  import { onMounted, reactive, watch, ref, onActivated, computed } from 'vue'
+  import { list, create, update, detail, remove, setDefault } from '@/api/device_group'
   import { ElMessage } from 'element-plus'
   import { T } from '@/utils/i18n'
-  import { Delete, Edit } from '@element-plus/icons-vue'
+  import { Star, Edit } from '@element-plus/icons-vue'
 
+  const userStore = useUserStore()
+  const canWrite = computed(() => userStore.permissions?.includes('*') || userStore.permissions?.includes('device.write'))
+  const defaultSaving = ref(false)
+  const makeDefault = async row => {
+    if (defaultSaving.value) return
+    defaultSaving.value = true
+    try { await setDefault({ id: row.id }); ElMessage.success(T('OperationSuccess')); await getList() }
+    catch {} finally { defaultSaving.value = false }
+  }
   const listRes = reactive({
     list: [], total: 0, loading: false,
   })
@@ -129,5 +140,6 @@ import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 </script>
 
 <style scoped lang="scss">
+.group-default{margin-left:8px}
 
 </style>

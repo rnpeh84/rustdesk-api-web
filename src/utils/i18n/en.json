@@ -1493,5 +1493,14 @@
   "ManualViewerLogin": {"One": "Users connecting to other devices sign in through the app address book."},
   "ManualCommandScope": {"One": "Valid for one device for 15 minutes. A new command revokes the previous one."},
   "AccessDetailsGuide": {"One": "Access guidance"},
-  "PolicySyncDetails": {"One": "Policy synchronization details"}
+  "PolicySyncDetails": {"One": "Policy synchronization details"},
+  "PolicyTarget": {"One": "Target"},
+  "PolicyTargetSearch": {"One": "Search name or connection ID"},
+  "PolicyTargetLoadFailed": {"One": "Unable to load targets. Search again."},
+  "PolicyTargetMissing": {"One": "Deleted target"},
+  "DefaultDeviceGroup": {"One": "Default group"},
+  "SetDefaultDeviceGroup": {"One": "Set as default group"},
+  "PolicyTargetNameSearch": {"One": "Search name"},
+  "SearchSessionDevice": {"One": "Search device ID or UUID"},
+  "UnspecifiedDevice": {"One": "Device unspecified"}
 }

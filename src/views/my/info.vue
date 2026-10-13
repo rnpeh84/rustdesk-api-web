@@ -61,6 +61,7 @@
       </el-card>
     </div>
 
+    <div class="profile-access-grid">
     <el-card class="profile-panel profile-providers" shadow="never" v-loading="oauthLoading">
       <template #header>
         <div class="profile-panel__heading">
@@ -98,10 +99,20 @@
       </div>
     </el-card>
 
-	<el-card class="profile-panel" shadow="never">
-	  <template #header><div class="profile-panel__heading"><span class="profile-panel__icon"><el-icon><Monitor/></el-icon></span><div><h2>{{ T('ActiveSessions') }}</h2><p>{{ T('ActiveSessionsDescription') }}</p></div></div></template>
-	  <el-table :data="sessionRows"><el-table-column prop="device_id" :label="T('Device')"/><el-table-column prop="device_uuid" label="UUID"/><el-table-column prop="expired_at" :label="T('ExpiresAt')"><template #default="{row}">{{ new Date(row.expired_at*1000).toLocaleString() }}</template></el-table-column><el-table-column :label="T('Action')" width="100"><template #default="{row}"><InlineConfirmButton circle :label="T('Revoke')" :confirm-key="row.id" :action="() => endSession(row)"/></template></el-table-column></el-table>
-	</el-card>
+    <el-card class="profile-panel profile-sessions" shadow="never">
+      <template #header><div class="profile-panel__heading"><span class="profile-panel__icon"><el-icon><Monitor/></el-icon></span><h2>{{ T('ActiveSessions') }}</h2><el-tag class="session-count" effect="plain">{{ sessionTotal }}</el-tag></div></template>
+      <form class="session-search" @submit.prevent="searchSessions">
+        <el-input v-model="sessionSearch" clearable maxlength="128" :placeholder="T('SearchSessionDevice')" :aria-label="T('SearchSessionDevice')" @clear="searchSessions" />
+        <el-button native-type="submit" :icon="Search" :loading="sessionLoading">{{ T('Search') }}</el-button>
+      </form>
+      <el-table :data="sessionRows" v-loading="sessionLoading">
+        <el-table-column :label="T('Device')" min-width="140"><template #default="{row}"><span>{{ row.device_id || T('UnspecifiedDevice') }}</span><small v-if="row.device_uuid" class="session-uuid" :title="row.device_uuid">{{ row.device_uuid }}</small></template></el-table-column>
+        <el-table-column :label="T('ExpiresAt')" min-width="145"><template #default="{row}">{{ new Date(row.expired_at*1000).toLocaleString() }}</template></el-table-column>
+        <el-table-column :label="T('Action')" width="64" align="center"><template #default="{row}"><InlineConfirmButton circle :label="T('Revoke')" :confirm-key="row.id" :action="() => endSession(row)"/></template></el-table-column>
+      </el-table>
+      <el-pagination v-if="sessionTotal > sessionSize" class="session-pagination" small layout="prev, pager, next" :pager-count="5" :page-size="sessionSize" :total="sessionTotal" :current-page="sessionPage" :disabled="sessionLoading" @current-change="changeSessionPage" />
+    </el-card>
+    </div>
 
 	<el-dialog v-model="totpDialog" :title="T('SetupTOTP')" width="560px"><p>{{ T('TOTPSetupGuide') }}</p><el-input :model-value="setup.secret" readonly/><p class="totp-uri">{{ setup.otpauth_uri }}</p><strong>{{ T('RecoveryCodes') }}</strong><div class="recovery-codes"><code v-for="code in setup.recovery_codes" :key="code">{{ code }}</code></div><el-form-item :label="T('VerificationCode')"><el-input v-model="verifyCode" maxlength="6"/></el-form-item><template #footer><el-button @click="totpDialog=false">{{ T('Cancel') }}</el-button><el-button type="primary" @click="confirmTOTP">{{ T('Enable') }}</el-button></template></el-dialog>
 
@@ -112,7 +123,7 @@
 <script setup>
 import InlineConfirmButton from '@/components/InlineConfirmButton.vue'
 import { computed, onMounted, ref } from 'vue'
-import { Key, Link, Lock, Monitor, User, UserFilled } from '@element-plus/icons'
+import { Key, Link, Lock, Monitor, Search, User, UserFilled } from '@element-plus/icons'
 import { ElMessageBox } from 'element-plus'
 import ChangePwdDialog from '@/components/changePwdDialog.vue'
 import { useUserStore } from '@/store/user'
@@ -127,6 +138,13 @@ const oidcData = ref([])
 const oauthLoading = ref(false)
 const security = ref({ totp_enabled: false, unused_recovery_codes: 0 })
 const sessionRows = ref([])
+const sessionTotal = ref(0)
+const sessionPage = ref(1)
+const sessionSize = 10
+const sessionSearch = ref('')
+const appliedSearch = ref('')
+const sessionLoading = ref(false)
+let sessionRequest = 0
 const totpDialog = ref(false)
 const setup = ref({ recovery_codes: [] })
 const verifyCode = ref('')
@@ -156,17 +174,32 @@ const toUnBind = async row => {
   if (res) getMyOauth()
 }
 
+const loadSessions = async () => {
+  const generation = ++sessionRequest
+  sessionLoading.value = true
+  const result = await sessions({ page: sessionPage.value, size: sessionSize, q: appliedSearch.value }).catch(() => false)
+  if (generation !== sessionRequest) return
+  sessionLoading.value = false
+  if (!result) return
+  sessionRows.value = result.data.list || []
+  sessionTotal.value = result.data.total || 0
+  if (!sessionRows.value.length && sessionPage.value > 1 && sessionTotal.value > 0) {
+    sessionPage.value = Math.ceil(sessionTotal.value / sessionSize)
+    return loadSessions()
+  }
+}
+const searchSessions = () => { appliedSearch.value = sessionSearch.value.trim(); sessionPage.value = 1; loadSessions() }
+const changeSessionPage = page => { sessionPage.value = page; loadSessions() }
 const loadSecurity = async () => {
-  const [state, sessionResult] = await Promise.all([securityStatus().catch(() => false), sessions().catch(() => false)])
+  const state = await securityStatus().catch(() => false)
   security.value = state?.data || security.value
-  sessionRows.value = sessionResult?.data || []
 }
 const startTOTP = async () => { const res = await setupTOTP().catch(() => false); if (res) { setup.value = res.data; verifyCode.value = ''; totpDialog.value = true } }
 const confirmTOTP = async () => { if (await enableTOTP({ code: verifyCode.value }).catch(() => false)) { totpDialog.value = false; loadSecurity() } }
 const turnOffTOTP = async () => { if (await ElMessageBox.confirm(T('DisableTOTPConfirm')).catch(() => false) && await disableTOTP().catch(() => false)) loadSecurity() }
-const endSession = async row => { if (await revokeSession({ id: row.id }).catch(() => false)) await loadSecurity() }
+const endSession = async row => { if (await revokeSession({ id: row.id }).catch(() => false)) await loadSessions() }
 
-onMounted(() => { getMyOauth(); loadSecurity() })
+onMounted(() => { getMyOauth(); loadSecurity(); loadSessions() })
 </script>
 
 <style scoped lang="scss">
@@ -179,6 +212,13 @@ onMounted(() => { getMyOauth(); loadSecurity() })
 .profile-summary__identity > div > span { margin-top: 2px; color: var(--console-muted); font-size: 12px; }
 .profile-summary__avatar { display: grid; flex: 0 0 auto; place-items: center; width: 38px; height: 38px; color: var(--console-primary); background: var(--console-primary-soft); border-radius: 50%; font-size: 17px; }
 .profile-summary__role { flex: 0 0 auto; color: var(--console-primary); background: var(--console-primary-soft); border-color: var(--console-primary-border); }
+.profile-access-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: start; gap: 14px; }
+.profile-access-grid > .el-card { min-width: 0; }
+.session-count { margin-left: auto; }
+.session-search { display: flex; gap: 8px; margin-bottom: 12px; }
+.session-search .el-input { min-width: 0; }
+.session-uuid { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--console-muted); }
+.session-pagination { justify-content: flex-end; margin-top: 12px; }
 .profile-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr); gap: 14px; }
 .profile-panel__heading { display: flex; align-items: center; gap: 11px; }
 .profile-panel__heading h2 { margin: 0; color: var(--console-heading); font-size: 14px; line-height: 1.4; }
@@ -207,7 +247,7 @@ onMounted(() => { getMyOauth(); loadSecurity() })
 .provider-empty__icon { display: grid; place-items: center; width: 42px; height: 42px; color: var(--console-muted); background: var(--console-neutral-soft); border-radius: 50%; font-size: 19px; }
 .provider-empty strong { margin-top: 10px; color: var(--console-heading); }
 .provider-empty p { max-width: 440px; margin: 4px 0 0; color: var(--console-muted); font-size: 12px; }
-@media (max-width: 900px) { .profile-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .profile-grid, .profile-access-grid { grid-template-columns: 1fr; } }
 @media (max-width: 620px) {
   .profile-summary :deep(.el-card__body) { align-items: center; padding: 14px; }
   .profile-details { grid-template-columns: 1fr; }
