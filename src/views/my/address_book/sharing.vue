@@ -1,6 +1,6 @@
 <template>
   <section class="sharing-center">
-    <el-tabs v-model="kind" @tab-change="changeKind"><el-tab-pane :label="T('DeviceSharing')" name="device"/><el-tab-pane :label="T('AddressBookSharing')" name="address_book"/></el-tabs>
+    <el-tabs v-model="kind" @tab-change="changeKind"><el-tab-pane :label="`${T('DeviceSharing')} (${countLabel('device')})`" name="device"/><el-tab-pane :label="`${T('AddressBookSharing')} (${countLabel('address_book')})`" name="address_book"/></el-tabs>
     <p class="sharing-help">{{ T(kind === 'device' ? 'DirectDeviceShareHelp' : 'WholeAddressBookShare') }}</p>
     <el-card shadow="never">
       <div class="sharing-toolbar">
@@ -50,6 +50,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Refresh, Share, List, Edit, Remove, User, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { T } from '@/utils/i18n'
+import { sharingDeviceCounts } from '@/utils/sharingCounts'
 import { books, entries, remove } from '@/api/my/sharing'
 import AddressBookShareDialog from '@/components/device/AddressBookShareDialog.vue'
 import DeviceConnect from '@/components/device/DeviceConnect.vue'
@@ -60,6 +61,8 @@ const kind = ref(route.query.kind === 'address_book' ? 'address_book' : 'device'
 const scope = ref('sent'), allBooks = ref([]), loading = ref(false), failed = ref(false), shareVisible = ref(false), shareBook = ref(null)
 const now = ref(Math.floor(Date.now() / 1000)), timer = setInterval(() => { now.value = Math.floor(Date.now() / 1000) }, 1000)
 const shownBooks = computed(() => allBooks.value.filter(book => (book.share_kind || 'address_book') === kind.value && (scope.value === 'sent' ? book.recipients.length : book.recipients.some(r => !r.expires_at || r.expires_at > now.value))))
+const deviceCounts = computed(() => sharingDeviceCounts(allBooks.value,scope.value,now.value))
+const countLabel = key => loading.value || failed.value ? '—' : deviceCounts.value[key]
 const isExpired = r => r.expires_at > 0 && r.expires_at <= now.value
 const expiryLabel = r => r.expires_at ? new Date(r.expires_at * 1000).toLocaleString() + ' · ' + T(isExpired(r) ? 'ShareExpired' : 'ShareExpiresOn') : T('ShareIndefinite')
 const changeKind = () => router.replace({ query: { ...route.query, kind: kind.value } })

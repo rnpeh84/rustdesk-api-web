@@ -16,3 +16,6 @@ export function changePolicyOption(text, key, value) {
  else config.options[key] = value
  return JSON.stringify(config, null, 2)
 }
+
+export const policyOptionValueKey = value => ({Y:'PolicySettingEnabled',N:'PolicySettingDisabled','':'PolicySettingDefault'})[value] || 'PolicySettingDefault'
+export const policyOptionEntries = options => Object.entries(options || {}).sort(([a],[b]) => a.localeCompare(b))

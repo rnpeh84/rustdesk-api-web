@@ -6,13 +6,13 @@
    <div class="access-summary"><el-tag :type="state.allowed ? 'info' : 'warning'" effect="plain">{{ T(accessReasonKey(state.reason)) }}</el-tag><el-tag effect="plain">{{ T(state.enforced ? 'DeviceAccessEnforced' : 'DeviceAccessNotEnforced') }}</el-tag>
     <el-tooltip v-if="state.can_manage" :content="T(blockLabel)"><el-button circle :icon="armed ? Check : state.blocked ? Unlock : Lock" :aria-label="T(blockLabel)" :loading="saving" :disabled="saving || loading" @click="block" @blur="cancel" @keydown.esc.stop.prevent="cancel"/></el-tooltip>
    </div>
-   <el-table :data="state.all_paths || state.paths" border :aria-label="T('DeviceAccessPaths')" size="small">
+   <el-table :data="state.can_manage ? (state.all_paths || state.paths) : state.paths" border :aria-label="T('DeviceAccessPaths')" size="small">
     <el-table-column :label="T('DeviceAccessPath')" min-width="120"><template #default="{row}">{{ T(accessPathKey(row.kind)) }}</template></el-table-column>
-    <el-table-column :label="T('DeviceAccessSubject')" min-width="150"><template #default="{row}"><span>{{ row.name }}</span><small v-if="row.collection_name">{{ row.collection_name }}</small></template></el-table-column>
+    <el-table-column :label="T('DeviceAccessSubject')" min-width="150"><template #default="{row}"><span>{{ row.name }}</span><small v-if="row.collection_name && row.collection_name !== row.name">{{ row.collection_name }}</small></template></el-table-column>
     <el-table-column :label="T('DeviceAccessExpiry')" min-width="150"><template #default="{row}"><time v-if="row.expires_at" :datetime="new Date(row.expires_at * 1000).toISOString()">{{ new Date(row.expires_at * 1000).toLocaleString() }}</time><span v-else>{{ T('DeviceAccessNoExpiry') }}</span></template></el-table-column>
     <template #empty>{{ T('DeviceAccessNoPaths') }}</template>
    </el-table>
-   <details><summary>{{ T('AccessDetailsGuide') }}</summary><p>{{ T('DeviceAccessImpact') }}</p><p>{{ T('DeviceAccessRemainingGuide') }}</p></details><small>{{ T('DeviceAccessLastChecked') }}: <time :datetime="new Date(state.checked_at * 1000).toISOString()">{{ new Date(state.checked_at * 1000).toLocaleString() }}</time></small>
+   <details><summary>{{ T('AccessDetailsGuide') }}</summary><p>{{ T('DeviceAccessImpact') }}</p><p>{{ T('DeviceAccessRemainingGuide') }}</p><small>{{ T('DeviceAccessLastChecked') }}: <time :datetime="new Date(state.checked_at * 1000).toISOString()">{{ new Date(state.checked_at * 1000).toLocaleString() }}</time></small></details>
   </template>
  </section>
 </template>

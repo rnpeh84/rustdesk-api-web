@@ -23,7 +23,7 @@
       <section class="device-detail-status" :class="isOnline ? 'is-online' : 'is-offline'">
         <div class="device-presence">
           <DevicePresence :online="isOnline"/>
-          <strong>{{ onlineTime ? timeAgo(onlineTime * 1000) : T('NeverConnected') }}</strong>
+          <div><strong>{{ T(isOnline ? 'Online' : 'Offline') }}</strong><small>{{ onlineTime ? timeAgo(onlineTime * 1000) : T('NeverConnected') }}</small></div>
         </div>
         <slot name="connect"><el-button type="primary" :icon="Connection" @click="emit('connect', peer.id)">
           {{ T('ConnectNow') }}
@@ -35,36 +35,20 @@
       <DevicePolicySyncPanel :key="`policy-${peer.row_id}`" :row-id="peer.row_id"/>
 
       <section class="device-detail-section">
-        <h3>{{ T('DeviceIdentity') }}</h3>
-        <dl class="device-detail-grid">
-          <div><dt>ID</dt><dd>{{ peer.id || '-' }}</dd></div>
-          <div><dt>{{ T('Hostname') }}</dt><dd>{{ device.hostname || '-' }}</dd></div>
-          <div><dt>{{ T('Alias') }}</dt><dd>{{ peer.alias || '-' }}</dd></div>
-          <div><dt>{{ T('Uuid') }}</dt><dd class="is-breakable">{{ peer.uuid || '-' }}</dd></div>
-        </dl>
-      </section>
-
-      <section class="device-detail-section">
-        <h3>{{ T('Assignment') }}</h3>
-        <dl class="device-detail-grid">
-          <div><dt>{{ T('Username') }}</dt><dd>{{ device.username || reported.shell_user || '-' }}</dd></div>
-          <div><dt>{{ T('Group') }}</dt><dd>{{ groupName || T('NotSet') }}</dd></div>
-          <div><dt>{{ T('AppliedPolicy') }}</dt><dd>{{ T('NotCollected') }}</dd></div>
-          <div><dt>{{ T('DeviceNote') }}</dt><dd>{{ T('NotCollected') }}</dd></div>
-        </dl>
-      </section>
-
-      <section class="device-detail-section">
-        <div class="device-detail-section-title"><h3>{{ T('SystemInformation') }}</h3><el-tooltip :content="T('Refresh')"><el-button circle :icon="Refresh" :aria-label="T('Refresh')" :loading="infoLoading" @click="loadInformation(true)"/></el-tooltip></div>
+        <div class="device-detail-section-title"><h3>{{ T('DeviceInformation') }}</h3><el-tooltip :content="T('Refresh')"><el-button circle :icon="Refresh" :aria-label="T('Refresh')" :loading="infoLoading" @click="loadInformation(true)"/></el-tooltip></div>
         <el-alert v-if="infoError" :title="infoError" type="warning" :closable="false"/>
         <dl class="device-detail-grid">
-          <div><dt>{{ T('Os') }}</dt><dd class="is-breakable">{{ device.os || T('NotCollected') }}</dd></div>
-          <div><dt>{{ T('Version') }}</dt><dd>{{ device.version || T('NotCollected') }}</dd></div>
-          <div><dt>CPU</dt><dd class="is-breakable">{{ device.cpu || T('NotCollected') }}</dd></div>
-          <div><dt>{{ T('Memory') }}</dt><dd>{{ device.memory || T('NotCollected') }}</dd></div>
-          <div><dt>{{ T('LastOnlineIp') }}</dt><dd>{{ peer.last_online_ip || '-' }}</dd></div>
-          <div><dt>{{ T('PublicKeyFingerprint') }}</dt><dd>{{ T('NotCollected') }}</dd></div>
+          <div v-if="peer.alias"><dt>{{ T('Alias') }}</dt><dd>{{ peer.alias }}</dd></div>
+          <div v-if="groupName"><dt>{{ T('DeviceGroupLabel') }}</dt><dd>{{ groupName }}</dd></div>
+          <div v-if="device.username || reported.shell_user"><dt>{{ T('DeviceOsAccount') }}</dt><dd>{{ device.username || reported.shell_user }}</dd></div>
+          <div><dt>{{ T('Os') }}</dt><dd class="is-breakable">{{ device.os || '-' }}</dd></div>
+          <div><dt>{{ T('DeviceClientVersion') }}</dt><dd>{{ device.version || '-' }}</dd></div>
+          <div><dt>CPU</dt><dd class="is-breakable">{{ device.cpu || '-' }}</dd></div>
+          <div><dt>{{ T('Memory') }}</dt><dd>{{ device.memory || '-' }}</dd></div>
+          <div v-if="peer.last_online_ip"><dt>{{ T('LastOnlineIp') }}</dt><dd>{{ peer.last_online_ip }}</dd></div>
+
         </dl>
+        <details v-if="peer.uuid" class="device-technical"><summary>{{ T('DeviceTechnicalDetails') }}</summary><dl class="device-detail-grid"><div><dt>{{ T('Uuid') }}</dt><dd class="is-breakable">{{ peer.uuid }}</dd></div></dl></details>
       </section>
 
       <section class="device-detail-section">
@@ -265,6 +249,11 @@ const loadHistory = async () => {
   border-radius: 8px;
 }
 
+.device-presence small { color: var(--console-muted); font-size: 12px; }
+.device-technical { margin-top: 12px; }
+.device-technical summary { cursor: pointer; color: var(--console-muted); }
+.device-technical summary:focus-visible { outline: 2px solid var(--console-primary); outline-offset: 2px; }
+.device-technical dl { margin-top: 10px; }
 .device-presence { display: flex; align-items: center; gap: 10px; white-space: nowrap;
   min-width: 0;
 }
