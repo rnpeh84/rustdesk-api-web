@@ -2,7 +2,7 @@
   <section class="ops-page" v-loading="loading" :aria-busy="loading">
     <header class="ops-toolbar">
       <small v-if="lastUpdated">{{ T('UpdatedAtTime', { param: lastUpdated }) }}</small>
-      <el-button type="primary" :loading="loading" @click="load"><el-icon><Refresh /></el-icon><span>{{ T('Refresh') }}</span></el-button>
+      <el-button type="primary" :loading="loading" @click="refreshAll"><el-icon><Refresh /></el-icon><span>{{ T('Refresh') }}</span></el-button>
     </header>
 
     <section v-if="auditLagLevel !== 'healthy'" class="ops-incident" :class="`is-${auditLagLevel}`" aria-live="polite">
@@ -41,6 +41,8 @@
         </div>
       </div>
     </el-card>
+
+    <WebClientSettings v-if="canManageServer" ref="webClientSettings"/>
 
     <el-card shadow="never" class="ops-alarms">
       <template #header>
@@ -92,8 +94,14 @@ import { useRouter } from 'vue-router'
 import { ArrowRight, CircleCheckFilled, Clock, Connection, DataLine, Refresh, WarningFilled } from '@element-plus/icons'
 import { alarms, status, updateAlarm } from '@/api/operations'
 import { T } from '@/utils/i18n'
+import WebClientSettings from '@/components/operations/WebClientSettings.vue'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
+const userStore=useUserStore()
+const canManageServer=computed(()=>userStore.permissions?.includes('*') || userStore.permissions?.includes('server.manage'))
+const webClientSettings=ref(null)
+const refreshAll=()=>{load();webClientSettings.value?.load()}
 const loading = ref(false)
 const snapshot = ref({})
 const alarmRows = ref([])

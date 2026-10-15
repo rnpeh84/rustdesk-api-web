@@ -1536,5 +1536,19 @@
   "PolicyNoClientOptions": {"One": "No client settings to deliver"},
   "PolicySettingEnabled": {"One": "Enabled"},
   "PolicySettingDisabled": {"One": "Disabled"},
-  "PolicySettingDefault": {"One": "Default"}
+  "PolicySettingDefault": {"One": "Default"},
+  "WebClientSettingsTitle": {"One": "Web client selection"},
+  "WebClientAddScope": {"One": "Add scope"},
+  "WebClientEditScope": {"One": "Edit scope"},
+  "WebClientGlobalDefault": {"One": "Global default"},
+  "WebClientScopeOrder": {"One": "Precedence: device → device group → signed-in user → user group → global default."},
+  "WebClientResourcesNeeded": {"One": "Deploy client resources before selecting an unavailable client."},
+  "WebClientNoScopeRules": {"One": "No scope overrides. The global default applies."},
+  "WebClientChosen": {"One": "Web client"},
+  "WebClientNotReady": {"One": "Not ready"},
+  "WebClientRemoveScope": {"One": "Remove scope override"},
+  "WebClientLoadFailed": {"One": "Unable to load settings. Please retry."},
+  "WebClientV2": {"One": "RustDesk Web Client V2"},
+  "WebClientReDe": {"One": "Re:De Web Client"},
+  "WebClientPopupBlocked": {"One": "The new tab was blocked. Allow popups and try again."}
 }

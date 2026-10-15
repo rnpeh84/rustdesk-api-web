@@ -1676,5 +1676,19 @@
   "PolicyNoClientOptions": {"One": "전달할 클라이언트 설정 없음"},
   "PolicySettingEnabled": {"One": "사용"},
   "PolicySettingDisabled": {"One": "사용 안 함"},
-  "PolicySettingDefault": {"One": "기본값"}
+  "PolicySettingDefault": {"One": "기본값"},
+  "WebClientSettingsTitle": {"One": "웹 클라이언트 선택"},
+  "WebClientAddScope": {"One": "적용 범위 추가"},
+  "WebClientEditScope": {"One": "적용 범위 수정"},
+  "WebClientGlobalDefault": {"One": "전체 기본값"},
+  "WebClientScopeOrder": {"One": "장치 → 장치 그룹 → 접속 사용자 → 접속 사용자 그룹 → 전체 기본값 순으로 적용합니다."},
+  "WebClientResourcesNeeded": {"One": "준비되지 않은 클라이언트는 리소스를 배치한 뒤 선택할 수 있습니다."},
+  "WebClientNoScopeRules": {"One": "개별 적용 범위가 없습니다. 전체 기본값을 사용합니다."},
+  "WebClientChosen": {"One": "웹 클라이언트"},
+  "WebClientNotReady": {"One": "준비되지 않음"},
+  "WebClientRemoveScope": {"One": "적용 해제"},
+  "WebClientLoadFailed": {"One": "설정을 불러오지 못했습니다. 다시 시도해 주세요."},
+  "WebClientV2": {"One": "RustDesk Web Client V2"},
+  "WebClientReDe": {"One": "Re:De Web Client"},
+  "WebClientPopupBlocked": {"One": "새 탭이 차단되었습니다. 팝업을 허용하고 다시 시도해 주세요."}
 }

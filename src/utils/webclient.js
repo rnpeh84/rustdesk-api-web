@@ -1,19 +1,24 @@
 import Websock from '@/utils/webclient/websock'
 import * as rendezvous from '@/utils/webclient/rendezvous'
 import * as message from '@/utils/webclient/message'
-import { ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { T } from '@/utils/i18n'
 import { useAppStore } from '@/store/app'
+import { resolve as resolveWebClient } from '@/api/webClientSelection'
+import { openSelectedWebClient } from '@/utils/webClientSelection'
 
 
 
 const app = useAppStore()
 
-export const toWebClientLink = (row) => {
-  // 콘솔과 같은 출처에서 웹 클라이언트를 열어 설치 프로필의 API 주소와 분리한다.
-  const url=new URL(`/webclient2/#/${encodeURIComponent(row.id)}`,window.location.origin)
-  if(url.protocol!=='https:'&&!(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)))return
-  window.open(url.href,'_blank','noopener,noreferrer')
+const openingPeers=new Set()
+export const toWebClientLink = async (row) => {
+  const key=row.row_id || row.id
+  if(openingPeers.has(key))return
+  openingPeers.add(key)
+  try{await openSelectedWebClient({row,origin:window.location.origin,open:()=>window.open('about:blank','_blank'),resolve:async params=>(await resolveWebClient(params)).data})}
+  catch(error){if(error.message==='web_client_popup_blocked')ElMessage.error(T('WebClientPopupBlocked'));else if(error.message?.startsWith('invalid_web_client'))ElMessage.error(T('WebClientLoadFailed'))}
+  finally{openingPeers.delete(key)}
 }
 
 export async function getPeerSlat (id) {
