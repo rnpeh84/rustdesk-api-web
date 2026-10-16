@@ -79,7 +79,7 @@ const refresh=async()=>{
 const connect=mode=>{
   if(!modes.value.includes(mode))return
   if(mode==='desktop')toWebClientLink(props.peer)
-  else terminal.value?.open(availability.value)
+  else toWebClientLink(props.peer,{mode:'terminal',legacyTerminal:()=>terminal.value?.open(availability.value)})
 }
 onMounted(()=>{refresh();timer=setInterval(refresh,15000);document.addEventListener('visibilitychange',refresh)})
 onActivated(()=>{enabled=true;refresh()})

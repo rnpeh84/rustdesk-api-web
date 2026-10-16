@@ -12,11 +12,11 @@ import { openSelectedWebClient } from '@/utils/webClientSelection'
 const app = useAppStore()
 
 const openingPeers=new Set()
-export const toWebClientLink = async (row) => {
+export const toWebClientLink = async (row, options = {}) => {
   const key=row.row_id || row.id
   if(openingPeers.has(key))return
   openingPeers.add(key)
-  try{await openSelectedWebClient({row,origin:window.location.origin,open:()=>window.open('about:blank','_blank'),resolve:async params=>(await resolveWebClient(params)).data})}
+  try{await openSelectedWebClient({row,origin:window.location.origin,open:()=>window.open('about:blank','_blank'),resolve:async params=>(await resolveWebClient(params)).data, ...options})}
   catch(error){if(error.message==='web_client_popup_blocked')ElMessage.error(T('WebClientPopupBlocked'));else if(error.message?.startsWith('invalid_web_client'))ElMessage.error(T('WebClientLoadFailed'))}
   finally{openingPeers.delete(key)}
 }

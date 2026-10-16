@@ -4,21 +4,21 @@
       <el-button type="primary" link :disabled="blocked" @click="visible = true">{{ T('WebTerminalConnect') }}</el-button>
       <el-button v-if="blocked" link @click="visible = true">{{ T('WebTerminalRecheck') }}</el-button>
     </div>
-    <el-dialog v-model="visible" class="terminal-dialog" :class="{ 'terminal-expanded': expanded }" :modal-class="expanded ? 'terminal-expanded-overlay' : ''" :fullscreen="expanded" :title="T('WebTerminalTitle', { param: peer.id })" width="min(1100px, calc(100vw - 24px))" append-to-body destroy-on-close :close-on-click-modal="false" :before-close="requestClose" @opened="attachNotifications" @closed="dispose" @keydown.capture="recordActivity" @pointerdown.capture="recordActivity" @wheel.capture.passive="recordActivity" @drop.capture="recordActivity">
+    <component :is="embedded ? InlineTerminal : ElDialog" v-model="visible" class="terminal-dialog" :class="{ 'terminal-expanded': expanded }" :modal-class="expanded ? 'terminal-expanded-overlay' : ''" :fullscreen="expanded" :title="T('WebTerminalTitle', { param: peer.id })" width="min(1100px, calc(100vw - 24px))" append-to-body destroy-on-close :close-on-click-modal="false" :before-close="requestClose" @opened="attachNotifications" @closed="dispose" @keydown.capture="recordActivity" @pointerdown.capture="recordActivity" @wheel.capture.passive="recordActivity" @drop.capture="recordActivity">
       <template #header="{ titleId }"><div class="terminal-heading" @contextmenu.prevent="workspaceMenu"><span :id="titleId">{{ T('WebTerminalTitle', { param: peer.id }) }}</span><div class="terminal-toolbar" role="toolbar" :aria-label="T('TerminalToolbar')">
         <el-button v-if="filesAllowed" :disabled="!active || state !== 'ready'" :icon="FolderOpened" :aria-label="T('DeviceFiles')" :title="T('DeviceFiles')" :aria-pressed="filesVisible" @click="toggleFiles"/>
         <el-button :disabled="!active" :icon="Search" :aria-label="T('TerminalFind')" :title="T('TerminalFind')" :aria-pressed="findVisible" @click="openFind"/>
         <el-button :icon="MoreFilled" :aria-label="T('TerminalActions')" :title="T('TerminalActions')" @click="toolbarMenu"/>
         <el-button :icon="Setting" :aria-label="T('TerminalSettings')" :title="T('TerminalSettings')" @click="settingsVisible = true"/>
-      </div><span class="terminal-hostname" :title="hostname">{{ hostname }}</span></div><el-button class="terminal-expand-button" :aria-label="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :title="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :aria-pressed="expanded" @click="expanded = !expanded"><WindowSizeIcon :restore="expanded"/></el-button></template>
-      <el-form v-if="!active" class="terminal-connect-form" :class="{'has-password':!useSaved}" @submit.prevent="connect">
+      </div><span class="terminal-hostname" :title="hostname">{{ hostname }}</span></div><el-button v-if="!embedded" class="terminal-expand-button" :aria-label="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :title="T(expanded ? 'TerminalRestore' : 'TerminalExpand')" :aria-pressed="expanded" @click="expanded = !expanded"><WindowSizeIcon :restore="expanded"/></el-button></template>
+      <el-form v-if="!embedded && !active" class="terminal-connect-form" :class="{'has-password':!useSaved}" @submit.prevent="connect">
         <el-checkbox v-if="hasSaved" v-model="useSaved" :disabled="busy">{{ T('WebTerminalSavedPassword') }}</el-checkbox>
         <el-form-item v-if="!useSaved" :label="T('WebTerminalPassword')">
           <el-input v-model="password" type="password" name="device-password" show-password autocomplete="off" maxlength="128" :aria-label="T('WebTerminalPassword')" :disabled="busy"/>
         </el-form-item>
         <el-button type="primary" native-type="submit" :loading="busy">{{ T('WebTerminalCheckConnect') }}</el-button>
       </el-form>
-      <div class="terminal-session-status" :class="{'is-connected':state === 'ready'}" role="status" aria-live="polite" @contextmenu.prevent="workspaceMenu">
+      <div v-if="!embedded" class="terminal-session-status" :class="{'is-connected':state === 'ready','is-pending':['unknown','checking','allowed'].includes(state)}" role="status" aria-live="polite" @contextmenu.prevent="workspaceMenu">
         <strong>{{ T(`TerminalState_${state}`) }}</strong>
         <ResourceMeters v-if="state === 'ready'" :resources="resourceStatus.resources" :reported-at="resourceStatus.reported_at" :active="resourceStatus.service_running"/>
         <span v-if="failureStage || !['unknown','checking','allowed','ready'].includes(state)">{{ T(`TerminalHelp_${state}`) }}</span>
@@ -38,14 +38,16 @@
       </el-dialog>
       <el-dialog class="terminal-owned-dialog" v-model="pasteVisible" :title="T('TerminalPaste')" width="min(520px, calc(100vw - 24px))" append-to-body :close-on-click-modal="false"><el-input v-model="pasteText" type="textarea" :rows="6" :aria-label="T('TerminalPasteText')" autocomplete="off"/><template #footer><el-button @click="pasteVisible = false">{{ T('Cancel') }}</el-button><el-button type="primary" :disabled="state !== 'ready' || !pasteText" @click="applyPaste">{{ T('TerminalPaste') }}</el-button></template></el-dialog>
       <template #footer>
-        <div class="terminal-footer" @contextmenu.prevent="workspaceMenu"><div ref="notificationHost" class="terminal-notification-host"/><div class="terminal-footer-actions"><el-button v-if="socket" @click="requestDisconnect">{{ T('WebTerminalDisconnect') }}</el-button><el-button @click="requestClose">{{ T('Close') }}</el-button></div></div>
+        <div class="terminal-footer" @contextmenu.prevent="workspaceMenu"><div ref="notificationHost" class="terminal-notification-host"/><div class="terminal-footer-actions"><el-button v-if="socket" @click="requestDisconnect">{{ T('WebTerminalDisconnect') }}</el-button><el-button v-if="!embedded" @click="requestClose">{{ T('Close') }}</el-button></div></div>
       </template>
-    </el-dialog>
+    </component>
   </div>
 </template>
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+import { ElDialog } from 'element-plus'
+import InlineTerminal from './InlineTerminal.vue'
 import '@xterm/xterm/css/xterm.css'
 import { T } from '@/utils/i18n'
 import { isDark } from '@/utils/theme'
@@ -58,8 +60,10 @@ import WorkspaceMenu from './WorkspaceMenu.vue'
 import { notifyTerminal as ElMessage, attachNotificationHost, releaseNotificationHost, showNotifications } from '@/utils/notifications'
 import { findTerminalMatches, quoteShellPath } from '@/utils/terminalTools'
 
-const props = defineProps({ peer: { type: Object, required: true }, showEntry:{type:Boolean,default:true} })
+const props = defineProps({ peer: { type: Object, required: true }, showEntry:{type:Boolean,default:true}, embedded:{type:Boolean,default:false} })
+const emit = defineEmits(['state','workspace','auth'])
 const state = ref('unknown')
+watch(state, value => emit('state', value))
 const blocked = computed(() => ['disabled', 'unsupported'].includes(state.value))
 const visible = ref(false)
 const password = ref('')
@@ -67,6 +71,9 @@ const useSaved = ref(false)
 const hasSaved = ref(false)
 const busy = ref(false)
 const active = ref(false)
+const workspaceAuthNeeded = ref(false)
+const workspaceAuth = () => ({ required: visible.value && workspaceAuthNeeded.value, busy: busy.value })
+watch([visible, workspaceAuthNeeded, busy], () => emit('auth', workspaceAuth()))
 const failureStage = ref('')
 const screen = ref(null)
 const socket = ref(null)
@@ -79,6 +86,10 @@ const settingsVisible=ref(false), idleMinutes=ref(0), idleDraft=ref(0), preferen
 const fileBusy=ref(false)
 const editorDirty=ref(false)
 const hostname=computed(()=>resourceStatus.value.device?.hostname || props.peer.hostname || T('TerminalHostnameUnknown'))
+watch([state,resourceStatus,filesAllowed,filesVisible],()=>{
+  const status=resourceStatus.value,resources=status.resources||{},now=Date.now()/1000
+  emit('workspace',{hostname:hostname.value,filesAllowed:filesAllowed.value,filesVisible:filesVisible.value,fresh:status.service_running===true&&Number.isFinite(status.reported_at)&&status.reported_at<=now+5&&now-status.reported_at<=90,cpu:resources.cpu_percent,memory:resources.memory_percent,disk:resources.disk_percent})
+},{deep:true})
 let idleTimer, resourceTimer, lastActivity=Date.now(), statusPending=false, preferenceGeneration=0
 const recordActivity=()=>{lastActivity=Date.now()}
 const documentActivity=event=>{if(visible.value&&event.target.closest?.('.terminal-dialog,.terminal-owned-dialog'))recordActivity()}
@@ -88,7 +99,7 @@ const savePreferences=async()=>{preferencesSaving.value=true;try{await saveTermi
 watch(settingsVisible,value=>{if(value)idleDraft.value=idleMinutes.value})
 const checkIdle=()=>{if(visible.value&&state.value==='ready'&&!fileBusy.value&&!editorDirty.value&&!preferencesSaving.value&&idleMinutes.value>0&&Date.now()-lastActivity>=idleMinutes.value*60000){visible.value=false;ElMessage.info(T('TerminalIdleClosed'))}}
 let connectionAvailability = {}
-let terminal, fit, observer, expiry, attempt = 0, alive = true
+let terminal, fit, observer, expiry, attempt = 0, alive = true, workspaceVisible = true
 const terminalTheme = computed(() => isDark.value
   ? { background: '#111111', foreground: '#e8e8e8', cursor: '#f5f5f5', selectionBackground: '#43b8df55' }
   : { background: '#ffffff', foreground: '#242424', cursor: '#087ea4', selectionBackground: '#087ea433' })
@@ -96,7 +107,7 @@ watch(terminalTheme, theme => { if (terminal) terminal.options.theme = theme })
 const states = new Set(['unknown', 'checking', 'allowed', 'ready', 'disabled', 'unsupported', 'auth_required', 'unavailable', 'configuration', 'pty_failed', 'busy', 'key_mismatch', 'offline', 'peer_not_found', 'server_rejected', 'signature_failed', 'id_server_unreachable', 'relay_unreachable', 'connection_timeout', 'connection_closed', 'protocol_error', 'browser_transport', 'request_failed', 'access_denied', 'browser_terminal_error', 'saved_password_unavailable'])
 const requestFailures = new Set(['busy', 'saved_password_unavailable', 'request_failed'])
 const stages = new Set(['configuration', 'id_server', 'server_verification', 'rendezvous', 'relay', 'device_verification', 'authentication', 'shell', 'session', 'browser', 'request'])
-const setState = (value, stage = '') => { const previous = state.value; state.value = states.has(value) ? value : 'unavailable'; failureStage.value = stages.has(stage) ? stage : ''; if (previous !== state.value && !['unknown','checking','allowed','ready'].includes(state.value)) ElMessage.error(T(`TerminalState_${state.value}`)) }
+const setState = (value, stage = '') => { const previous = state.value; state.value = states.has(value) ? value : 'unavailable'; failureStage.value = stages.has(stage) ? stage : ''; if (!props.embedded && previous !== state.value && !['unknown','checking','allowed','ready'].includes(state.value)) ElMessage.error(T(`TerminalState_${state.value}`)) }
 const send = message => { if (socket.value?.readyState === WebSocket.OPEN) socket.value.send(JSON.stringify(message)) }
 const clearTerminal = () => { observer?.disconnect(); observer = null; terminal?.dispose(); terminal = null; fit = null; active.value = false }
 const disconnect = () => {
@@ -112,7 +123,7 @@ const disconnect = () => {
 }
 const requestClose=async done=>{if(editorDirty.value && !(await files.value?.confirmClose()))return;if(typeof done==='function')done();else visible.value=false}
 const requestDisconnect=async()=>{if(editorDirty.value && !(await files.value?.confirmClose()))return;disconnect()}
-const dispose = () => { clearInterval(idleTimer);clearInterval(resourceTimer);idleTimer=resourceTimer=null;preferenceGeneration++;settingsVisible.value=false;releaseNotificationHost(notificationHost.value); disconnect(); password.value = ''; expanded.value = dragging.value = false }
+const dispose = () => { workspaceAuthNeeded.value=false; clearInterval(idleTimer);clearInterval(resourceTimer);idleTimer=resourceTimer=null;preferenceGeneration++;settingsVisible.value=false;releaseNotificationHost(notificationHost.value); disconnect(); password.value = ''; expanded.value = dragging.value = false }
 const attachNotifications = () => attachNotificationHost(notificationHost.value)
 const openFiles = async (list = []) => { filesVisible.value = true; await nextTick(); await files.value?.open(connectionAvailability, list) }
 const toggleFiles = () => { if (filesVisible.value) files.value?.close(); else openFiles() }
@@ -149,7 +160,7 @@ const contextItems = computed(() => {
     items.push({ id: 'session-divider', separator: true })
   }
   if (filesAllowed.value) add('files', filesVisible.value ? 'FilesHide' : 'DeviceFiles', state.value !== 'ready')
-  add('expand', expanded.value ? 'TerminalRestore' : 'TerminalExpand')
+  if(!props.embedded)add('expand', expanded.value ? 'TerminalRestore' : 'TerminalExpand')
   add('notifications', 'NotificationCenter')
   add('settings','TerminalSettings')
   add('reconnect', 'TerminalReconnect', !!socket.value || busy.value)
@@ -231,12 +242,14 @@ const setupTerminal = async current => {
     let binary = ''; for (const byte of bytes) binary += String.fromCharCode(byte)
     send({ type: 'input', data: btoa(binary) })
   })
-  observer = new ResizeObserver(() => { if (!terminal || !visible.value) return; fit.fit(); if (state.value === 'ready') send({ type: 'resize', rows: terminal.rows, cols: terminal.cols }) })
+  observer = new ResizeObserver(() => { if (!terminal || !visible.value || !workspaceVisible || !screen.value?.clientWidth) return; fit.fit(); if (state.value === 'ready') send({ type: 'resize', rows: terminal.rows, cols: terminal.cols }) })
   observer.observe(screen.value)
   send({ type: 'open', rows: terminal.rows, cols: terminal.cols })
 }
 const connect = async () => {
   if (busy.value || socket.value) return
+  if (props.embedded && !useSaved.value && !password.value) { workspaceAuthNeeded.value = true; return }
+  workspaceAuthNeeded.value = false
   const generation = ++attempt
   busy.value = true
   setState('checking')
@@ -261,11 +274,11 @@ const connect = async () => {
           setupTerminal(current).catch(() => { disconnect(); setState('browser_terminal_error', 'browser') })
         }
       } else if (msg.type === 'opened') {
-        busy.value = false; setState('ready');recordActivity();refreshResources(); if (terminal) { terminal.options.disableStdin = false; terminal.focus() }
+        busy.value = false; setState('ready');recordActivity();refreshResources(); if (terminal) { terminal.options.disableStdin = !workspaceVisible; if(workspaceVisible)terminal.focus() }
       } else if (msg.type === 'output' && terminal && typeof msg.data === 'string') {
         try { terminal.write(Uint8Array.from(atob(msg.data), c => c.charCodeAt(0))) } catch { disconnect(); setState('protocol_error', 'session') }
       } else if (msg.type === 'error') {
-        if (msg.state === 'auth_required' || msg.state === 'saved_password_unavailable') useSaved.value = false
+        if (msg.state === 'auth_required' || msg.state === 'saved_password_unavailable') { useSaved.value = false; workspaceAuthNeeded.value = true }
         disconnect(); setState(msg.state, msg.stage)
       } else if (msg.type === 'closed') disconnect()
     }
@@ -276,8 +289,11 @@ const connect = async () => {
       busy.value = false
       const denied = error?.code === 403 || [401, 403].includes(error?.response?.status)
       const reason = error?.code === 101 && requestFailures.has(error?.data?.state) ? error.data.state : 'request_failed'
+      if (reason === 'saved_password_unavailable') { useSaved.value = false; workspaceAuthNeeded.value = true }
       setState(denied ? 'access_denied' : error?.code === 'ECONNABORTED' ? 'connection_timeout' : reason, 'request')
     }
+  } finally {
+    password.value = ''
   }
 }
 onMounted(async () => {
@@ -287,7 +303,41 @@ onMounted(async () => {
   try { const res = await terminalStatus(props.peer.row_id); if (alive && !socket.value && !visible.value) { setState(res.data.state); hasSaved.value = !!res.data.has_saved_password; useSaved.value = hasSaved.value } } catch { /* 조회 실패 시 활성 여부를 추측하지 않는다. */ }
 })
 onDeactivated(dispose)
-defineExpose({open:async availability=>{connectionAvailability=availability;resourceStatus.value=availability;filesAllowed.value=!!availability.files_enabled;hasSaved.value=!!availability.has_saved_password;useSaved.value=hasSaved.value;visible.value=true;await nextTick();if(hasSaved.value)await connect()}})
+// 공통 인증 입력은 현재 작업영역에 바인딩된 전용 채널에서만 받는다.
+defineExpose({
+  workspaceAuth,
+  submitWorkspaceAuth: value => {
+    if (!props.embedded || !visible.value || !workspaceAuthNeeded.value || busy.value || socket.value || typeof value !== 'string' || !value || value.length > 128) return
+    password.value = value; useSaved.value = false; void connect()
+  },
+  workspaceCommand: async name => {
+    if (!['find','copy','paste','save-output','files','notifications','settings','reconnect'].includes(name)) return
+    recordActivity()
+    if (name === 'reconnect') {
+      visible.value = true; await nextTick()
+      if (props.embedded && !useSaved.value && !socket.value && !busy.value) { workspaceAuthNeeded.value = true; return }
+      return connect()
+    }
+    if (name === 'files' && !filesAllowed.value) return
+    return contextAction(name)
+  },
+  requestWorkspaceClose: async () => {
+    if (editorDirty.value && !(await files.value?.confirmClose())) return false
+    dispose(); return true
+  },
+  setWorkspaceVisible: value => {
+    workspaceVisible = value
+    if (terminal) { terminal.options.disableStdin = !value || state.value !== 'ready'; if (!value) screen.value?.querySelector('textarea')?.blur() }
+    if (value) nextTick(() => { if (terminal) { fit?.fit(); if (state.value === 'ready') send({type:'resize',rows:terminal.rows,cols:terminal.cols}) } })
+  },
+  open: async availability => {
+    connectionAvailability = availability; resourceStatus.value = availability; filesAllowed.value = !!availability.files_enabled
+    hasSaved.value = !!availability.has_saved_password; useSaved.value = hasSaved.value; visible.value = true
+    await nextTick()
+    if (hasSaved.value) await connect()
+    else if (props.embedded) workspaceAuthNeeded.value = true
+  }
+})
 onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown','wheel','drop'])document.removeEventListener(event,documentActivity,true);clearInterval(expiry); dispose() })
 </script>
 

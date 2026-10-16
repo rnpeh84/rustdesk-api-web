@@ -6,11 +6,17 @@ export function selectedWebClientURL(path, origin) {
   return url.href
 }
 
-export async function openSelectedWebClient({row,origin,open,resolve}) {
+export async function openSelectedWebClient({row,origin,open,resolve,mode='desktop',legacyTerminal}) {
+  if(!['desktop','terminal'].includes(mode))throw new Error('invalid_web_client_mode')
   // 클릭 시 탭을 먼저 열어 비동기 조회 후 브라우저의 팝업 차단을 피한다.
   const tab=open()
   if(!tab)throw new Error('web_client_popup_blocked')
   tab.opener=null
-  try{const result=await resolve({peer_id:row.row_id||undefined,device_id:row.id});tab.location.replace(selectedWebClientURL(result.path,origin))}
+  try{
+    const result=await resolve({peer_id:row.row_id||undefined,device_id:row.id})
+    const url=selectedWebClientURL(result.path,origin)
+    if(mode==='terminal' && result.path.startsWith('/webclient2/')){tab.close();await legacyTerminal?.();return}
+    tab.location.replace(url+(mode==='terminal'?'?mode=terminal':''))
+  }
   catch(error){tab.close();throw error}
 }

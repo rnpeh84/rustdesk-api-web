@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const constantRoutes = [
+  { path: '/remote-terminal/:deviceId', name: 'RemoteTerminalWorkspace', meta: { title: 'WebTerminal' }, component: () => import('@/views/remote/terminal.vue'), hidden: true },
   {
     path: '/login',
     name: 'Login',

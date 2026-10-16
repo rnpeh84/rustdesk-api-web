@@ -30,3 +30,11 @@ test('팝업 차단 시 조회 실행 안 함',async()=>{
   await assert.rejects(openSelectedWebClient({row:{id:'123'},open:()=>null,resolve:()=>{called=true}}),/web_client_popup_blocked/)
   assert.equal(called,false)
 })
+
+test('ReDe 터미널 진입은 공통 작업창, V2는 기존 터미널 유지',async()=>{
+  for(const key of ['webcl','webclient2']) {
+    const events=[]
+    await openSelectedWebClient({row:{row_id:3,id:'123'},origin:'https://console.example.test',mode:'terminal',open:()=>({location:{replace:url=>events.push(url)},close:()=>events.push('close')}),resolve:async()=>({path:`/${key}/#/123`}),legacyTerminal:()=>events.push('legacy')})
+    assert.deepEqual(events,key==='webcl'?['https://console.example.test/webcl/#/123?mode=terminal']:['close','legacy'])
+  }
+})
