@@ -416,6 +416,6 @@ onBeforeUnmount(() => { stopNotifications();alive = false;for(const event of ['k
 </style>
 
 <style scoped>
-.terminal-inline .terminal-screen{order:0}.terminal-inline .terminal-files-divider{order:1}.terminal-inline .terminal-files{order:2;max-width:calc(100% - 160px);border-left:1px solid var(--el-border-color)}
+.terminal-inline .terminal-screen{order:0}.terminal-inline .terminal-files-divider{order:1}.terminal-inline .terminal-files{order:2;max-width:calc(100% - 160px)}
 @media(max-width:760px){.terminal-inline .terminal-files{position:absolute;right:0;top:0;bottom:0;width:min(400px,100%)!important;max-width:100%;z-index:3}.terminal-inline .terminal-files-divider{display:none}}
 </style>

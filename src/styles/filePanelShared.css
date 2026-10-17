@@ -103,3 +103,42 @@
 .file-panel-ui .file-row-actions>.icon-button,.file-panel-ui .files-workspace .files-row-actions .el-button.is-link{color:var(--file-primary)}
 .file-panel-ui .files-workspace .files-row-actions .el-icon{color:inherit}
 .file-panel-ui #file-list .file-row-actions>.icon-button{color:var(--file-primary)}
+
+/* 모든 어댑터는 같은 일반 DOM을 사용한다. 프레임워크 버튼의 기본값을 상속하지 않는다. */
+.file-panel-ui .file-browser-host{display:flex;flex:1;min-height:0;min-width:0;order:4;overflow:hidden}
+.file-panel-ui #file-browser.file-browser-ui{position:relative;display:flex;flex:1;flex-direction:column;min-width:0;min-height:0;overflow:hidden;margin:0;padding:0}
+.file-panel-ui .file-browser-ui [hidden]{display:none!important}
+.file-panel-ui .file-browser-ui button{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;appearance:none;font-family:inherit;font-size:12px;font-weight:400;line-height:20px;cursor:pointer;box-shadow:none;letter-spacing:normal;text-transform:none}
+.file-panel-ui .file-browser-ui button:disabled{cursor:default;opacity:.45}
+.file-panel-ui .file-browser-ui .file-path{gap:4px;height:36px;min-height:36px}
+.file-panel-ui .file-browser-ui .file-path input{flex:1;min-width:0;width:0;height:36px;min-height:36px;margin:0;box-sizing:border-box;opacity:1}
+.file-panel-ui .file-browser-ui #file-go{flex:none;width:36px;height:36px;min-height:36px;min-width:36px;margin:0;padding:6px;border:0;border-radius:5px;color:var(--file-primary);background:transparent}
+.file-panel-ui .file-browser-ui .file-actions{display:flex;gap:3px;align-items:center;height:32px;min-height:32px;margin:0 0 10px;flex:none}
+.file-panel-ui .file-browser-ui .file-actions>.icon-button{width:30px;min-width:30px;height:30px;min-height:30px;padding:6px;margin:0;border:0;border-radius:5px;background:transparent;color:var(--file-primary)}
+.file-panel-ui .file-browser-ui #file-upload{width:78px;min-width:78px;height:32px;min-height:32px;margin:0 0 0 auto;padding:5px 8px;gap:7px;border:1px solid var(--file-border);border-radius:5px;background:var(--file-hover);color:var(--file-text)}
+.file-panel-ui .file-browser-ui #file-upload>span{margin:0;padding:0;line-height:20px}
+.file-panel-ui .file-browser-ui #file-search{display:block;width:100%;box-sizing:border-box;height:32px;min-height:32px;margin:0}
+.file-panel-ui .file-browser-ui>.file-list-stage{display:flex;flex:1;min-height:0;padding:0;overflow:hidden;order:0}
+.file-panel-ui .file-browser-ui #file-list{flex:1;min-height:0;padding:0;margin:0;overflow:auto;scrollbar-gutter:stable}
+.file-panel-ui .file-browser-ui .file-sort-button{justify-content:flex-start}
+.file-panel-ui .file-browser-ui .file-entry{justify-content:flex-start}
+.file-panel-ui .file-browser-ui .file-interaction-hint{display:none}
+.file-panel-ui .file-browser-ui .file-create-form{position:absolute;left:0;right:0;top:86px;z-index:5;display:grid;gap:8px;padding:12px;border:1px solid var(--file-border);border-radius:5px;background:var(--file-bg);box-shadow:0 6px 18px #0002}
+.file-panel-ui .file-browser-ui .file-create-form label{font-size:12px;margin:0;line-height:20px;color:var(--file-text)}
+.file-panel-ui .file-browser-ui #file-create-name{box-sizing:border-box;width:100%;height:32px;min-height:32px;padding:0 10px;border:1px solid var(--file-border);border-radius:5px;font:inherit;background:var(--file-bg);color:var(--file-text);outline:0}
+.file-panel-ui .file-browser-ui #file-create-name:focus{border-color:var(--file-primary);box-shadow:0 0 0 2px var(--file-soft)}
+.file-panel-ui .file-browser-ui .file-create-form>div{display:flex;justify-content:flex-end;gap:6px}
+.file-panel-ui .file-browser-ui .file-create-form button{height:30px;min-height:30px;padding:4px 10px;border:1px solid var(--file-border);border-radius:5px;background:var(--file-bg);color:var(--file-text)}
+.file-panel-ui .file-browser-ui #file-create-submit{background:var(--file-primary);border-color:var(--file-primary);color:#fff}
+.file-panel-ui .file-browser-ui #file-create-error{margin:0;font-size:12px;color:var(--el-color-danger,#d43b4d);overflow-wrap:anywhere}
+.file-panel-ui .file-browser-ui button:not(:disabled):hover{background:var(--file-soft)}
+.file-panel-ui .file-browser-ui #file-create-submit:not(:disabled):hover{filter:brightness(.95);background:var(--file-primary)}
+.file-panel-ui .files-more-page{order:5;flex:none}
+.file-panel-ui .file-browser-ui .file-loading-spinner{display:block}
+
+.file-panel-ui{border-left:1px solid var(--file-line)}
+.file-panel-ui .file-browser-ui #file-access{white-space:nowrap;color:var(--file-muted);font-size:11px}
+.file-panel-ui .file-browser-ui button:focus-visible{outline:2px solid var(--file-primary);outline-offset:2px}
+
+.file-panel-ui .file-browser-ui #file-go:not(:disabled):hover{background:var(--file-soft)}
+.file-panel-ui .file-browser-ui #file-upload:not(:disabled):hover{background:var(--file-soft);border-color:var(--file-primary);color:var(--file-primary)}

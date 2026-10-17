@@ -10,31 +10,9 @@
     </el-form>
     <div v-if="error" class="files-recovery" role="alert"><span>{{ error }}</span><el-button v-if="!connected && useSaved" :disabled="busy" :icon="Refresh" :aria-label="T('WebTerminalRecheck')" :title="T('WebTerminalRecheck')" @click="connect()"/></div>
     <div v-if="connected" class="files-workspace" :class="{ 'is-dragging': dragging, 'is-busy': busy }" :aria-busy="busy" @dragover.prevent="dragging = true" @dragleave="dragging = false" @drop.prevent="drop">
-      <div class="files-toolbar">
-        <el-button :disabled="busy || path === '/'" :icon="Back" :aria-label="T('FilesParent')" :title="T('FilesParent')" @click="navigate(parent)"/>
-        <el-button :disabled="busy" :icon="House" :aria-label="T('FilesHome')" :title="T('FilesHome')" @click="navigate(home)"/>
-        <el-button :disabled="busy" :icon="Refresh" :aria-label="T('Refresh')" :title="T('Refresh')" @click="navigate(path)"/>
-        <el-button :disabled="busy || !writable" :icon="FolderAdd" :aria-label="T('FilesNewFolder')" :title="T('FilesNewFolder')" @click="edit('mkdir')"/>
-        <el-button class="files-upload" :disabled="busy || !writable" :icon="Upload" :aria-label="T('FilesUpload')" :title="T('FilesUpload')" @click="picker?.click()">{{ T('FilesUpload') }}</el-button>
-        <input ref="picker" type="file" multiple hidden @change="selectFiles"/>
-      </div>
-      <form class="files-location" @submit.prevent="navigate(location)"><el-input v-model="location" :readonly="busy" :aria-label="T('FilesPath')" autocomplete="off" :spellcheck="false"/><el-button native-type="submit" :disabled="busy" :icon="Right" :aria-label="T('FilesGo')" :title="T('FilesGo')"/></form>
-      <el-input v-model="filter" class="files-filter" :prefix-icon="Search" clearable :placeholder="T('FilesSearch')" :aria-label="T('FilesSearch')" maxlength="256"/>
-      <span v-if="!writable" class="files-readonly">{{ T('FilesReadOnly') }}</span>
-      <div class="file-list-stage" :aria-busy="listing">
-      <el-table :data="displayEntries" height="100%" :empty-text="T('FilesEmpty')" row-key="name" :row-class-name="({row}) => row.name === selectedName ? 'is-selected' : ''" :default-sort="{prop:'name',order:'ascending'}" @sort-change="sortEntries" @row-click="selectRow" @row-dblclick="openRow" @row-contextmenu="showMenu" @wheel.passive="menu = null" @touchmove.passive="menu = null">
-        <el-table-column prop="name" sortable="custom" :label="T('Filename')" min-width="110">
-          <template #default="{ row }"><el-button v-if="row.kind !== 'blocked'" link :disabled="busy" :class="['files-entry',{ 'is-folder':row.kind === 'directory' }]" :icon="row.kind === 'directory' ? Folder : Document" :title="row.parent ? T('FilesParent') : `${row.mode || ''} · UID ${row.uid ?? '-'} / GID ${row.gid ?? '-'}`" @keydown.enter.prevent="openRow(row, null, $event)" @keydown.shift.f10.stop.prevent="keyboardMenu(row, $event)">{{ row.name }}</el-button><span v-else class="files-name files-blocked"><el-icon><Document/></el-icon>{{ row.name }}<el-icon :aria-label="T('FilesBlocked')"><Lock/></el-icon></span></template>
-        </el-table-column>
-        <el-table-column prop="size" sortable="custom" :label="T('FilesSize')" width="82"><template #default="{ row }">{{ row.kind === 'file' ? sizeLabel(row.size) : '-' }}</template></el-table-column>
-        <el-table-column class-name="files-row-actions files-download" width="40"><template #default="{ row }"><el-button v-if="row.kind === 'file'" link :disabled="busy" :icon="Download" :aria-label="`${T('FilesDownload')} ${row.name}`" :title="T('FilesDownload')" @click.stop="download(row)"/></template></el-table-column>
-        <el-table-column class-name="files-row-actions files-more" width="44"><template #default="{ row }"><el-button v-if="!row.parent && row.kind !== 'blocked'" link :disabled="busy" :icon="MoreFilled" :aria-label="`${T('FilesActions')} ${row.name}`" :title="T('FilesActions')" @click.stop="keyboardMenu(row, $event)"/></template></el-table-column>
-      </el-table>
-      <div v-if="listing" class="file-list-loading" role="status"><span class="file-loading-spinner" aria-hidden="true"></span><span class="file-loading-label">{{ T('FilesLoading') }}</span></div>
-      </div>
-      <el-button v-if="next !== null" :disabled="busy" @click="loadMore">{{ T('FilesMore') }}</el-button>
+      <div ref="browserHost" class="file-browser-host"></div>
+      <el-button class="files-more-page" v-if="next !== null" :disabled="busy" @click="loadMore">{{ T('FilesMore') }}</el-button>
       <div v-if="progress" class="files-progress" role="status" aria-live="polite"><span>{{ progress.name }}</span><el-progress :percentage="progress.percent"/><el-button :disabled="cancelled" @click="cancelled = true">{{ T('Cancel') }}</el-button></div>
-      <div class="files-summary"><span>{{ T('FilesEntryCount', { count: displayEntries.length }) }}</span><span>{{ writable ? T('FilesWritable') : T('FilesReadOnlyShort') }}</span></div>
     </div>
     <WorkspaceMenu class="files-context-menu" :position="menu" :items="menuItems" :label="T('FilesActions')" @close="menu = null" @action="menuAction"/>
     <FileTextEditor v-model="editorVisible" v-model:text="editorText" :name="editorEntry?.name" :path="editorEntry?.path" :original="editorOriginal" :read-only="editorEntry?.can_write !== true || !editorHash" :loading="editorLoading" :saving="editorSaving" :error="editorError" @save="saveEditor"/>
@@ -57,8 +35,11 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
+import {fileViewMarkup,renderFileRows,bindFileView,updateFileSelection,fileSizeLabel,fileViewLabels,FILE_VIEW_DEFAULTS} from '@/utils/fileView'
+import {filePanelIcon} from '@/utils/filePanelIcons'
+import {useAppStore} from '@/store/app'
 import { terminalStatus } from '@/api/terminal'
-import { Back, Refresh, Upload, Download, Folder, Lock, Close, House, FolderAdd, Right, Document, MoreFilled, Search } from '@element-plus/icons-vue'
+import { Refresh, Close } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 import WorkspaceMenu from './WorkspaceMenu.vue'
 import FileTextEditor from './FileTextEditor.vue'
@@ -70,7 +51,8 @@ const emit = defineEmits(['close', 'terminal-path', 'busy-change', 'dirty-change
 const visible = ref(false), connected = ref(false), busy = ref(false), listing = ref(false), password = ref(''), hasSaved = ref(false), useSaved = ref(false)
 const error = ref(''), notice = ref(''), user = ref(''), path = ref(''), entries = ref([]), next = ref(null), progress = ref(null), dragging = ref(false), picker = ref(null), cancelled = ref(false)
 const home = ref(''), location = ref(''), writable = ref(false), menu = ref(null), editing = ref(false), editOp = ref('mkdir'), editRow = ref(null), editName = ref(''), editPath = ref(''), editMode = ref('600'), editError = ref('')
-const showHidden = ref(true), copiedEntry = ref(null), propertiesVisible = ref(false), properties = ref(null)
+const browserHost=ref(null);let fileView,viewHost,gridFingerprint=''
+const showHidden = ref(FILE_VIEW_DEFAULTS.showHidden), copiedEntry = ref(null), propertiesVisible = ref(false), properties = ref(null)
 const filter = ref(''), selectedName = ref(''), sort = ref({by:'name',order:'asc'})
 const displayEntries = computed(() => (path.value !== '/' ? [{name:'..',kind:'directory',parent:true}] : []).concat(entries.value.filter(row => showHidden.value || !row.name.startsWith('.'))))
 const parent = computed(() => path.value.split('/').slice(0, -1).join('/') || '/')
@@ -80,18 +62,18 @@ const editorDirty=computed(()=>editorVisible.value&&editorText.value!==editorOri
 watch(editorDirty,value=>emit('dirty-change',value))
 let filterTimer
 const listOptions = () => ({ query:filter.value,sort_by:sort.value.by,sort_order:sort.value.order })
-const selectRow = (row, column, event) => { if (!event?.target.closest('.files-row-actions')) { selectedName.value = row.name;if(row.kind==='file')openEditor(row) } }
+const selectRow = (row, focus=false) => {menu.value=null;selectedName.value=row.name;updateFileSelection(browserHost.value,row.name,!busy.value);if(focus)[...browserHost.value.querySelectorAll('.file-row')].find(node=>node.dataset.name===row.name)?.focus()}
 const openRow = (row, column, event) => { if(!busy.value&&!event?.target.closest('.files-row-actions')){if(row.kind==='directory')navigate(row.parent?parent.value:joinPath(row.name));else if(row.kind==='file')openEditor(row)} }
 const scheduleFilter = () => { clearTimeout(filterTimer); filterTimer=setTimeout(() => { if (connected.value && !busy.value) navigate(path.value) },250) }
 watch(filter,scheduleFilter)
 watch(busy,value=>{emit('busy-change',value);if(!value && requestedFilter!==filter.value && connected.value)scheduleFilter()})
 let requestedFilter = ''
-const sortEntries = ({prop,order}) => { sort.value={by:prop==='size'?'size':'name',order:order==='descending'?'desc':'asc'};if(connected.value&&!busy.value)navigate(path.value) }
+const sortEntries = value => {const [by,order]=value.split('-');sort.value={by,order};if(connected.value&&!busy.value)navigate(path.value)}
 const joinPath = name => path.value === '/' ? `/${name}` : path.value ? `${path.value}/${name}` : name
 const sizeLabel = size => size < 1024 ? `${size} B` : size < 1048576 ? `${(size / 1024).toFixed(1)} KB` : `${(size / 1048576).toFixed(1)} MB`
 const showError = e => { error.value = T(fileErrorKey(e?.message)); notice.value = ''; notify.error(error.value) }
 watch(notice, value => { if (value) notify.success(value) })
-const dispose = () => { clearTimeout(filterTimer); generation++; client?.close(); client = null; password.value = ''; listing.value = busy.value = connected.value = dragging.value = false; progress.value = menu.value = null; editing.value = propertiesVisible.value = editorVisible.value = false; copiedEntry.value = null; filter.value='';selectedName.value='';editorText.value=editorOriginal.value='';editorEntry.value=null }
+const dispose = () => { clearTimeout(filterTimer); generation++; client?.close(); client = null; password.value = '';fileView?.dispose();fileView=viewHost=null;gridFingerprint=''; listing.value = busy.value = connected.value = dragging.value = false; progress.value = menu.value = null; editing.value = propertiesVisible.value = editorVisible.value = false; copiedEntry.value = null; filter.value='';selectedName.value='';editorText.value=editorOriginal.value='';editorEntry.value=null }
 const close = () => { visible.value = false; dispose(); emit('close') }
 watch(visible, value => { if (!value) dispose() })
 const navigate = async target => {
@@ -204,13 +186,6 @@ const drop = event => {
   upload(Array.from(event.dataTransfer.files || []))
 }
 
-const showMenu = (row, column, event) => {
-  event.preventDefault()
-  event.stopPropagation?.()
-  if (!connected.value) return
-  menu.value = { row, x: event.clientX, y: event.clientY, trigger: event.target.closest('button') }
-}
-const keyboardMenu = (row, event) => { const box = event.currentTarget.getBoundingClientRect(); showMenu(row, null, { preventDefault() {}, target: event.currentTarget, clientX: box.left, clientY: box.bottom }) }
 const blankMenu = event => {
   if (event.target.closest('input,textarea,.workspace-context-menu') || !connected.value) return
   event.preventDefault()
@@ -264,7 +239,7 @@ const menuAction = async (op, context) => {
   if (op === 'home') return navigate(home.value)
   if (op === 'parent') return navigate(parent.value)
   if (op === 'open') return navigate(row.parent ? parent.value : joinPath(row.name))
-  if (op === 'location') return document.querySelector('.files-location input')?.focus()
+  if (op === 'location') return browserHost.value?.querySelector('#file-path')?.focus()
   if (op === 'hidden') { showHidden.value = !showHidden.value; return }
   if (op === 'copy-name') return copyText(row.name)
   if (op === 'copy-path') return copyText(row ? joinPath(row.name) : path.value)
@@ -282,6 +257,7 @@ const menuAction = async (op, context) => {
   }
   if (op === 'download') return download(row)
   if (op === 'editor') return openEditor(row)
+  if (op === 'mkdir') return browserHost.value?.querySelector('#file-mkdir').click()
   if (op !== 'remove') return edit(op, row)
   const current = client
   try { await ElMessageBox.confirm(T('FilesDeleteConfirm', { param: row.name }), T('FilesAction_remove'), { customClass:'terminal-owned-dialog',type: 'warning', confirmButtonText: T('FilesAction_remove'), cancelButtonText: T('Cancel') }) }
@@ -308,6 +284,29 @@ const applyEdit = async () => {
   finally { if (client === current) busy.value = false }
 }
 const confirmClose=async()=>{if(!editorDirty.value)return true;try{await ElMessageBox.confirm(T('FilesEditorDiscard'),T('FilesEditor'),{customClass:'terminal-owned-dialog',type:'warning',confirmButtonText:T('FilesEditorDiscardButton'),cancelButtonText:T('Cancel')});return true}catch{return false}}
+// 공통 DOM을 마운트하고 기존 파일 계정/프로토콜 어댑터만 연결한다.
+const syncFileView=()=>{
+  const host=browserHost.value;if(!host||!connected.value)return
+  if(viewHost!==host){
+    fileView?.dispose();viewHost=host;host.innerHTML=fileViewMarkup(filePanelIcon,fileViewLabels(useAppStore().setting.lang))
+    host.querySelector('#file-browser').hidden=false;picker.value=host.querySelector('#file-input');picker.value.onchange=selectFiles
+    fileView=bindFileView(host,{
+      navigate,action:action=>{if(action==='upload')picker.value.click();else navigate(action==='home'?home.value:action==='parent'?parent.value:path.value)},
+      notice:message=>notify.success(message),search:value=>{filter.value=value},hidden:value=>{showHidden.value=value},sort:sortEntries,
+      mkdir:async name=>{if(busy.value||!writable.value)throw Error(T('FilesReadOnly'));const current=client;busy.value=true;try{await current.request('mkdir',{path:path.value,name})}catch(e){throw Error(T(fileErrorKey(e.message)))}finally{if(client===current)busy.value=false}if(client===current)await navigate(path.value)}
+    },fileViewLabels(useAppStore().setting.lang));gridFingerprint=''
+  }
+  const rows=displayEntries.value, fingerprint=JSON.stringify(rows)
+  if(fingerprint!==gridFingerprint){gridFingerprint=fingerprint;renderFileRows(host,rows.map(raw=>({name:raw.name,kind:raw.kind,sizeLabel:fileSizeLabel(raw.size||0),parent:raw.parent,blocked:raw.kind==='blocked',raw})),{
+    icon:filePanelIcon,get enabled(){return !busy.value},selected:selectedName.value,
+    select:(row,focus)=>selectRow(row.raw,focus),open:row=>openRow(row.raw),download:row=>download(row.raw),parent:()=>navigate(parent.value),
+    menu:(row,x,y,trigger)=>{menu.value={row:row.raw,x,y,trigger}},copy:row=>menuAction('copy-entry',{row:row.raw})
+  })}
+  fileView.update({enabled:!busy.value,writable:writable.value,atRoot:path.value==='/',drives:false,loading:listing.value,path:path.value,query:filter.value,hidden:showHidden.value,access:writable.value?'':T('FilesReadOnlyShort'),sort:sort.value.by+'-'+sort.value.order,count:T('FilesEntryCount',{count:entries.value.filter(row=>showHidden.value||!row.name.startsWith('.')).length})})
+  updateFileSelection(host,selectedName.value,!busy.value)
+}
+watch([browserHost,connected,busy,listing,path,entries,showHidden,writable,sort,selectedName],syncFileView,{flush:'post',deep:true})
+
 defineExpose({ close, confirmClose, open: async (availability, files = []) => { if (visible.value && connected.value) { if (files.length) await upload(files); return }; queued = files; hasSaved.value = !!availability.has_saved_password; useSaved.value = hasSaved.value; error.value = notice.value = ''; visible.value = true; const version = generation; try { const result = await terminalStatus(props.peer.row_id); if (version !== generation || !visible.value) return; hasSaved.value = !!result.data.has_saved_password; useSaved.value = hasSaved.value } catch { /* 조회 실패 시 전달받은 상태를 유지한다. */ }; await nextTick(); if (hasSaved.value && visible.value) await connect(files) } })
 onDeactivated(() => { visible.value = false; dispose() })
 onBeforeUnmount(dispose)

@@ -1,0 +1,21 @@
+{
+  "path": "Remote folder",
+  "go": "Go to path",
+  "parent": "Parent folder",
+  "home": "Home folder",
+  "refresh": "Refresh",
+  "mkdir": "New folder",
+  "drives": "Drives",
+  "upload": "Upload",
+  "search": "Search this folder",
+  "name": "Name",
+  "size": "Size",
+  "hidden": "Hidden items",
+  "loading": "Loading files",
+  "empty": "No files to display.",
+  "folderName": "Folder name",
+  "create": "Create",
+  "cancel": "Cancel",
+  "invalidName": "Check the folder name.",
+  "created": "Folder created."
+}

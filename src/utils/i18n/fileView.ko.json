@@ -1,0 +1,21 @@
+{
+  "path": "원격 폴더",
+  "go": "경로 이동",
+  "parent": "상위 폴더",
+  "home": "홈 폴더",
+  "refresh": "새로고침",
+  "mkdir": "새 폴더",
+  "drives": "내 PC 드라이브 목록",
+  "upload": "업로드",
+  "search": "현재 폴더에서 검색",
+  "name": "파일명",
+  "size": "크기",
+  "hidden": "숨김 항목",
+  "loading": "파일 목록을 불러오는 중",
+  "empty": "표시할 파일이 없습니다.",
+  "folderName": "폴더 이름",
+  "create": "만들기",
+  "cancel": "취소",
+  "invalidName": "폴더 이름을 확인하세요.",
+  "created": "폴더를 만들었습니다."
+}
