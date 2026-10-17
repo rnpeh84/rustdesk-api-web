@@ -1,6 +1,11 @@
 <template>
   <section v-if="visible" class="device-files-panel file-panel-ui" role="region" :aria-label="`${T('DeviceFiles')} · ${peer.id}`" @contextmenu.stop="blankMenu" @keydown.shift.f10.stop="blankMenu">
-    <div class="files-heading"><strong>{{ T('DeviceFiles') }}</strong><span v-if="connected" :title="T('FilesAccountHint')">{{ user }}</span><el-button link :icon="Close" :aria-label="T('FilesHide')" :title="T('FilesHide')" @click="close"/></div>
+    <div class="files-heading">
+      <strong>{{ T('DeviceFiles') }}</strong>
+      <span v-if="connected" :title="T('FilesAccountHint')">{{ user }}</span>
+      <el-button v-if="error && !connected && useSaved" class="files-retry" link :disabled="busy" :icon="Refresh" :aria-label="T('WebTerminalRecheck')" :title="T('WebTerminalRecheck')" @click="connect()"/>
+      <el-button link :icon="Close" :aria-label="T('FilesHide')" :title="T('FilesHide')" @click="close"/>
+    </div>
     <el-form v-if="!connected && (!embedded || !useSaved)" @submit.prevent="connect()">
       <el-form-item v-if="!useSaved" :label="T('WebTerminalPassword')">
         <el-input v-model="password" type="password" show-password autocomplete="off" maxlength="128" :disabled="busy" :aria-label="T('WebTerminalPassword')"/>
@@ -8,7 +13,6 @@
       <el-checkbox v-if="hasSaved" v-model="useSaved" :disabled="busy">{{ T('WebTerminalSavedPassword') }}</el-checkbox>
       <el-button type="primary" native-type="submit" :loading="busy">{{ T('WebTerminalCheckConnect') }}</el-button>
     </el-form>
-    <div v-if="error" class="files-recovery" role="alert"><span>{{ error }}</span><el-button v-if="!connected && useSaved" :disabled="busy" :icon="Refresh" :aria-label="T('WebTerminalRecheck')" :title="T('WebTerminalRecheck')" @click="connect()"/></div>
     <div v-if="connected" class="files-workspace" :class="{ 'is-dragging': dragging, 'is-busy': busy }" :aria-busy="busy" @dragover.prevent="dragging = true" @dragleave="dragging = false" @drop.prevent="drop">
       <div ref="browserHost" class="file-browser-host"></div>
       <el-button class="files-more-page" v-if="next !== null" :disabled="busy" @click="loadMore">{{ T('FilesMore') }}</el-button>
@@ -314,6 +318,9 @@ onBeforeUnmount(dispose)
 
 <style src="../../styles/filePanelShared.css"></style>
 <style scoped>
+.device-files-panel.file-panel-ui .files-heading > .el-button.is-link{flex:none;width:30px;min-width:30px;height:30px;min-height:30px;margin-left:auto;padding:6px}
+.device-files-panel.file-panel-ui .files-heading > .files-retry + .el-button{margin-left:0}
+.files-heading > .el-button:focus-visible{outline:2px solid var(--file-primary);outline-offset:2px}
 .files-progress{flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(60px,1fr) auto;align-items:center;gap:8px;margin-top:8px}.files-progress>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.files-edit-buttons{display:flex;justify-content:flex-end;margin-top:16px}.files-mode-hint{font-size:12px;color:var(--el-text-color-secondary)}.files-properties{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px;font-size:12px}.files-properties dt{color:var(--el-text-color-secondary)}.files-properties dd{margin:0;overflow-wrap:anywhere}
 @media(max-width:600px){.files-progress{grid-template-columns:minmax(0,1fr) auto}.files-progress>span{grid-column:1/-1}}
 </style>

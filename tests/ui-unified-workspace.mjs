@@ -18,6 +18,7 @@ const output=async(frame,text)=>frame.waitForFunction(text=>document.querySelect
 const artifacts=new URL('../../runtime/unified-workspace/',import.meta.url)
 await mkdir(artifacts,{recursive:true})
 let complete=false
+const started=Date.now()
 try {
   const report=await context.request.post(fixture.origin+'/api/client/install/official/report',{headers:{Authorization:'Bearer '+fixture.report_token},data:{id:fixture.device_id,service_running:true,desktop:'no_session',terminal:'available',platform:'linux',shell_user:'fixture-user',resources:{cpu_percent:13,memory_percent:55,disk_percent:92,disk_path:'/'}}})
   assert.equal(report.status(),204)
@@ -133,7 +134,26 @@ try {
       await page.waitForFunction(()=>document.querySelector('#log-entries')?.textContent.includes('안전한 파일 작업 제한'))
       assert.equal(await page.locator('.log-row').filter({hasText:'안전한 파일 작업 제한'}).count(),1)
       assert.equal((await page.locator('#log-entries').innerText()).includes('×2'),false,'파일 연결 실패 중복 알림')
-      await frame.locator('.files-recovery').waitFor({state:'visible'})
+      assert.equal(await frame.locator('.files-recovery,.device-files-panel > [role="alert"]').count(),0,'파일 오류 중복 배너 없음')
+      const retry=frame.locator('.files-heading .files-retry')
+      await retry.waitFor({state:'visible'});assert.equal(await retry.isEnabled(),true)
+      assert.ok((await frame.locator('.notification-summary').innerText()).includes('안전한 파일 작업 제한'),'기존 오류 팝업 유지')
+      for(const theme of ['light','dark'])for(const width of [1440,768,390]){
+        await page.setViewportSize({width,height:900});await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme)
+        await retry.focus();await retry.press('Tab');await page.keyboard.press('Shift+Tab')
+        const header=await frame.evaluate(()=>{const heading=document.querySelector('.files-heading'),retry=heading.querySelector('.files-retry'),close=heading.lastElementChild,a=retry.getBoundingClientRect(),b=close.getBoundingClientRect(),h=heading.getBoundingClientRect();return {height:h.height,width:a.width,heightButton:a.height,gap:b.left-a.right,rightGap:h.right-b.right,aligned:a.y===b.y,focused:document.activeElement===retry,outline:getComputedStyle(retry).outlineWidth,label:retry.getAttribute('aria-label')}})
+        assert.ok(header.height===54&&header.width===30&&header.heightButton===30&&header.gap===8&&header.rightGap===16&&header.aligned&&header.focused&&header.outline==='2px'&&header.label,'오류 재시도 헤더 정렬/키보드 초점: '+JSON.stringify(header))
+      }
+      await page.setViewportSize({width:1440,height:1000})
+      await page.screenshot({path:new URL('file-error-notification.png',artifacts).pathname.replace(/^\/([A-Z]:)/,'$1'),fullPage:true})
+      await context.request.post(fixture.origin+'/__fixture/control',{headers:gate,data:{action:'slow-files'}})
+      // 앞선 인증·재연결 시험과 같은 사용자이므로 기존 분당 발급 제한이 지난 뒤 복구를 검증한다.
+      await page.waitForTimeout(Math.min(60000,Math.max(0,62000-(Date.now()-started))))
+      await retry.press('Enter')
+      try{await frame.locator('.file-row').first().waitFor({state:'visible',timeout:8000})}
+      catch{throw new Error('파일 재시도 결과: '+await frame.locator('.notification-summary').innerText())}
+      assert.equal(await retry.count(),0,'파일 재연결 성공 후 재시도 아이콘 숨김')
+      assert.equal(await frame.locator('.files-recovery').count(),0)
       assert.equal(await page.locator('#utility-panel').isVisible(),false)
       assert.equal(await page.locator('#status').innerText(),'연결됨')
       await page.locator('#open-files').click()
@@ -202,7 +222,7 @@ try {
   await anonymous.close()
   assert.deepEqual(errors,[])
   for(const url of urls){assert.equal(new URL(url).protocol,'wss:');assert.equal(new URL(url).search,'')}
-  const result={scope:'로컬 TLS API·실제 두 웹 번들·기존 xterm·암호화 모의 장치, 운영/실제 OS 아님',sessions:2,requestMode:true,singleSurface:true,sharedToolbar:true,immutableRequest:true,sharedAuthentication:true,passwordRetry:true,passwordCancel:true,sharedLog:true,logSecretExclusion:true,operationNotifications:true,sandboxFailureKeepsTerminalWithoutNativeFallback:true,filePanelRight:true,inputIsolation:true,terminalInputOutput:true,resize:true,disconnectCleanup:true,loginPageClose:true,responsiveThemes:6,authenticationThemes:6,pageErrors:errors}
+  const result={scope:'로컬 TLS API·실제 두 웹 번들·기존 xterm·암호화 모의 장치, 운영/실제 OS 아님',sessions:2,requestMode:true,singleSurface:true,sharedToolbar:true,immutableRequest:true,sharedAuthentication:true,passwordRetry:true,passwordCancel:true,sharedLog:true,logSecretExclusion:true,operationNotifications:true,fileErrorBannerRemoved:true,fileHeaderKeyboardRetry:true,fileErrorThemes:6,sandboxFailureKeepsTerminalWithoutNativeFallback:true,filePanelRight:true,inputIsolation:true,terminalInputOutput:true,resize:true,disconnectCleanup:true,loginPageClose:true,responsiveThemes:6,authenticationThemes:6,pageErrors:errors}
   await writeFile(new URL('result.json',artifacts),JSON.stringify(result,null,2))
   console.log(JSON.stringify(result));complete=true
 } finally {
