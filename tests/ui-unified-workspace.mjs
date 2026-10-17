@@ -19,12 +19,12 @@ const artifacts=new URL('../../runtime/unified-workspace/',import.meta.url)
 await mkdir(artifacts,{recursive:true})
 let complete=false
 try {
-  const report=await context.request.post(fixture.origin+'/api/client/install/official/report',{headers:{Authorization:'Bearer '+fixture.report_token},data:{id:fixture.device_id,service_running:true,desktop:'no_session',terminal:'available',platform:'linux',shell_user:'fixture-user'}})
+  const report=await context.request.post(fixture.origin+'/api/client/install/official/report',{headers:{Authorization:'Bearer '+fixture.report_token},data:{id:fixture.device_id,service_running:true,desktop:'no_session',terminal:'available',platform:'linux',shell_user:'fixture-user',resources:{cpu_percent:13,memory_percent:55,disk_percent:92,disk_path:'/'}}})
   assert.equal(report.status(),204)
   const resolved=await context.request.get(fixture.origin+'/api/admin/terminal/workspace?device_id='+encodeURIComponent(fixture.device_id),{headers:{'api-token':fixture.token}})
   assert.equal(resolved.status(),200,'실제 인증 API의 작업창 장치 식별')
   await context.request.post(fixture.origin+'/__fixture/control',{headers:gate,data:{action:'forget-password'}})
-  for(let session=0;session<3;session++) {
+  for(let session=0;session<2;session++) {
     if(session===0)await page.goto(fixture.origin+'/webcl/#/'+fixture.device_id+'?mode=terminal');else await page.locator('#terminal-reconnect').click()
     if(session===0){
       await page.locator('#password-form').waitFor({state:'visible'})
@@ -86,21 +86,43 @@ try {
     await frame.getByRole('dialog',{name:'터미널 설정',exact:true}).waitFor()
     await frame.getByRole('button',{name:'취소',exact:true}).click()
     if(session===0){
-    await page.locator('#terminal-files').click()
+    await page.locator('#open-files').click()
     await frame.locator('.device-files-panel').waitFor({state:'visible'})
+    assert.ok(await frame.locator('.terminal-files').evaluate(node=>node.getBoundingClientRect().right>=innerWidth-2),'파일 패널이 오른쪽에 있지 않습니다.')
+    const divider=frame.getByRole('separator',{name:'파일 패널 너비 조절'});await divider.press('ArrowLeft');assert.equal(await divider.getAttribute('aria-valuenow'),'420');await divider.press('ArrowRight');assert.equal(await divider.getAttribute('aria-valuenow'),'400')
     await frame.waitForFunction(()=>document.querySelector('.files-location input')&&!document.querySelector('.files-location input').disabled)
     const fileInputs=(await stats()).Inputs
-    await page.locator('#terminal-files').focus()
+    await page.locator('#open-files').focus()
     await page.keyboard.type('not-remote8')
     assert.equal((await stats()).Inputs,fileInputs)
-    await page.locator('#terminal-files').click()
+    await page.locator('#open-files').click()
+    }
+    if(session===1){
+      await context.request.post(fixture.origin+'/__fixture/control',{headers:gate,data:{action:'sandbox-files'}})
+      await page.locator('#open-files').click()
+      await page.locator('#utility-panel').waitFor({state:'visible'})
+      await page.waitForFunction(()=>document.querySelector('#log-entries')?.textContent.includes('표준 파일 전송'))
+      assert.equal(await frame.locator('.terminal-files').isVisible(),false)
+      assert.ok((await page.locator('#utility-panel').boundingBox()).x>600)
+      assert.equal(await page.locator('#status').innerText(),'연결됨')
+      await page.locator('#close-panel').click()
     }
     assert.equal(await page.locator('#status').innerText(),'연결됨')
     assert.equal(await page.locator('#session-id').isVisible(),true)
+    assert.deepEqual(await page.locator('.resource-stat b').allTextContents(),['13%','55%','92%']);assert.equal(await page.locator('.resource-stat.is-high').count(),1)
     if(await page.locator('#session-log').isHidden())await page.locator('#open-log').click()
     await page.locator('#log-entries').focus()
     const beforeLogInput=(await stats()).Inputs;await page.keyboard.type('log-only8');assert.equal((await stats()).Inputs,beforeLogInput)
     await page.waitForFunction(()=>document.querySelector('#log-entries')?.innerText.includes('장치 연결됨'))
+    if(session===0){
+      await page.locator('#terminal-copy').click()
+      await page.locator('#open-settings').click();await frame.getByRole('dialog',{name:'터미널 설정',exact:true}).waitFor()
+      await frame.getByRole('button',{name:'저장',exact:true}).click()
+      await page.waitForFunction(()=>document.querySelector('#log-entries')?.textContent.includes('설정'))
+      const popup=await frame.locator('.notification-dock.has-new').boundingBox();assert.ok(popup.width<=420&&popup.width>250,'알림은 작은 팝업이어야 합니다.');assert.ok(popup.x>500,'알림 팝업은 오른쪽에 있어야 합니다.')
+      await page.screenshot({path:new URL('notification-popup.png',artifacts).pathname.replace(/^\/([A-Z]:)/,'$1')})
+      await page.waitForTimeout(5500);assert.ok((await page.locator('#log-entries').innerText()).includes('설정'),'일시 알림 종료 후 작업 로그 유지')
+    }
     const log=await page.locator('#log-entries').innerText()
     assert.ok(log.includes('장치 연결됨'))
     for(const secret of [fixture.password,fixture.token,text,'wrong-fixture-password'])assert.equal(log.includes(secret),false)
@@ -116,6 +138,8 @@ try {
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
         assert.ok(await page.locator('.session-title strong').evaluate(node=>node.getBoundingClientRect().height<=20),'공통 제목이 세로로 접혔습니다.')
         assert.equal(await frame.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
+        const resourceLine=await page.locator('.workspace-summary').boundingBox();assert.ok(resourceLine.height<=24);assert.equal(await page.locator('.resource-stat').count(),3)
+        assert.ok(await page.locator('.session-footer').evaluate(node=>node.scrollWidth<=node.clientWidth),'하단 한 줄 상태바 overflow')
         assert.ok(await frame.locator('.xterm-screen').evaluate(node=>node.getBoundingClientRect().height>100))
         await page.screenshot({path:new URL(theme+'-'+width+'.png',artifacts).pathname.replace(/^\/([A-Z]:)/,'$1')})
       }
@@ -145,7 +169,7 @@ try {
   await anonymous.close()
   assert.deepEqual(errors,[])
   for(const url of urls){assert.equal(new URL(url).protocol,'wss:');assert.equal(new URL(url).search,'')}
-  const result={scope:'로컬 TLS API·실제 두 웹 번들·기존 xterm·암호화 모의 장치, 운영/실제 OS 아님',sessions:3,requestMode:true,singleSurface:true,sharedToolbar:true,immutableRequest:true,sharedAuthentication:true,passwordRetry:true,passwordCancel:true,sharedLog:true,logSecretExclusion:true,inputIsolation:true,terminalInputOutput:true,resize:true,disconnectCleanup:true,loginPageClose:true,responsiveThemes:6,authenticationThemes:6,pageErrors:errors}
+  const result={scope:'로컬 TLS API·실제 두 웹 번들·기존 xterm·암호화 모의 장치, 운영/실제 OS 아님',sessions:2,requestMode:true,singleSurface:true,sharedToolbar:true,immutableRequest:true,sharedAuthentication:true,passwordRetry:true,passwordCancel:true,sharedLog:true,logSecretExclusion:true,operationNotifications:true,sandboxFallbackKeepsTerminal:true,filePanelRight:true,inputIsolation:true,terminalInputOutput:true,resize:true,disconnectCleanup:true,loginPageClose:true,responsiveThemes:6,authenticationThemes:6,pageErrors:errors}
   await writeFile(new URL('result.json',artifacts),JSON.stringify(result,null,2))
   console.log(JSON.stringify(result));complete=true
 } finally {

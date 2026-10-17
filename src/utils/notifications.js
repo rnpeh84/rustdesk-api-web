@@ -5,6 +5,8 @@ import { ElMessage } from 'element-plus'
 export const notifications = reactive({ items: [], revision: 0, opened: false })
 export const notificationPortal = shallowRef(null)
 let sequence = 0
+const terminalListeners = new Set()
+export const subscribeTerminalNotifications = listener => { terminalListeners.add(listener); return () => terminalListeners.delete(listener) }
 export const attachNotificationHost = element => { if (element) notificationPortal.value = element }
 export const releaseNotificationHost = element => { if (notificationPortal.value === element) {notificationPortal.value = null;notifications.opened=false} }
 export const visibleNotifications=computed(()=>notificationPortal.value ? notifications.items : [])
@@ -25,6 +27,8 @@ export function notifyTerminal(input = {}) {
   }
   notifications.revision++
   const item = notifications.items[0]
+  // 이미 표시한 작업 알림만 전달하며 터미널 입력·출력은 수집하지 않는다.
+  for (const listener of terminalListeners) listener({id:item.id,message:item.message,type:item.type,time:item.time,count:item.count})
   return { close: () => { item.read = true; options.onClose?.() } }
 }
 // 일반 화면의 알림은 기존 일시 알림으로 표시하고 터미널 기록과 섞지 않는다.

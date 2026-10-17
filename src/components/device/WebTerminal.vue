@@ -26,8 +26,8 @@
       </div>
       <form v-if="findVisible" class="terminal-find" @submit.prevent="findText(1)"><el-input ref="findInput" v-model="query" :aria-label="T('TerminalFindText')" autocomplete="off" @input="findIndex = -1"/><span>{{ findCount ? `${findIndex + 1} / ${findCount}` : '0 / 0' }}</span><el-button :icon="ArrowUp" :aria-label="T('TerminalFindPrevious')" @click="findText(-1)"/><el-button :icon="ArrowDown" :aria-label="T('TerminalFindNext')" @click="findText(1)"/><el-button :icon="Close" :aria-label="T('TerminalFindClose')" @click="closeFind"/></form>
       <div v-show="active" class="terminal-workspace" @contextmenu="workspaceMenu">
-        <div v-show="filesVisible" class="terminal-files" :style="{ width: `${filesWidth}px` }"><DeviceFiles ref="files" :peer="peer" @close="filesVisible = false" @terminal-path="preparePath" @busy-change="fileBusy = $event; recordActivity()" @dirty-change="editorDirty = $event"/></div>
-        <div v-if="filesVisible" class="terminal-files-divider" role="separator" tabindex="0" aria-orientation="vertical" :aria-label="T('FilesResize')" :aria-valuemin="260" :aria-valuemax="600" :aria-valuenow="filesWidth" @pointerdown="startResize" @keydown.left.prevent="resizeFiles(filesWidth - 20)" @keydown.right.prevent="resizeFiles(filesWidth + 20)"/>
+        <div v-show="filesVisible" class="terminal-files" :style="{ width: `${filesWidth}px` }"><DeviceFiles ref="files" :peer="peer" :embedded="embedded" @unavailable="fallbackFiles" @close="filesVisible = false" @terminal-path="preparePath" @busy-change="fileBusy = $event; recordActivity()" @dirty-change="editorDirty = $event"/></div>
+        <div v-if="filesVisible" class="terminal-files-divider" role="separator" tabindex="0" aria-orientation="vertical" :aria-label="T('FilesResize')" :aria-valuemin="260" :aria-valuemax="600" :aria-valuenow="filesWidth" @pointerdown="startResize" @keydown.left.prevent="resizeFiles(filesWidth + (embedded ? 20 : -20))" @keydown.right.prevent="resizeFiles(filesWidth + (embedded ? -20 : 20))"/>
         <div ref="screen" class="terminal-screen" :class="{ 'is-dragging': dragging }" :aria-label="T('WebTerminalTitle', { param: peer.id })" @contextmenu.prevent.stop="terminalMenu" @dragover="dragOver" @dragleave="dragging = false" @drop="dropFiles"/>
       </div>
       <WorkspaceMenu class="terminal-context-menu" :position="menu" :items="contextItems" :label="T('TerminalActions')" @close="menu = null" @action="contextAction"/>
@@ -57,11 +57,11 @@ import ResourceMeters from './ResourceMeters.vue'
 import WindowSizeIcon from './WindowSizeIcon.vue'
 import DeviceFiles from './DeviceFiles.vue'
 import WorkspaceMenu from './WorkspaceMenu.vue'
-import { notifyTerminal as ElMessage, attachNotificationHost, releaseNotificationHost, showNotifications } from '@/utils/notifications'
+import { notifyTerminal as ElMessage, attachNotificationHost, releaseNotificationHost, showNotifications, subscribeTerminalNotifications } from '@/utils/notifications'
 import { findTerminalMatches, quoteShellPath } from '@/utils/terminalTools'
 
 const props = defineProps({ peer: { type: Object, required: true }, showEntry:{type:Boolean,default:true}, embedded:{type:Boolean,default:false} })
-const emit = defineEmits(['state','workspace','auth'])
+const emit = defineEmits(['state','workspace','auth','notification','file-fallback'])
 const state = ref('unknown')
 watch(state, value => emit('state', value))
 const blocked = computed(() => ['disabled', 'unsupported'].includes(state.value))
@@ -78,7 +78,7 @@ const failureStage = ref('')
 const screen = ref(null)
 const socket = ref(null)
 const expanded = ref(false), filesAllowed = ref(false), files = ref(null), dragging = ref(false)
-const filesVisible = ref(false), filesWidth = ref(320)
+const filesVisible = ref(false), filesWidth = ref(props.embedded ? 400 : 320)
 const notificationHost = ref(null), menu = ref(null), fontSize = ref(14)
 const findVisible = ref(false), findInput = ref(null), query = ref(''), findIndex = ref(-1), findCount = ref(0)
 const pasteVisible = ref(false), pasteText = ref(''), selected = ref(false)
@@ -88,7 +88,7 @@ const editorDirty=ref(false)
 const hostname=computed(()=>resourceStatus.value.device?.hostname || props.peer.hostname || T('TerminalHostnameUnknown'))
 watch([state,resourceStatus,filesAllowed,filesVisible],()=>{
   const status=resourceStatus.value,resources=status.resources||{},now=Date.now()/1000
-  emit('workspace',{hostname:hostname.value,filesAllowed:filesAllowed.value,filesVisible:filesVisible.value,fresh:status.service_running===true&&Number.isFinite(status.reported_at)&&status.reported_at<=now+5&&now-status.reported_at<=90,cpu:resources.cpu_percent,memory:resources.memory_percent,disk:resources.disk_percent})
+  emit('workspace',{hostname:hostname.value,filesAllowed:state.value==='ready',helperFilesAllowed:filesAllowed.value,filesVisible:filesVisible.value,fresh:status.service_running===true&&Number.isFinite(status.reported_at)&&status.reported_at<=now+5&&now-status.reported_at<=90,cpu:resources.cpu_percent,memory:resources.memory_percent,disk:resources.disk_percent})
 },{deep:true})
 let idleTimer, resourceTimer, lastActivity=Date.now(), statusPending=false, preferenceGeneration=0
 const recordActivity=()=>{lastActivity=Date.now()}
@@ -125,11 +125,13 @@ const requestClose=async done=>{if(editorDirty.value && !(await files.value?.con
 const requestDisconnect=async()=>{if(editorDirty.value && !(await files.value?.confirmClose()))return;disconnect()}
 const dispose = () => { workspaceAuthNeeded.value=false; clearInterval(idleTimer);clearInterval(resourceTimer);idleTimer=resourceTimer=null;preferenceGeneration++;settingsVisible.value=false;releaseNotificationHost(notificationHost.value); disconnect(); password.value = ''; expanded.value = dragging.value = false }
 const attachNotifications = () => attachNotificationHost(notificationHost.value)
-const openFiles = async (list = []) => { filesVisible.value = true; await nextTick(); await files.value?.open(connectionAvailability, list) }
-const toggleFiles = () => { if (filesVisible.value) files.value?.close(); else openFiles() }
+const fallbackFiles = (reason='account') => { files.value?.close();filesVisible.value=false;emit('file-fallback',reason) }
+const stopNotifications=subscribeTerminalNotifications(value=>{if(props.embedded&&visible.value)emit('notification',value)})
+const openFiles = async (list = []) => { if(props.embedded&&!filesAllowed.value){fallbackFiles();return} filesVisible.value = true; await nextTick(); await files.value?.open(connectionAvailability, list) }
+const toggleFiles = async () => { if (filesVisible.value) {if(!(await files.value?.confirmClose()))return;files.value?.close()} else await openFiles() }
 const resizeFiles = value => { filesWidth.value = Math.max(260, Math.min(600, value, (screen.value?.parentElement.clientWidth || 960) - 200)) }
 let resizing = null
-const moveResize = event => { if (resizing) resizeFiles(resizing.width + event.clientX - resizing.x) }
+const moveResize = event => { if (resizing) resizeFiles(resizing.width + (props.embedded ? resizing.x - event.clientX : event.clientX - resizing.x)) }
 const stopResize = () => { resizing = null; window.removeEventListener('pointermove', moveResize); window.removeEventListener('pointerup', stopResize); window.removeEventListener('pointercancel', stopResize) }
 const startResize = event => { if (event.button !== 0) return; event.preventDefault(); resizing = { x: event.clientX, width: filesWidth.value }; window.addEventListener('pointermove', moveResize); window.addEventListener('pointerup', stopResize); window.addEventListener('pointercancel', stopResize) }
 const dragOver = event => { if (event.dataTransfer?.types.includes('Files')) { event.preventDefault(); dragging.value = filesAllowed.value } }
@@ -318,7 +320,7 @@ defineExpose({
       if (props.embedded && !useSaved.value && !socket.value && !busy.value) { workspaceAuthNeeded.value = true; return }
       return connect()
     }
-    if (name === 'files' && !filesAllowed.value) return
+    if (name === 'files' && !filesAllowed.value) { if(props.embedded)fallbackFiles();return }
     return contextAction(name)
   },
   requestWorkspaceClose: async () => {
@@ -338,7 +340,7 @@ defineExpose({
     else if (props.embedded) workspaceAuthNeeded.value = true
   }
 })
-onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown','wheel','drop'])document.removeEventListener(event,documentActivity,true);clearInterval(expiry); dispose() })
+onBeforeUnmount(() => { stopNotifications();alive = false;for(const event of ['keydown','pointerdown','wheel','drop'])document.removeEventListener(event,documentActivity,true);clearInterval(expiry); dispose() })
 </script>
 
 <style scoped>
@@ -408,4 +410,9 @@ onBeforeUnmount(() => { alive = false;for(const event of ['keydown','pointerdown
 .terminal-owned-dialog.el-dialog{padding:0;overflow:hidden}.terminal-owned-dialog .el-dialog__header{padding:12px 44px 12px 16px;background:var(--el-bg-color-overlay);border-bottom:1px solid var(--el-border-color)}.terminal-owned-dialog .el-dialog__title{font-size:14px;color:var(--el-text-color-primary)}.terminal-owned-dialog .el-dialog__body{padding:14px 16px}.terminal-owned-dialog .el-dialog__footer{padding:10px 16px;border-top:1px solid var(--el-border-color)}.terminal-owned-dialog .el-dialog__close,.terminal-owned-dialog .el-message-box__title{color:var(--el-text-color-regular)}.terminal-dialog .el-button:not(.is-link):not(.is-text),.terminal-owned-dialog .el-button:not(.is-link):not(.is-text){height:32px;border-radius:5px;background:var(--el-fill-color-light);color:var(--el-text-color-primary);border-color:var(--el-border-color)}.terminal-dialog .el-button--primary:not(.is-link),.terminal-owned-dialog .el-button--primary:not(.is-link){background:var(--el-color-primary);border-color:var(--el-color-primary);color:#fff}.terminal-dialog .el-button:not(.is-disabled):not(.is-link):hover,.terminal-owned-dialog .el-button:not(.is-disabled):not(.is-link):hover{background:var(--el-fill-color);border-color:var(--el-color-primary)}.terminal-dialog .terminal-toolbar .el-button,.terminal-dialog .files-toolbar .el-button{height:30px;min-height:30px;width:30px;padding:6px}.terminal-dialog .el-button.is-disabled,.terminal-owned-dialog .el-button.is-disabled{opacity:.5}.terminal-owned-dialog .el-message-box__content{color:var(--el-text-color-regular)}.terminal-owned-dialog .el-textarea__inner,.terminal-owned-dialog .el-input__wrapper,.terminal-owned-dialog .el-select__wrapper{background:var(--el-bg-color)}.terminal-owned-dialog .el-input__inner{color:var(--el-text-color-primary)}
 
 .terminal-dialog .el-input.is-disabled .el-input__inner,.terminal-owned-dialog .el-input.is-disabled .el-input__inner{background:transparent;color:var(--el-disabled-text-color);-webkit-text-fill-color:var(--el-disabled-text-color)}
+</style>
+
+<style scoped>
+.terminal-inline .terminal-screen{order:0}.terminal-inline .terminal-files-divider{order:1}.terminal-inline .terminal-files{order:2;max-width:calc(100% - 160px);border-left:1px solid var(--el-border-color)}
+@media(max-width:760px){.terminal-inline .terminal-files{position:absolute;right:0;top:0;bottom:0;width:min(400px,100%)!important;max-width:100%;z-index:3}.terminal-inline .terminal-files-divider{display:none}}
 </style>

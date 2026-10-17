@@ -2,7 +2,7 @@
   <main class="remote-terminal-host">
     <div v-if="failure" class="remote-terminal-error" role="alert"><p>{{ T(failure) }}</p><el-button @click="load">{{ T('WebTerminalRecheck') }}</el-button></div>
     <p v-else-if="!peer" class="remote-terminal-loading" role="status">{{ T('TerminalState_checking') }}</p>
-    <WebTerminal v-if="peer" ref="terminal" :peer="peer" :show-entry="false" embedded @state="sendState" @workspace="sendView" @auth="sendAuth"/>
+    <WebTerminal v-if="peer" ref="terminal" :peer="peer" :show-entry="false" embedded @state="sendState" @workspace="sendView" @auth="sendAuth" @notification="sendNotification" @file-fallback="sendFileFallback"/>
   </main>
 </template>
 <script setup>
@@ -18,6 +18,8 @@ let alive = true, generation = 0
 let authPort
 const sendAuth = value => authPort?.postMessage({type:'auth',required:value.required===true,busy:value.busy===true})
 const sendState = state => { if (parent !== window) parent.postMessage({ type: 'rede-terminal-state', device, state }, location.origin) }
+const sendNotification = value => { if(parent!==window)parent.postMessage({...value,type:'rede-terminal-notification',level:value.type,device},location.origin) }
+const sendFileFallback = reason => { if(parent!==window)parent.postMessage({type:'rede-terminal-file-fallback',device,reason},location.origin) }
 const sendView = value => { if (parent !== window) parent.postMessage({type:'rede-terminal-view',device,...value},location.origin) }
 const load = async () => {
   const version = ++generation

@@ -5,6 +5,7 @@
   "SharedDeviceDeleteHint": { "One": "Remove this device from the shares below and delete it." },
   "SharedDeviceDeleteTitle": { "One": "Delete shared device" },
   "Client": { "One": "Client" },
+	"FilesStandardFallback": {"One": "Switching to standard file transfer. Advanced file tools are unavailable on this device."},
 	"FilesError_sandbox": {"One": "The Linux kernel cannot isolate the file helper. Landlock ABI 3 or newer is required."},
 	"TerminalExpand": { "One": "Expand terminal" }, "TerminalRestore": { "One": "Restore terminal size" },
 	"DeviceFiles": { "One": "File transfer" }, "FilesParent": { "One": "Parent folder" }, "FilesUpload": { "One": "Upload" }, "FilesDownload": { "One": "Download" }, "FilesSize": { "One": "Size" }, "FilesMore": { "One": "Show more" }, "FilesEmpty": { "One": "No files." }, "FilesBlocked": { "One": "Links and special files cannot be accessed." },
