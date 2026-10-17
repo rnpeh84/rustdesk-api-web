@@ -6,7 +6,7 @@
   "SharedDeviceDeleteTitle": { "One": "Delete shared device" },
   "Client": { "One": "Client" },
 	"FilesStandardFallback": {"One": "Switching to standard file transfer. Advanced file tools are unavailable on this device."},
-	"FilesError_sandbox": {"One": "The Linux kernel cannot isolate the file helper. Landlock ABI 3 or newer is required."},
+	"FilesError_sandbox": {"One": "Secure file restrictions are unavailable on this device. A supported Linux kernel is required."},
 	"TerminalExpand": { "One": "Expand terminal" }, "TerminalRestore": { "One": "Restore terminal size" },
 	"DeviceFiles": { "One": "File transfer" }, "FilesParent": { "One": "Parent folder" }, "FilesUpload": { "One": "Upload" }, "FilesDownload": { "One": "Download" }, "FilesSize": { "One": "Size" }, "FilesMore": { "One": "Show more" }, "FilesEmpty": { "One": "No files." }, "FilesBlocked": { "One": "Links and special files cannot be accessed." },
 	"FilesDropGuide": {"One": "Drop files to upload. Maximum 64 MB per file."}, "FilesUploaded": { "One": "Uploaded {param} files." }, "FilesDownloaded": { "One": "Download completed." }, "FilesCancelled": { "One": "Transfer cancelled." }, "FilesDirectoriesUnsupported": { "One": "Select files instead of folders." },

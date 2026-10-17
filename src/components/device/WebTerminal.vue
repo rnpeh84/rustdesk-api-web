@@ -26,9 +26,9 @@
       </div>
       <form v-if="findVisible" class="terminal-find" @submit.prevent="findText(1)"><el-input ref="findInput" v-model="query" :aria-label="T('TerminalFindText')" autocomplete="off" @input="findIndex = -1"/><span>{{ findCount ? `${findIndex + 1} / ${findCount}` : '0 / 0' }}</span><el-button :icon="ArrowUp" :aria-label="T('TerminalFindPrevious')" @click="findText(-1)"/><el-button :icon="ArrowDown" :aria-label="T('TerminalFindNext')" @click="findText(1)"/><el-button :icon="Close" :aria-label="T('TerminalFindClose')" @click="closeFind"/></form>
       <div v-show="active" class="terminal-workspace" @contextmenu="workspaceMenu">
-        <div v-show="filesVisible" class="terminal-files" :style="{ width: `${filesWidth}px` }"><DeviceFiles ref="files" :peer="peer" :embedded="embedded" @unavailable="fallbackFiles" @close="filesVisible = false" @terminal-path="preparePath" @busy-change="fileBusy = $event; recordActivity()" @dirty-change="editorDirty = $event"/></div>
+        <div v-show="filesVisible" class="terminal-files" :style="{ width: `${filesWidth}px` }"><DeviceFiles ref="files" :peer="peer" :embedded="embedded" @close="filesVisible = false" @terminal-path="preparePath" @busy-change="fileBusy = $event; recordActivity()" @dirty-change="editorDirty = $event"/></div>
         <div v-if="filesVisible" class="terminal-files-divider" role="separator" tabindex="0" aria-orientation="vertical" :aria-label="T('FilesResize')" :aria-valuemin="260" :aria-valuemax="600" :aria-valuenow="filesWidth" @pointerdown="startResize" @keydown.left.prevent="resizeFiles(filesWidth + (embedded ? 20 : -20))" @keydown.right.prevent="resizeFiles(filesWidth + (embedded ? -20 : 20))"/>
-        <div ref="screen" class="terminal-screen" :class="{ 'is-dragging': dragging }" :aria-label="T('WebTerminalTitle', { param: peer.id })" @contextmenu.prevent.stop="terminalMenu" @dragover="dragOver" @dragleave="dragging = false" @drop="dropFiles"/>
+        <div ref="screen" class="terminal-screen" :class="{ 'is-dragging': dragging }" :aria-label="T('WebTerminalTitle', { param: peer.id })" @contextmenu.prevent.stop="terminalMenu" @dragover="dragOver" @dragleave="dragging = false" @drop="dropFiles"><div ref="terminalMount" class="terminal-mount"/></div>
       </div>
       <WorkspaceMenu class="terminal-context-menu" :position="menu" :items="contextItems" :label="T('TerminalActions')" @close="menu = null" @action="contextAction"/>
       <el-dialog class="terminal-owned-dialog" v-model="settingsVisible" :title="T('TerminalSettings')" width="min(420px, calc(100vw - 24px))" append-to-body :close-on-click-modal="false" @keydown.capture="recordActivity" @pointerdown.capture="recordActivity">
@@ -61,7 +61,7 @@ import { notifyTerminal as ElMessage, attachNotificationHost, releaseNotificatio
 import { findTerminalMatches, quoteShellPath } from '@/utils/terminalTools'
 
 const props = defineProps({ peer: { type: Object, required: true }, showEntry:{type:Boolean,default:true}, embedded:{type:Boolean,default:false} })
-const emit = defineEmits(['state','workspace','auth','notification','file-fallback'])
+const emit = defineEmits(['state','workspace','auth','notification'])
 const state = ref('unknown')
 watch(state, value => emit('state', value))
 const blocked = computed(() => ['disabled', 'unsupported'].includes(state.value))
@@ -76,6 +76,7 @@ const workspaceAuth = () => ({ required: visible.value && workspaceAuthNeeded.va
 watch([visible, workspaceAuthNeeded, busy], () => emit('auth', workspaceAuth()))
 const failureStage = ref('')
 const screen = ref(null)
+const terminalMount = ref(null)
 const socket = ref(null)
 const expanded = ref(false), filesAllowed = ref(false), files = ref(null), dragging = ref(false)
 const filesVisible = ref(false), filesWidth = ref(props.embedded ? 400 : 320)
@@ -88,12 +89,12 @@ const editorDirty=ref(false)
 const hostname=computed(()=>resourceStatus.value.device?.hostname || props.peer.hostname || T('TerminalHostnameUnknown'))
 watch([state,resourceStatus,filesAllowed,filesVisible],()=>{
   const status=resourceStatus.value,resources=status.resources||{},now=Date.now()/1000
-  emit('workspace',{hostname:hostname.value,filesAllowed:state.value==='ready',helperFilesAllowed:filesAllowed.value,filesVisible:filesVisible.value,fresh:status.service_running===true&&Number.isFinite(status.reported_at)&&status.reported_at<=now+5&&now-status.reported_at<=90,cpu:resources.cpu_percent,memory:resources.memory_percent,disk:resources.disk_percent})
+  emit('workspace',{hostname:hostname.value,filesAllowed:filesAllowed.value&&state.value==='ready',helperFilesAllowed:filesAllowed.value,filesVisible:filesVisible.value,fresh:status.service_running===true&&Number.isFinite(status.reported_at)&&status.reported_at<=now+5&&now-status.reported_at<=90,cpu:resources.cpu_percent,memory:resources.memory_percent,disk:resources.disk_percent})
 },{deep:true})
 let idleTimer, resourceTimer, lastActivity=Date.now(), statusPending=false, preferenceGeneration=0
 const recordActivity=()=>{lastActivity=Date.now()}
 const documentActivity=event=>{if(visible.value&&event.target.closest?.('.terminal-dialog,.terminal-owned-dialog'))recordActivity()}
-const refreshResources=async()=>{if(!visible.value||statusPending)return;statusPending=true;const current=attempt;try{const result=await terminalStatus(props.peer.row_id);if(visible.value&&current===attempt)resourceStatus.value=result.data}catch{if(visible.value&&current===attempt)resourceStatus.value={}}finally{statusPending=false}}
+const refreshResources=async()=>{if(!visible.value||statusPending)return;statusPending=true;const current=attempt;try{const result=await terminalStatus(props.peer.row_id);if(visible.value&&current===attempt){resourceStatus.value=result.data;filesAllowed.value=!!result.data.files_enabled}}catch{if(visible.value&&current===attempt)resourceStatus.value={}}finally{statusPending=false}}
 const loadPreferences=async()=>{const current=++preferenceGeneration;try{const result=await terminalPreferences();if(visible.value&&current===preferenceGeneration){idleMinutes.value=idleDraft.value=[0,1,5,10,15,30,60].includes(result.data.idle_minutes)?result.data.idle_minutes:0}}catch{if(visible.value&&current===preferenceGeneration)ElMessage.warning(T('TerminalSettingsUnavailable'))}}
 const savePreferences=async()=>{preferencesSaving.value=true;try{await saveTerminalPreferences({idle_minutes:idleDraft.value});idleMinutes.value=idleDraft.value;recordActivity();settingsVisible.value=false;ElMessage.success(T('TerminalSettingsSaved'))}catch{ElMessage.error(T('TerminalSettingsSaveFailed'))}finally{preferencesSaving.value=false}}
 watch(settingsVisible,value=>{if(value)idleDraft.value=idleMinutes.value})
@@ -125,9 +126,8 @@ const requestClose=async done=>{if(editorDirty.value && !(await files.value?.con
 const requestDisconnect=async()=>{if(editorDirty.value && !(await files.value?.confirmClose()))return;disconnect()}
 const dispose = () => { workspaceAuthNeeded.value=false; clearInterval(idleTimer);clearInterval(resourceTimer);idleTimer=resourceTimer=null;preferenceGeneration++;settingsVisible.value=false;releaseNotificationHost(notificationHost.value); disconnect(); password.value = ''; expanded.value = dragging.value = false }
 const attachNotifications = () => attachNotificationHost(notificationHost.value)
-const fallbackFiles = (reason='account') => { files.value?.close();filesVisible.value=false;emit('file-fallback',reason) }
 const stopNotifications=subscribeTerminalNotifications(value=>{if(props.embedded&&visible.value)emit('notification',value)})
-const openFiles = async (list = []) => { if(props.embedded&&!filesAllowed.value){fallbackFiles();return} filesVisible.value = true; await nextTick(); await files.value?.open(connectionAvailability, list) }
+const openFiles = async (list = []) => { if(!filesAllowed.value){await refreshResources();if(!filesAllowed.value){ElMessage.warning(T('FilesError_account'));return}} filesVisible.value = true; await nextTick(); await files.value?.open(connectionAvailability, list) }
 const toggleFiles = async () => { if (filesVisible.value) {if(!(await files.value?.confirmClose()))return;files.value?.close()} else await openFiles() }
 const resizeFiles = value => { filesWidth.value = Math.max(260, Math.min(600, value, (screen.value?.parentElement.clientWidth || 960) - 200)) }
 let resizing = null
@@ -228,7 +228,7 @@ const setupTerminal = async current => {
   terminal = new Terminal({ cursorBlink: true, disableStdin: true, screenReaderMode: true, scrollback: 2000, fontSize: fontSize.value, fontFamily: 'Consolas, "SFMono-Regular", Menlo, monospace', theme: terminalTheme.value })
   fit = new FitAddon()
   terminal.loadAddon(fit)
-  terminal.open(screen.value)
+  terminal.open(terminalMount.value)
   terminal.parser.registerOscHandler(52, () => true)
   terminal.attachCustomKeyEventHandler(event => {
     if (event.type !== 'keydown') return true
@@ -320,7 +320,7 @@ defineExpose({
       if (props.embedded && !useSaved.value && !socket.value && !busy.value) { workspaceAuthNeeded.value = true; return }
       return connect()
     }
-    if (name === 'files' && !filesAllowed.value) { if(props.embedded)fallbackFiles();return }
+    if (name === 'files' && !filesAllowed.value) return openFiles()
     return contextAction(name)
   },
   requestWorkspaceClose: async () => {
@@ -376,6 +376,9 @@ onBeforeUnmount(() => { stopNotifications();alive = false;for(const event of ['k
 .terminal-expanded .terminal-session-status { flex: 0 0 auto; }
 .terminal-expanded .terminal-workspace { flex: 1 1 0; height: auto; min-height: 0; }
 .terminal-screen :deep(.xterm) { height: 100%; }
+.terminal-mount { height:100%; width:calc(100% - 20px); }
+/* 겹쳐 표시되는 OS 스크롤바도 마지막 열을 가리지 않도록 전용 공간을 둔다. */
+.terminal-mount :deep(.xterm-viewport) { right:-20px; scrollbar-gutter:stable; }
 @media (max-width: 600px) { .terminal-screen { padding: 6px; } .terminal-heading{gap:8px;flex-wrap:wrap}.terminal-toolbar .el-button{width:28px;height:28px}.terminal-files{position:absolute;inset:0 auto 0 0;z-index:2;max-width:100%;width:100%!important;background:var(--el-bg-color);}.terminal-files-divider{display:none;}.terminal-footer{gap:6px;flex-wrap:wrap}.terminal-notification-host{flex-basis:100%}.terminal-footer-actions{margin-left:auto}.terminal-find{padding:6px;gap:4px} }
 /* 작업 공간만 어두운 팔레트를 적용하고 기존 대시보드 테마는 유지한다. */
 :global(.el-dialog.terminal-dialog){background:var(--el-bg-color);border:1px solid var(--el-border-color);box-shadow:var(--el-box-shadow)}

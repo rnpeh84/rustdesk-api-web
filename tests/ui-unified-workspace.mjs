@@ -100,12 +100,11 @@ try {
     if(session===1){
       await context.request.post(fixture.origin+'/__fixture/control',{headers:gate,data:{action:'sandbox-files'}})
       await page.locator('#open-files').click()
-      await page.locator('#utility-panel').waitFor({state:'visible'})
-      await page.waitForFunction(()=>document.querySelector('#log-entries')?.textContent.includes('표준 파일 전송'))
-      assert.equal(await frame.locator('.terminal-files').isVisible(),false)
-      assert.ok((await page.locator('#utility-panel').boundingBox()).x>600)
+      await frame.locator('.terminal-files').waitFor({state:'visible'})
+      await page.waitForFunction(()=>document.querySelector('#log-entries')?.textContent.includes('안전한 파일 작업 제한'))
+      assert.equal(await page.locator('#utility-panel').isVisible(),false)
       assert.equal(await page.locator('#status').innerText(),'연결됨')
-      await page.locator('#close-panel').click()
+      await page.locator('#open-files').click()
     }
     assert.equal(await page.locator('#status').innerText(),'연결됨')
     assert.equal(await page.locator('#session-id').isVisible(),true)
@@ -141,6 +140,8 @@ try {
         const resourceLine=await page.locator('.workspace-summary').boundingBox();assert.ok(resourceLine.height<=24);assert.equal(await page.locator('.resource-stat').count(),3)
         assert.ok(await page.locator('.session-footer').evaluate(node=>node.scrollWidth<=node.clientWidth),'하단 한 줄 상태바 overflow')
         assert.ok(await frame.locator('.xterm-screen').evaluate(node=>node.getBoundingClientRect().height>100))
+        const scrollSpace=await frame.evaluate(()=>{const text=document.querySelector('.xterm-screen').getBoundingClientRect(),viewport=document.querySelector('.xterm-viewport').getBoundingClientRect(),host=document.querySelector('.terminal-screen').getBoundingClientRect();return {right:viewport.right-text.right,bottom:host.bottom-text.bottom,inside:viewport.right<=host.right}})
+        assert.ok(scrollSpace.right>=19&&scrollSpace.bottom>=5&&scrollSpace.inside,'스크롤바가 터미널 마지막 열/행을 가립니다: '+JSON.stringify(scrollSpace))
         await page.screenshot({path:new URL(theme+'-'+width+'.png',artifacts).pathname.replace(/^\/([A-Z]:)/,'$1')})
       }
       await page.setViewportSize({width:1440,height:1000})
@@ -169,7 +170,7 @@ try {
   await anonymous.close()
   assert.deepEqual(errors,[])
   for(const url of urls){assert.equal(new URL(url).protocol,'wss:');assert.equal(new URL(url).search,'')}
-  const result={scope:'로컬 TLS API·실제 두 웹 번들·기존 xterm·암호화 모의 장치, 운영/실제 OS 아님',sessions:2,requestMode:true,singleSurface:true,sharedToolbar:true,immutableRequest:true,sharedAuthentication:true,passwordRetry:true,passwordCancel:true,sharedLog:true,logSecretExclusion:true,operationNotifications:true,sandboxFallbackKeepsTerminal:true,filePanelRight:true,inputIsolation:true,terminalInputOutput:true,resize:true,disconnectCleanup:true,loginPageClose:true,responsiveThemes:6,authenticationThemes:6,pageErrors:errors}
+  const result={scope:'로컬 TLS API·실제 두 웹 번들·기존 xterm·암호화 모의 장치, 운영/실제 OS 아님',sessions:2,requestMode:true,singleSurface:true,sharedToolbar:true,immutableRequest:true,sharedAuthentication:true,passwordRetry:true,passwordCancel:true,sharedLog:true,logSecretExclusion:true,operationNotifications:true,sandboxFailureKeepsTerminalWithoutNativeFallback:true,filePanelRight:true,inputIsolation:true,terminalInputOutput:true,resize:true,disconnectCleanup:true,loginPageClose:true,responsiveThemes:6,authenticationThemes:6,pageErrors:errors}
   await writeFile(new URL('result.json',artifacts),JSON.stringify(result,null,2))
   console.log(JSON.stringify(result));complete=true
 } finally {

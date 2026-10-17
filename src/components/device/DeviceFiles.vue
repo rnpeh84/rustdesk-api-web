@@ -62,7 +62,7 @@ import { notifyTerminal as notify } from '@/utils/notifications'
 import { DeviceFilesClient, fileErrorKey } from '@/utils/deviceFiles'
 import { T } from '@/utils/i18n'
 const props = defineProps({ peer: { type: Object, required: true }, embedded:Boolean })
-const emit = defineEmits(['close', 'terminal-path', 'busy-change', 'dirty-change','unavailable'])
+const emit = defineEmits(['close', 'terminal-path', 'busy-change', 'dirty-change'])
 const visible = ref(false), connected = ref(false), busy = ref(false), password = ref(''), hasSaved = ref(false), useSaved = ref(false)
 const error = ref(''), notice = ref(''), user = ref(''), path = ref(''), entries = ref([]), next = ref(null), progress = ref(null), dragging = ref(false), picker = ref(null), cancelled = ref(false)
 const home = ref(''), location = ref(''), writable = ref(false), menu = ref(null), editing = ref(false), editOp = ref('mkdir'), editRow = ref(null), editName = ref(''), editPath = ref(''), editMode = ref('600'), editError = ref('')
@@ -85,14 +85,7 @@ let requestedFilter = ''
 const sortEntries = ({prop,order}) => { sort.value={by:prop==='size'?'size':'name',order:order==='descending'?'desc':'asc'};if(connected.value&&!busy.value)navigate(path.value) }
 const joinPath = name => path.value === '/' ? `/${name}` : path.value ? `${path.value}/${name}` : name
 const sizeLabel = size => size < 1024 ? `${size} B` : size < 1048576 ? `${(size / 1024).toFixed(1)} KB` : `${(size / 1048576).toFixed(1)} MB`
-let fallbackIssued = false
-const showError = e => {
-  if(props.embedded && !connected.value && e?.message === 'sandbox') {
-    if(!fallbackIssued){fallbackIssued=true;notify.warning(T('FilesStandardFallback'));emit('unavailable','sandbox')}
-    return
-  }
-  error.value = T(fileErrorKey(e?.message)); notice.value = ''; notify.error(error.value)
-}
+const showError = e => { error.value = T(fileErrorKey(e?.message)); notice.value = ''; notify.error(error.value) }
 watch(notice, value => { if (value) notify.success(value) })
 const dispose = () => { clearTimeout(filterTimer); generation++; client?.close(); client = null; password.value = ''; busy.value = connected.value = dragging.value = false; progress.value = menu.value = null; editing.value = propertiesVisible.value = editorVisible.value = false; copiedEntry.value = null; filter.value='';selectedName.value='';editorText.value=editorOriginal.value='';editorEntry.value=null }
 const close = () => { visible.value = false; dispose(); emit('close') }
@@ -311,7 +304,7 @@ const applyEdit = async () => {
   finally { if (client === current) busy.value = false }
 }
 const confirmClose=async()=>{if(!editorDirty.value)return true;try{await ElMessageBox.confirm(T('FilesEditorDiscard'),T('FilesEditor'),{customClass:'terminal-owned-dialog',type:'warning',confirmButtonText:T('FilesEditorDiscardButton'),cancelButtonText:T('Cancel')});return true}catch{return false}}
-defineExpose({ close, confirmClose, open: async (availability, files = []) => { if (visible.value && connected.value) { if (files.length) await upload(files); return }; fallbackIssued=false;queued = files; hasSaved.value = !!availability.has_saved_password; useSaved.value = hasSaved.value; error.value = notice.value = ''; visible.value = true; const version = generation; try { const result = await terminalStatus(props.peer.row_id); if (version !== generation || !visible.value) return; hasSaved.value = !!result.data.has_saved_password; useSaved.value = hasSaved.value } catch { /* 조회 실패 시 전달받은 상태를 유지한다. */ }; await nextTick(); if (hasSaved.value && visible.value) await connect(files) } })
+defineExpose({ close, confirmClose, open: async (availability, files = []) => { if (visible.value && connected.value) { if (files.length) await upload(files); return }; queued = files; hasSaved.value = !!availability.has_saved_password; useSaved.value = hasSaved.value; error.value = notice.value = ''; visible.value = true; const version = generation; try { const result = await terminalStatus(props.peer.row_id); if (version !== generation || !visible.value) return; hasSaved.value = !!result.data.has_saved_password; useSaved.value = hasSaved.value } catch { /* 조회 실패 시 전달받은 상태를 유지한다. */ }; await nextTick(); if (hasSaved.value && visible.value) await connect(files) } })
 onDeactivated(() => { visible.value = false; dispose() })
 onBeforeUnmount(dispose)
 </script>

@@ -6,7 +6,7 @@
   "SharedDeviceDeleteTitle": { "One": "공유 중인 장치 삭제" },
   "Client": { "One": "클라이언트" },
 	"FilesStandardFallback": {"One": "표준 파일 전송으로 전환합니다. 이 장치에서는 고급 파일 도구를 사용할 수 없습니다."},
-	"FilesError_sandbox": {"One": "이 Linux 커널은 파일 도우미 격리를 지원하지 않습니다. Landlock ABI 3 이상이 필요합니다."},
+	"FilesError_sandbox": {"One": "이 장치에서는 안전한 파일 작업 제한을 적용할 수 없습니다. 지원되는 Linux 커널이 필요합니다."},
 	"TerminalExpand": { "One": "터미널 크게 보기" }, "TerminalRestore": { "One": "터미널 원래 크기" },
 	"DeviceFiles": { "One": "파일 전송" }, "FilesParent": { "One": "상위 폴더" }, "FilesUpload": { "One": "업로드" }, "FilesDownload": { "One": "다운로드" }, "FilesSize": { "One": "크기" }, "FilesMore": { "One": "더 보기" }, "FilesEmpty": { "One": "파일이 없습니다." }, "FilesBlocked": { "One": "링크·특수 파일은 접근할 수 없습니다." },
 	"FilesDropGuide": {"One": "파일을 끌어 놓아 업로드할 수 있습니다. 파일당 최대 64 MB입니다."}, "FilesUploaded": { "One": "{param}개 파일을 업로드했습니다." }, "FilesDownloaded": { "One": "다운로드를 완료했습니다." }, "FilesCancelled": { "One": "전송을 취소했습니다." }, "FilesDirectoriesUnsupported": { "One": "폴더 대신 전송할 파일을 선택해 주세요." },
