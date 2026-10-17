@@ -52,4 +52,4 @@ export class DeviceFilesClient {
   }
 }
 
-export const fileErrorKey = code => ['path','account','permission','exists','size','integrity','helper','sandbox','protocol','busy','io','transport','closed','timeout','blocked','nonempty','cross_device'].includes(code) ? `FilesError_${code}` : ['auth_required','access_denied','saved_password_unavailable','key_mismatch','disabled','unsupported','offline','relay_unreachable','id_server_unreachable','connection_timeout','signature_failed','connection_closed'].includes(code) ? `TerminalHelp_${code}` : 'FilesError_io'
+export const fileErrorKey = code => ['path','account','permission','exists','size','integrity','helper','sandbox','protocol','busy','io','transport','closed','timeout','blocked','nonempty','cross_device'].includes(code) ? `FilesError_${code}` : ['auth_required','access_denied','saved_password_unavailable','key_mismatch','disabled','unsupported','offline','relay_unreachable','id_server_unreachable','connection_timeout','signature_failed','connection_closed','unavailable','request_failed','pty_failed','server_rejected','peer_not_found','configuration'].includes(code) ? `TerminalHelp_${code}` : 'FilesError_io'

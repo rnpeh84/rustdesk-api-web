@@ -91,6 +91,15 @@ try {
     assert.ok(await frame.locator('.terminal-files').evaluate(node=>node.getBoundingClientRect().right>=innerWidth-2),'파일 패널이 오른쪽에 있지 않습니다.')
     const divider=frame.getByRole('separator',{name:'파일 패널 너비 조절'});await divider.press('ArrowLeft');assert.equal(await divider.getAttribute('aria-valuenow'),'420');await divider.press('ArrowRight');assert.equal(await divider.getAttribute('aria-valuenow'),'400')
     await frame.waitForFunction(()=>document.querySelector('.files-location input')&&!document.querySelector('.files-location input').disabled)
+    await frame.locator('.files-workspace').waitFor({state:'visible'})
+    for(const theme of ['light','dark'])for(const width of [1440,768,390]){
+      await page.setViewportSize({width,height:900});await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme)
+      await frame.locator('.files-location input').focus();await page.waitForTimeout(150)
+      const style=await frame.evaluate(()=>{const panel=document.querySelector('.device-files-panel'),row=panel.querySelector('.el-table__body tr'),cell=row.querySelector('td'),button=panel.querySelector('.files-row-actions button'),input=panel.querySelector('.files-location input'),wrapper=input.closest('.el-input__wrapper');return {row:row.getBoundingClientRect().height,left:parseFloat(getComputedStyle(cell).borderLeftWidth),font:parseFloat(getComputedStyle(cell).fontSize),outline:parseFloat(getComputedStyle(input).outlineWidth),focus:getComputedStyle(wrapper).boxShadow,gap:panel.getBoundingClientRect().right-button.getBoundingClientRect().right}})
+      assert.ok(style.row>=37&&style.row<=39&&style.left===0&&style.font===12&&style.outline===0&&style.focus!=='none'&&style.gap>=16,'공통 파일 스타일/포커스: '+JSON.stringify(style))
+      if(width===1440)await page.screenshot({path:new URL('files-common-'+theme+'.png',artifacts).pathname.replace(/^\/([A-Z]:)/,'$1')})
+    }
+    await page.setViewportSize({width:1440,height:1000})
     const fileInputs=(await stats()).Inputs
     await page.locator('#open-files').focus()
     await page.keyboard.type('not-remote8')
@@ -102,6 +111,9 @@ try {
       await page.locator('#open-files').click()
       await frame.locator('.terminal-files').waitFor({state:'visible'})
       await page.waitForFunction(()=>document.querySelector('#log-entries')?.textContent.includes('안전한 파일 작업 제한'))
+      assert.equal(await page.locator('.log-row').filter({hasText:'안전한 파일 작업 제한'}).count(),1)
+      assert.equal((await page.locator('#log-entries').innerText()).includes('×2'),false,'파일 연결 실패 중복 알림')
+      await frame.locator('.files-recovery').waitFor({state:'visible'})
       assert.equal(await page.locator('#utility-panel').isVisible(),false)
       assert.equal(await page.locator('#status').innerText(),'연결됨')
       await page.locator('#open-files').click()

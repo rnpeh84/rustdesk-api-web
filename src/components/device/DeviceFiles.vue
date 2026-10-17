@@ -1,20 +1,21 @@
 <template>
   <section v-if="visible" class="device-files-panel" role="region" :aria-label="`${T('DeviceFiles')} · ${peer.id}`" @contextmenu.stop="blankMenu" @keydown.shift.f10.stop="blankMenu">
     <div class="files-heading"><strong>{{ T('DeviceFiles') }}</strong><span v-if="connected" :title="T('FilesAccountHint')">{{ user }}</span><el-button link :icon="Close" :aria-label="T('FilesHide')" :title="T('FilesHide')" @click="close"/></div>
-    <el-form v-if="!connected" @submit.prevent="connect()">
+    <el-form v-if="!connected && (!embedded || !useSaved)" @submit.prevent="connect()">
       <el-form-item v-if="!useSaved" :label="T('WebTerminalPassword')">
         <el-input v-model="password" type="password" show-password autocomplete="off" maxlength="128" :disabled="busy" :aria-label="T('WebTerminalPassword')"/>
       </el-form-item>
       <el-checkbox v-if="hasSaved" v-model="useSaved" :disabled="busy">{{ T('WebTerminalSavedPassword') }}</el-checkbox>
       <el-button type="primary" native-type="submit" :loading="busy">{{ T('WebTerminalCheckConnect') }}</el-button>
     </el-form>
+    <div v-if="error" class="files-recovery" role="alert"><span>{{ error }}</span><el-button v-if="!connected && useSaved" :disabled="busy" :icon="Refresh" :aria-label="T('WebTerminalRecheck')" :title="T('WebTerminalRecheck')" @click="connect()"/></div>
     <div v-if="connected" class="files-workspace" :class="{ 'is-dragging': dragging, 'is-busy': busy }" :aria-busy="busy" @dragover.prevent="dragging = true" @dragleave="dragging = false" @drop.prevent="drop">
       <div class="files-toolbar">
         <el-button :disabled="busy || path === '/'" :icon="Back" :aria-label="T('FilesParent')" :title="T('FilesParent')" @click="navigate(parent)"/>
         <el-button :disabled="busy" :icon="House" :aria-label="T('FilesHome')" :title="T('FilesHome')" @click="navigate(home)"/>
         <el-button :disabled="busy" :icon="Refresh" :aria-label="T('Refresh')" :title="T('Refresh')" @click="navigate(path)"/>
         <el-button :disabled="busy || !writable" :icon="FolderAdd" :aria-label="T('FilesNewFolder')" :title="T('FilesNewFolder')" @click="edit('mkdir')"/>
-        <el-button type="primary" :disabled="busy || !writable" :icon="Upload" :aria-label="T('FilesUpload')" :title="T('FilesUpload')" @click="picker?.click()"/>
+        <el-button class="files-upload" :disabled="busy || !writable" :icon="Upload" :aria-label="T('FilesUpload')" :title="T('FilesUpload')" @click="picker?.click()">{{ T('FilesUpload') }}</el-button>
         <input ref="picker" type="file" multiple hidden @change="selectFiles"/>
       </div>
       <form class="files-location" @submit.prevent="navigate(location)"><el-input v-model="location" :readonly="busy" :aria-label="T('FilesPath')" autocomplete="off" :spellcheck="false"/><el-button native-type="submit" :disabled="busy" :icon="Right" :aria-label="T('FilesGo')" :title="T('FilesGo')"/></form>
@@ -26,7 +27,7 @@
         </el-table-column>
         <el-table-column prop="size" sortable="custom" :label="T('FilesSize')" width="82"><template #default="{ row }">{{ row.kind === 'file' ? sizeLabel(row.size) : '-' }}</template></el-table-column>
         <el-table-column class-name="files-row-actions" width="34"><template #default="{ row }"><el-button v-if="row.kind === 'file'" link :disabled="busy" :icon="Download" :aria-label="`${T('FilesDownload')} ${row.name}`" :title="T('FilesDownload')" @click.stop="download(row)"/></template></el-table-column>
-        <el-table-column class-name="files-row-actions" width="30"><template #default="{ row }"><el-button v-if="!row.parent && row.kind !== 'blocked'" link :disabled="busy" :icon="MoreFilled" :aria-label="`${T('FilesActions')} ${row.name}`" :title="T('FilesActions')" @click.stop="keyboardMenu(row, $event)"/></template></el-table-column>
+        <el-table-column class-name="files-row-actions" width="44"><template #default="{ row }"><el-button v-if="!row.parent && row.kind !== 'blocked'" link :disabled="busy" :icon="MoreFilled" :aria-label="`${T('FilesActions')} ${row.name}`" :title="T('FilesActions')" @click.stop="keyboardMenu(row, $event)"/></template></el-table-column>
       </el-table>
       <el-button v-if="next !== null" :disabled="busy" @click="loadMore">{{ T('FilesMore') }}</el-button>
       <div v-if="progress" class="files-progress" role="status" aria-live="polite"><span>{{ progress.name }}</span><el-progress :percentage="progress.percent"/><el-button :disabled="cancelled" @click="cancelled = true">{{ T('Cancel') }}</el-button></div>
@@ -112,7 +113,7 @@ const connect = async (files = queued) => {
   const value = password.value
   dispose(); const current = new DeviceFilesClient(props.peer); client = current; const version = generation
   busy.value = true; error.value = notice.value = ''; path.value = ''; entries.value = []
-  current.onClose = code => { if (client === current) { connected.value = busy.value = false; showError(new Error(code)) } }
+  current.onClose = code => { if (client === current) { const idle = connected.value && !busy.value; connected.value = false; if (idle) showError(new Error(code)) } }
   try {
     const ready = await current.connect(value, useSaved.value)
     if (version !== generation || !visible.value) return
@@ -349,5 +350,36 @@ onBeforeUnmount(dispose)
 .files-workspace :deep(.el-table){user-select:none;-webkit-user-select:none}
 </style>
 <style scoped>
-.device-files-panel{background:var(--el-bg-color);color:var(--el-text-color-regular)}.files-filter{flex:none;margin-bottom:8px}.files-entry{max-width:100%;font-size:12px;font-weight:400;color:var(--el-text-color-regular)}.files-entry :deep(span){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.files-entry.is-folder{font-weight:600}.files-entry.is-folder :deep(.el-icon){color:var(--el-color-primary);font-size:17px}.files-entry:not(.is-folder) :deep(.el-icon){color:var(--el-text-color-secondary);font-size:15px}.files-blocked{display:flex;align-items:center;gap:5px;color:var(--el-text-color-secondary)}.files-heading{margin-bottom:10px}.files-toolbar{margin-bottom:2px}.files-summary{padding-top:8px;border-top:1px solid var(--el-border-color);color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table){--el-table-bg-color:var(--el-bg-color);--el-table-tr-bg-color:var(--el-bg-color);--el-table-header-bg-color:var(--el-bg-color);--el-table-header-text-color:var(--el-text-color-secondary);--el-table-text-color:var(--el-text-color-regular);--el-table-border-color:var(--el-border-color);--el-table-row-hover-bg-color:var(--el-fill-color-light);--el-table-current-row-bg-color:var(--el-fill-color)}.files-workspace :deep(.el-table td){padding:6px 0}.files-workspace :deep(.el-table tr.is-selected td){background:var(--el-fill-color)}.files-workspace :deep(.el-table .cell){padding:0 6px}.files-workspace :deep(.el-table__body tr){cursor:default}.files-workspace :deep(.el-table__body tr td:first-child){border-left:2px solid var(--el-border-color)}.files-workspace :deep(.el-table__body tr:hover td:first-child),.files-workspace :deep(.el-table__body tr.is-selected td:first-child){border-left-color:var(--el-color-primary)}.files-workspace :deep(.el-table .sort-caret.ascending){border-bottom-color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table .sort-caret.descending){border-top-color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table .ascending .sort-caret.ascending){border-bottom-color:var(--el-color-primary)}.files-workspace :deep(.el-table .descending .sort-caret.descending){border-top-color:var(--el-color-primary)}
+.device-files-panel{background:var(--el-bg-color);color:var(--el-text-color-regular)}.files-filter{flex:none;margin-bottom:8px}.files-entry{max-width:100%;font-size:12px;font-weight:400;color:var(--el-text-color-regular)}.files-entry :deep(span){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.files-entry.is-folder{font-weight:600}.files-entry.is-folder :deep(.el-icon){color:var(--el-color-primary);font-size:17px}.files-entry:not(.is-folder) :deep(.el-icon){color:var(--el-text-color-secondary);font-size:15px}.files-blocked{display:flex;align-items:center;gap:5px;color:var(--el-text-color-secondary)}.files-heading{margin-bottom:10px}.files-toolbar{margin-bottom:2px}.files-summary{padding-top:8px;border-top:1px solid var(--el-border-color);color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table){--el-table-bg-color:var(--el-bg-color);--el-table-tr-bg-color:var(--el-bg-color);--el-table-header-bg-color:var(--el-bg-color);--el-table-header-text-color:var(--el-text-color-secondary);--el-table-text-color:var(--el-text-color-regular);--el-table-border-color:var(--el-border-color);--el-table-row-hover-bg-color:var(--el-fill-color-light);--el-table-current-row-bg-color:var(--el-fill-color)}.files-workspace :deep(.el-table td){padding:6px 0}.files-workspace :deep(.el-table tr.is-selected td){background:var(--el-fill-color)}.files-workspace :deep(.el-table .cell){padding:0 6px}.files-workspace :deep(.el-table__body tr){cursor:default}.files-workspace :deep(.el-table .sort-caret.ascending){border-bottom-color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table .sort-caret.descending){border-top-color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table .ascending .sort-caret.ascending){border-bottom-color:var(--el-color-primary)}.files-workspace :deep(.el-table .descending .sort-caret.descending){border-top-color:var(--el-color-primary)}
+</style>
+
+<style>
+/* Windows 파일 패널과 같은 컴팩트 목록 규격을 사용한다. */
+.terminal-dialog .device-files-panel{--file-row-height:38px;--file-action-size:30px;padding:16px;font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif}
+.terminal-dialog .device-files-panel .files-workspace{border:0;border-radius:0}
+.terminal-dialog .device-files-panel .files-workspace.is-dragging{outline:2px dashed var(--el-color-primary);outline-offset:-2px}
+.terminal-dialog .device-files-panel .files-entry{font-size:12px;font-weight:400}
+.terminal-dialog .device-files-panel .files-entry .el-icon{font-size:16px}
+.terminal-dialog .device-files-panel .files-location input{font-family:inherit}
+.terminal-dialog .device-files-panel .files-workspace .el-table__body{border-spacing:0}
+.terminal-dialog .device-files-panel .files-workspace .el-table__body td.el-table__cell{height:var(--file-row-height);padding:3px 0;border-top:0;border-left:0;border-right:0;border-bottom:1px solid var(--el-border-color-light);border-radius:0}
+.terminal-dialog .device-files-panel .files-workspace .el-table .cell{padding:0 6px;font-size:12px}
+.terminal-dialog .device-files-panel .files-workspace .el-table .files-row-actions .cell{padding:0 6px}
+.terminal-dialog .device-files-panel .files-workspace .files-row-actions .el-button.is-link{width:var(--file-action-size);height:var(--file-action-size);min-height:var(--file-action-size);padding:5px;border-radius:5px}
+.terminal-dialog .device-files-panel .files-workspace .el-table tr.is-selected td{background:var(--el-color-primary-light-9)}
+.terminal-dialog .device-files-panel .files-recovery{display:flex;align-items:center;gap:8px;padding:8px;margin-bottom:8px;border-radius:5px;background:var(--el-color-danger-light-9);color:var(--el-color-danger);font-size:12px}
+.terminal-dialog .device-files-panel .files-recovery>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.terminal-dialog .device-files-panel .files-location{order:0}
+.terminal-dialog .device-files-panel .files-toolbar{order:1;margin:0 0 10px;gap:3px}
+.terminal-dialog .device-files-panel .files-filter{order:2}
+.terminal-dialog .device-files-panel .files-readonly{order:3}
+.terminal-dialog .device-files-panel .files-workspace>.el-table{order:4}
+.terminal-dialog .device-files-panel .files-workspace>.el-button{order:5}
+.terminal-dialog .device-files-panel .files-progress{order:6}
+.terminal-dialog .device-files-panel .files-summary{order:7}
+.terminal-dialog .device-files-panel .files-toolbar>.el-button,.terminal-dialog .device-files-panel .files-row-actions .el-button{color:var(--el-text-color-secondary);background:transparent;border-color:transparent}
+.terminal-dialog .device-files-panel .files-toolbar>.el-button:not(.is-disabled):hover,.terminal-dialog .device-files-panel .files-row-actions .el-button:not(.is-disabled):hover{color:var(--el-color-primary);background:var(--el-color-primary-light-9)}
+.terminal-dialog .device-files-panel .files-toolbar>.files-upload{margin-left:auto;width:auto;padding:6px 9px;border:1px solid var(--el-color-primary-light-7);color:var(--el-color-primary)}
+.terminal-dialog .device-files-panel .files-workspace .files-entry.el-button.is-link{--el-button-text-color:var(--el-text-color-regular);color:var(--el-text-color-regular)}
+.terminal-dialog .device-files-panel .files-workspace .files-row-actions .el-button.is-link{--el-button-text-color:var(--el-text-color-secondary);color:var(--el-text-color-secondary)}
 </style>

@@ -403,6 +403,9 @@ html.portainer-ui {
   .el-table th.device-identity-column .cell, .el-table td.device-identity-column .cell { padding-inline: 16px; text-align: left; }
   .device-identity-column .peer-id-column { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-width: 0; white-space: nowrap; }
   :is(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 2px solid var(--console-primary); outline-offset: 2px; }
+  // Element Plus 입력은 바깥 wrapper 한 곳에만 포커스를 표시한다.
+  input.el-input__inner:focus-visible { outline: 0; outline-offset: 0; box-shadow: none; }
+  .el-input__wrapper:has(.el-input__inner:focus-visible) { box-shadow: 0 0 0 1px var(--console-primary) inset, 0 0 0 2px var(--console-primary-soft); }
   // 작업 영역 클래스가 없는 세션·토큰 표에서도 제거 아이콘의 기본·호버를 동일하게 표시한다.
   .el-button.console-delete-action:not(:has(.query-action-label)) {
     color: var(--console-danger); background: transparent; border-color: transparent;
