@@ -1,0 +1,97 @@
+/* 파일 패널 공통 외형. ReDe와 콘솔의 이 파일은 같은 원본/바이트로 유지한다. */
+.file-panel-ui{--file-bg:#fff;--file-text:#343434;--file-muted:#717171;--file-line:#dedede;--file-border:#bdbdbd;--file-hover:#f1f1f1;--file-primary:#087ea4;--file-soft:#e5f3f9;--el-bg-color:var(--file-bg);--el-text-color-regular:var(--file-text);--el-text-color-secondary:var(--file-muted);--el-border-color:var(--file-border);--el-border-color-light:var(--file-line);--el-border-color-lighter:var(--file-line);--el-color-primary:var(--file-primary);--el-color-primary-light-9:var(--file-soft);height:100%;min-height:0;min-width:0;display:flex;flex-direction:column;padding:0;box-sizing:border-box;background:var(--file-bg);color:var(--file-text);font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif;font-size:12px}
+:root.dark .file-panel-ui,:root[data-theme=dark] .file-panel-ui{--file-bg:#212121;--file-text:#e8e8e8;--file-muted:#a5a5a5;--file-line:#333;--file-border:#484848;--file-hover:#303030;--file-primary:#43b8df;--file-soft:#183b45}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]):not(.portainer-ui) .file-panel-ui{--file-bg:#212121;--file-text:#e8e8e8;--file-muted:#a5a5a5;--file-line:#333;--file-border:#484848;--file-hover:#303030;--file-primary:#43b8df;--file-soft:#183b45}}
+.file-panel-ui :is(.files-heading,.panel-heading){display:flex;align-items:center;gap:8px;flex:none;height:54px;min-height:54px;padding:10px 16px;margin:0;box-sizing:border-box}
+.file-panel-ui :is(.files-heading strong,.panel-heading h2){margin:0;font-size:12px;font-weight:600;line-height:22px;color:var(--file-text)}
+.file-panel-ui .files-heading>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--file-muted)}
+.file-panel-ui :is(.files-heading>.el-button,.panel-heading>.icon-button){margin-left:auto;width:30px;height:30px;min-height:30px;padding:6px;border:0;border-radius:5px;background:transparent;color:var(--file-primary)}
+.file-panel-ui :is(.files-workspace,#panel-files){display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;padding:0 16px 16px;margin:0;overflow:hidden;border:0;border-radius:0;box-sizing:border-box}
+.file-panel-ui #file-browser{display:flex;flex:1;flex-direction:column;min-height:0;margin:0;overflow:hidden}
+.file-panel-ui :is(.files-location,.file-path){display:flex;align-items:stretch;gap:4px;flex:none;height:36px;min-height:36px;margin:0 0 8px}
+.file-panel-ui #file-path-form{margin:0;flex:none}
+.file-panel-ui :is(.files-location .el-input,.files-location .el-input__wrapper,#file-path){height:36px;min-height:36px;min-width:0;border-radius:5px;box-sizing:border-box}
+.file-panel-ui :is(.files-location input,#file-path,#file-search){font-family:inherit;font-size:12px;outline:0;outline-offset:0}
+.file-panel-ui :is(#file-path,#file-search){padding:0 11px;border:1px solid var(--file-border);background:var(--file-bg);color:var(--file-text);border-radius:5px;line-height:normal}
+.file-panel-ui :is(.files-location .el-button,.file-path .icon-button){width:36px;height:36px;min-height:36px;padding:6px;margin:0;border:0;background:transparent;color:var(--file-primary);flex:none}
+.file-panel-ui :is(.files-location input,.files-filter input){height:100%;line-height:normal;box-shadow:none}
+.file-panel-ui :is(.files-location .el-input__wrapper,.files-filter .el-input__wrapper){box-shadow:0 0 0 1px var(--file-border) inset}
+.file-panel-ui :is(.files-location .el-input__wrapper,.files-filter .el-input__wrapper):focus-within{box-shadow:0 0 0 1px var(--file-primary) inset,0 0 0 2px var(--file-soft)}
+.file-panel-ui :is(#file-path,#file-search):focus{border-color:var(--file-primary);box-shadow:0 0 0 2px var(--file-soft)}
+.file-panel-ui :is(.files-toolbar,.file-actions){display:flex;align-items:center;gap:3px;height:32px;min-height:32px;flex:none;margin:0 0 10px}
+.file-panel-ui :is(.files-toolbar>.el-button,.file-actions>.icon-button){display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-height:30px;margin:0;padding:6px;border:0;border-radius:5px;background:transparent;color:var(--file-primary);flex:none}
+.file-panel-ui :is(.files-toolbar>.files-upload,.file-actions>.file-upload){display:inline-flex;align-items:center;gap:7px;margin-left:auto;width:auto;height:32px;min-height:32px;padding:5px 8px;border:1px solid var(--file-border);border-radius:5px;background:var(--file-bg);color:var(--file-text);font-size:12px;line-height:20px}
+.file-panel-ui :is(.files-toolbar>.el-button,.file-actions>button):not(:disabled):not(.is-disabled):hover{background:var(--file-soft);color:var(--file-primary)}
+.file-panel-ui :is(.file-ui-icon,.files-toolbar .el-icon,.files-location .el-icon,.files-entry .el-icon,.files-row-actions .el-icon,.panel-heading .ui-icon){width:16px;height:16px;min-width:16px;font-size:16px;flex:none}
+.file-panel-ui .file-ui-icon{display:inline-block;vertical-align:middle;fill:currentColor;stroke:none;background:transparent;mask:none;-webkit-mask:none}
+.file-panel-ui :is(.files-filter,.file-search){display:block;position:relative;flex:none;height:32px;min-height:32px;margin:0 0 8px}
+.file-panel-ui .files-filter .el-input__wrapper{height:32px;min-height:32px;border-radius:5px}
+.file-panel-ui #file-search{height:32px;min-height:32px;padding-left:30px}
+.file-panel-ui .file-search>.file-ui-icon{position:absolute;left:10px;top:8px;width:14px;height:14px;color:var(--file-muted);pointer-events:none}
+.file-panel-ui .files-readonly{flex:none;margin:0 0 6px;color:var(--file-muted);font-size:11px;line-height:16px}
+.file-panel-ui :is(.files-workspace .file-list-stage,#file-list){flex:1;min-height:0;margin:0;user-select:none;-webkit-user-select:none;font-size:12px;border-top:0;outline:0}
+.file-panel-ui #file-list{overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:0}
+.file-panel-ui .el-table{--el-table-bg-color:var(--file-bg);--el-table-tr-bg-color:var(--file-bg);--el-table-header-bg-color:var(--file-bg);--el-table-text-color:var(--file-text);--el-table-header-text-color:var(--file-muted);--el-table-border-color:var(--file-line);--el-table-row-hover-bg-color:var(--file-hover);--el-table-current-row-bg-color:var(--file-soft)}
+.file-panel-ui .el-table__body{border-collapse:separate;border-spacing:0}
+.file-panel-ui .el-table__body td.el-table__cell{height:38px;padding:0;border:0;border-bottom:1px solid var(--file-line);border-radius:0}
+.file-panel-ui .el-table .cell{padding:0 6px;line-height:22px;font-size:12px}
+.file-panel-ui .el-table__header th.el-table__cell{height:28px;padding:0;font-weight:400}
+.file-panel-ui .file-row{display:grid;grid-template-columns:minmax(0,1fr) 82px 40px 44px;gap:0;align-items:center;min-height:38px;height:38px;padding:0;margin:0;border:0;border-bottom:1px solid var(--file-line);border-radius:0;font-size:12px;scroll-margin-top:28px;box-sizing:border-box}
+.file-panel-ui .file-row>span{padding:0 6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-panel-ui :is(.file-row[aria-selected=true],.el-table tr.is-selected td){background:var(--file-soft);color:var(--file-text)}
+.file-panel-ui .file-row:hover{background:var(--file-hover)}
+.file-panel-ui :is(.file-entry,.files-entry.el-button.is-link){display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;max-width:100%;min-width:0;min-height:30px;height:30px;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:var(--file-text);font-family:inherit;font-size:12px;font-weight:400;line-height:22px;text-align:left;white-space:nowrap}
+.file-panel-ui :is(.file-entry>span,.files-entry>span){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-panel-ui :is(.file-entry.is-folder>.file-ui-icon,.files-entry.is-folder .el-icon){color:var(--file-primary)}
+.file-panel-ui :is(.file-entry:not(.is-folder)>.file-ui-icon,.files-entry:not(.is-folder) .el-icon){color:var(--file-muted)}
+.file-panel-ui :is(.files-entry.el-button.is-link,.file-row-actions>.icon-button){--el-button-text-color:var(--file-text)}
+.file-panel-ui .file-row>span.file-row-actions{display:contents}
+.file-panel-ui .file-entry-size{color:var(--file-text);font-size:12px}
+.file-panel-ui :is(.file-row-actions>.icon-button,.files-row-actions .el-button.is-link){display:inline-flex;align-items:center;justify-content:center;justify-self:start;width:30px;height:30px;min-height:30px;padding:5px;border:0;border-radius:5px;background:transparent;color:var(--file-muted)}
+.file-panel-ui .file-row-actions>.file-download{margin-left:4px}.file-panel-ui .file-row-actions>.file-more{margin-left:7px}
+.file-panel-ui .el-table .files-download .cell{padding:0 4px}.file-panel-ui .el-table .files-more .cell{padding:0 7px}
+.file-panel-ui :is(.file-row-actions>.icon-button,.files-row-actions .el-button.is-link):not(:disabled):not(.is-disabled):hover{color:var(--file-primary);background:var(--file-soft)}
+.file-panel-ui .file-action-placeholder{visibility:hidden;pointer-events:none}
+.file-panel-ui .file-list-header{position:sticky;top:0;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) 82px 40px 44px;gap:0;height:28px;min-height:28px;padding:0;border-bottom:1px solid var(--file-line);background:var(--file-bg);font-size:12px;box-sizing:border-box}
+.file-panel-ui .file-list-header>div{min-width:0}
+.file-panel-ui .file-sort-button{display:flex;align-items:center;justify-content:flex-start;gap:3px;width:100%;height:27px;min-height:27px;margin:0;padding:0 6px;border:0;border-radius:0;background:transparent;color:var(--file-muted);font:inherit;font-weight:400;line-height:22px;text-align:left}
+.file-panel-ui :is(.caret-wrapper,.file-sort-caret){display:inline-flex;position:relative;align-items:center;vertical-align:middle;width:16px;height:14px;margin:0;flex:none}
+.file-panel-ui :is(.sort-caret,.file-sort-caret i){position:absolute;left:3px;width:0;height:0;border:5px solid transparent}
+.file-panel-ui :is(.sort-caret.ascending,.file-sort-caret .ascending){top:-4px;border-bottom-color:var(--file-muted)}
+.file-panel-ui :is(.sort-caret.descending,.file-sort-caret .descending){bottom:-4px;border-top-color:var(--file-muted)}
+.file-panel-ui :is(.ascending .sort-caret.ascending,[aria-sort=ascending] .file-sort-caret .ascending){border-bottom-color:var(--file-primary)}
+.file-panel-ui :is(.descending .sort-caret.descending,[aria-sort=descending] .file-sort-caret .descending){border-top-color:var(--file-primary)}
+.file-panel-ui :is(.files-summary,.file-summary){display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;min-height:28px;box-sizing:border-box;padding:8px 0 0;margin:0;border-top:1px solid var(--file-line);color:var(--file-muted);font-size:11px;line-height:20px}
+.file-panel-ui .file-summary .field-hint{margin:0;padding:0;line-height:20px;font-size:11px}
+.file-panel-ui .file-summary label{display:inline-flex;align-items:center;gap:5px;margin:0;padding:0;color:var(--file-muted);font-size:11px;line-height:20px;white-space:nowrap}
+.file-panel-ui #file-hidden{display:inline-block;width:14px;height:14px;min-height:0;flex:none;margin:0;padding:0;border-radius:3px;box-shadow:none;accent-color:var(--file-primary)}
+.file-panel-ui .file-row:focus-visible,.file-panel-ui .file-sort-button:focus-visible{outline:2px solid var(--file-primary);outline-offset:-2px}
+.file-panel-ui .files-workspace.is-dragging{outline:2px dashed var(--file-primary);outline-offset:-2px;background:var(--file-soft)}
+.file-panel-ui .files-blocked{display:flex;align-items:center;gap:5px;color:var(--file-muted)}
+.file-panel-ui .files-recovery{display:flex;align-items:center;gap:8px;margin:0 16px 8px;padding:8px;border-radius:5px;background:var(--el-color-danger-light-9);color:var(--el-color-danger);font-size:12px}
+.file-panel-ui .files-recovery>span{flex:1;min-width:0;overflow-wrap:anywhere}
+@media(max-height:620px){.file-panel-ui :is(.files-workspace,#panel-files){overflow-y:auto}.file-panel-ui #file-browser{flex:none;min-height:320px}}
+/* 관리 콘솔의 전역 테이블 규칙보다 파일 패널 규격을 우선한다. */
+.file-panel-ui .files-location{order:0}.file-panel-ui .files-toolbar{order:1}.file-panel-ui .files-filter{order:2}.file-panel-ui .files-readonly{order:3}.file-panel-ui .files-workspace .file-list-stage{order:4}.file-panel-ui .files-progress{order:5}.file-panel-ui .files-summary{order:6}
+.file-panel-ui .files-workspace .el-table__body td.el-table__cell{height:38px;padding:0;border:0;border-bottom:1px solid var(--file-line);border-radius:0}
+.file-panel-ui .files-workspace .el-table__header th.el-table__cell{height:28px;padding:0;font-weight:400}
+.file-panel-ui .files-workspace .el-table .files-entry.el-button.is-link{height:30px;min-height:30px;padding:0;white-space:nowrap;font-size:12px;font-weight:400;color:var(--file-text)}
+.file-panel-ui .files-workspace .files-row-actions .el-button.is-link{width:30px;height:30px;min-height:30px;padding:5px;color:var(--file-muted)}
+.file-panel-ui .files-workspace .files-toolbar>.el-button{height:30px;min-height:30px;width:30px;padding:6px;border:0;background:transparent;color:var(--file-primary)}
+.file-panel-ui .files-workspace .files-toolbar>.files-upload{height:32px;min-height:32px;width:auto;padding:5px 8px;border:1px solid var(--file-border);background:var(--file-bg);color:var(--file-text)}
+
+.file-panel-ui .files-filter{display:inline-flex;width:100%}.file-panel-ui .files-filter .el-input__wrapper{width:100%;box-sizing:border-box}
+.file-panel-ui .file-list-header,.file-panel-ui .files-workspace .el-table__header th.el-table__cell{background:var(--file-hover)}
+
+/* 목록의 공간을 보존하고 그 위에서만 로딩을 표시한다. */
+.file-panel-ui .file-list-stage{position:relative;display:flex;flex:1;min-width:0;min-height:0;overflow:hidden}
+.file-panel-ui .file-list-stage>.el-table{flex:1;min-height:0}
+.file-panel-ui .file-list-loading{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--file-bg) 82%,transparent);cursor:progress}
+.file-panel-ui .file-list-loading[hidden]{display:none}
+.file-panel-ui .file-loading-spinner{width:24px;height:24px;box-sizing:border-box;border:2px solid var(--file-line);border-top-color:var(--file-primary);border-radius:50%;animation:file-list-spin .75s linear infinite}
+@keyframes file-list-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.file-panel-ui .file-loading-spinner{animation-duration:1.8s}}
+
+.file-panel-ui .file-loading-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.file-panel-ui #panel-files #file-browser>.file-list-stage{flex:1;min-height:0}
+.file-panel-ui .file-list-stage>.el-table{font-size:12px}

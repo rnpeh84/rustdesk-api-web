@@ -1,5 +1,5 @@
 <template>
-  <section v-if="visible" class="device-files-panel" role="region" :aria-label="`${T('DeviceFiles')} · ${peer.id}`" @contextmenu.stop="blankMenu" @keydown.shift.f10.stop="blankMenu">
+  <section v-if="visible" class="device-files-panel file-panel-ui" role="region" :aria-label="`${T('DeviceFiles')} · ${peer.id}`" @contextmenu.stop="blankMenu" @keydown.shift.f10.stop="blankMenu">
     <div class="files-heading"><strong>{{ T('DeviceFiles') }}</strong><span v-if="connected" :title="T('FilesAccountHint')">{{ user }}</span><el-button link :icon="Close" :aria-label="T('FilesHide')" :title="T('FilesHide')" @click="close"/></div>
     <el-form v-if="!connected && (!embedded || !useSaved)" @submit.prevent="connect()">
       <el-form-item v-if="!useSaved" :label="T('WebTerminalPassword')">
@@ -21,14 +21,17 @@
       <form class="files-location" @submit.prevent="navigate(location)"><el-input v-model="location" :readonly="busy" :aria-label="T('FilesPath')" autocomplete="off" :spellcheck="false"/><el-button native-type="submit" :disabled="busy" :icon="Right" :aria-label="T('FilesGo')" :title="T('FilesGo')"/></form>
       <el-input v-model="filter" class="files-filter" :prefix-icon="Search" clearable :placeholder="T('FilesSearch')" :aria-label="T('FilesSearch')" maxlength="256"/>
       <span v-if="!writable" class="files-readonly">{{ T('FilesReadOnly') }}</span>
+      <div class="file-list-stage" :aria-busy="listing">
       <el-table :data="displayEntries" height="100%" :empty-text="T('FilesEmpty')" row-key="name" :row-class-name="({row}) => row.name === selectedName ? 'is-selected' : ''" :default-sort="{prop:'name',order:'ascending'}" @sort-change="sortEntries" @row-click="selectRow" @row-dblclick="openRow" @row-contextmenu="showMenu" @wheel.passive="menu = null" @touchmove.passive="menu = null">
         <el-table-column prop="name" sortable="custom" :label="T('Filename')" min-width="110">
           <template #default="{ row }"><el-button v-if="row.kind !== 'blocked'" link :disabled="busy" :class="['files-entry',{ 'is-folder':row.kind === 'directory' }]" :icon="row.kind === 'directory' ? Folder : Document" :title="row.parent ? T('FilesParent') : `${row.mode || ''} · UID ${row.uid ?? '-'} / GID ${row.gid ?? '-'}`" @keydown.enter.prevent="openRow(row, null, $event)" @keydown.shift.f10.stop.prevent="keyboardMenu(row, $event)">{{ row.name }}</el-button><span v-else class="files-name files-blocked"><el-icon><Document/></el-icon>{{ row.name }}<el-icon :aria-label="T('FilesBlocked')"><Lock/></el-icon></span></template>
         </el-table-column>
         <el-table-column prop="size" sortable="custom" :label="T('FilesSize')" width="82"><template #default="{ row }">{{ row.kind === 'file' ? sizeLabel(row.size) : '-' }}</template></el-table-column>
-        <el-table-column class-name="files-row-actions" width="34"><template #default="{ row }"><el-button v-if="row.kind === 'file'" link :disabled="busy" :icon="Download" :aria-label="`${T('FilesDownload')} ${row.name}`" :title="T('FilesDownload')" @click.stop="download(row)"/></template></el-table-column>
-        <el-table-column class-name="files-row-actions" width="44"><template #default="{ row }"><el-button v-if="!row.parent && row.kind !== 'blocked'" link :disabled="busy" :icon="MoreFilled" :aria-label="`${T('FilesActions')} ${row.name}`" :title="T('FilesActions')" @click.stop="keyboardMenu(row, $event)"/></template></el-table-column>
+        <el-table-column class-name="files-row-actions files-download" width="40"><template #default="{ row }"><el-button v-if="row.kind === 'file'" link :disabled="busy" :icon="Download" :aria-label="`${T('FilesDownload')} ${row.name}`" :title="T('FilesDownload')" @click.stop="download(row)"/></template></el-table-column>
+        <el-table-column class-name="files-row-actions files-more" width="44"><template #default="{ row }"><el-button v-if="!row.parent && row.kind !== 'blocked'" link :disabled="busy" :icon="MoreFilled" :aria-label="`${T('FilesActions')} ${row.name}`" :title="T('FilesActions')" @click.stop="keyboardMenu(row, $event)"/></template></el-table-column>
       </el-table>
+      <div v-if="listing" class="file-list-loading" role="status"><span class="file-loading-spinner" aria-hidden="true"></span><span class="file-loading-label">{{ T('FilesLoading') }}</span></div>
+      </div>
       <el-button v-if="next !== null" :disabled="busy" @click="loadMore">{{ T('FilesMore') }}</el-button>
       <div v-if="progress" class="files-progress" role="status" aria-live="polite"><span>{{ progress.name }}</span><el-progress :percentage="progress.percent"/><el-button :disabled="cancelled" @click="cancelled = true">{{ T('Cancel') }}</el-button></div>
       <div class="files-summary"><span>{{ T('FilesEntryCount', { count: displayEntries.length }) }}</span><span>{{ writable ? T('FilesWritable') : T('FilesReadOnlyShort') }}</span></div>
@@ -64,7 +67,7 @@ import { DeviceFilesClient, fileErrorKey } from '@/utils/deviceFiles'
 import { T } from '@/utils/i18n'
 const props = defineProps({ peer: { type: Object, required: true }, embedded:Boolean })
 const emit = defineEmits(['close', 'terminal-path', 'busy-change', 'dirty-change'])
-const visible = ref(false), connected = ref(false), busy = ref(false), password = ref(''), hasSaved = ref(false), useSaved = ref(false)
+const visible = ref(false), connected = ref(false), busy = ref(false), listing = ref(false), password = ref(''), hasSaved = ref(false), useSaved = ref(false)
 const error = ref(''), notice = ref(''), user = ref(''), path = ref(''), entries = ref([]), next = ref(null), progress = ref(null), dragging = ref(false), picker = ref(null), cancelled = ref(false)
 const home = ref(''), location = ref(''), writable = ref(false), menu = ref(null), editing = ref(false), editOp = ref('mkdir'), editRow = ref(null), editName = ref(''), editPath = ref(''), editMode = ref('600'), editError = ref('')
 const showHidden = ref(true), copiedEntry = ref(null), propertiesVisible = ref(false), properties = ref(null)
@@ -88,25 +91,25 @@ const joinPath = name => path.value === '/' ? `/${name}` : path.value ? `${path.
 const sizeLabel = size => size < 1024 ? `${size} B` : size < 1048576 ? `${(size / 1024).toFixed(1)} KB` : `${(size / 1048576).toFixed(1)} MB`
 const showError = e => { error.value = T(fileErrorKey(e?.message)); notice.value = ''; notify.error(error.value) }
 watch(notice, value => { if (value) notify.success(value) })
-const dispose = () => { clearTimeout(filterTimer); generation++; client?.close(); client = null; password.value = ''; busy.value = connected.value = dragging.value = false; progress.value = menu.value = null; editing.value = propertiesVisible.value = editorVisible.value = false; copiedEntry.value = null; filter.value='';selectedName.value='';editorText.value=editorOriginal.value='';editorEntry.value=null }
+const dispose = () => { clearTimeout(filterTimer); generation++; client?.close(); client = null; password.value = ''; listing.value = busy.value = connected.value = dragging.value = false; progress.value = menu.value = null; editing.value = propertiesVisible.value = editorVisible.value = false; copiedEntry.value = null; filter.value='';selectedName.value='';editorText.value=editorOriginal.value='';editorEntry.value=null }
 const close = () => { visible.value = false; dispose(); emit('close') }
 watch(visible, value => { if (!value) dispose() })
 const navigate = async target => {
   if (busy.value) return
   const current = client
-  busy.value = true; error.value = ''; menu.value = null
+  listing.value = busy.value = true; error.value = ''; menu.value = null
   if(target !== path.value)filter.value=''
   const options=listOptions();requestedFilter=options.query
   try { const result = await current.request('list', { path: target,...options }); if (client !== current) return; path.value = result.path ?? target; location.value = path.value; writable.value = result.writable !== false; entries.value = result.entries; next.value = result.next;selectedName.value='' }
   catch (e) { if (client === current) showError(e) }
-  finally { if (client === current) busy.value = false }
+  finally { if (client === current) listing.value = busy.value = false }
 }
 const loadMore = async () => {
   if (busy.value || next.value === null) return
-  const current = client; busy.value = true
+  const current = client; listing.value = busy.value = true
   try { const result = await current.request('list', { path: path.value, offset: next.value,...listOptions() }); if (client === current) { entries.value.push(...result.entries); next.value = result.next } }
   catch (e) { if (client === current) showError(e) }
-  finally { if (client === current) busy.value = false }
+  finally { if (client === current) listing.value = busy.value = false }
 }
 const connect = async (files = queued) => {
   if (busy.value) return
@@ -310,76 +313,8 @@ onDeactivated(() => { visible.value = false; dispose() })
 onBeforeUnmount(dispose)
 </script>
 
+<style src="../../styles/filePanelShared.css"></style>
 <style scoped>
-.device-files-panel{height:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:10px;box-sizing:border-box;background:var(--el-bg-color)}.files-heading{display:flex;align-items:center;gap:8px;flex:none;margin-bottom:8px;font-size:12px}.files-heading>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:var(--el-text-color-secondary)}.files-heading>.el-button{margin-left:auto}.files-workspace{flex:1;min-height:0;display:flex;flex-direction:column;border:2px solid transparent;border-radius:4px}.files-workspace.is-dragging{border-color:var(--el-color-primary);background:var(--el-color-primary-light-9)}.files-toolbar{display:flex;align-items:center;justify-content:flex-start;gap:4px;flex:none}.files-toolbar .el-button{width:30px;height:30px;padding:6px}.files-toolbar .el-button+.el-button{margin-left:0}.files-location{display:flex;gap:4px;flex:none;margin:8px 0}.files-location :deep(input){font-family:monospace;font-size:12px}.files-readonly{flex:none;color:var(--el-text-color-secondary);font-size:11px;margin-bottom:6px}.files-workspace>.el-table{flex:1;min-height:0;font-size:12px}.files-error{flex:none;margin-bottom:8px}.files-error :deep(.el-alert__content){max-height:80px;overflow:auto}.files-name{overflow-wrap:anywhere}.files-name .el-icon{margin-left:6px}.files-progress{flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(60px,1fr) auto;align-items:center;gap:8px;margin-top:8px}.files-progress>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.files-edit-buttons{display:flex;justify-content:flex-end;margin-top:16px}.files-mode-hint{font-size:12px;color:var(--el-text-color-secondary)}.files-summary{display:flex;justify-content:space-between;gap:8px;flex:none;padding-top:7px;font-size:11px;color:var(--el-text-color-secondary)}.files-properties{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px;font-size:12px}.files-properties dt{color:var(--el-text-color-secondary)}.files-properties dd{margin:0;overflow-wrap:anywhere}
+.files-progress{flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(60px,1fr) auto;align-items:center;gap:8px;margin-top:8px}.files-progress>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.files-edit-buttons{display:flex;justify-content:flex-end;margin-top:16px}.files-mode-hint{font-size:12px;color:var(--el-text-color-secondary)}.files-properties{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px;font-size:12px}.files-properties dt{color:var(--el-text-color-secondary)}.files-properties dd{margin:0;overflow-wrap:anywhere}
 @media(max-width:600px){.files-progress{grid-template-columns:minmax(0,1fr) auto}.files-progress>span{grid-column:1/-1}}
-.files-workspace :deep(.el-button.is-link){max-width:100%;height:auto;white-space:normal;overflow-wrap:anywhere}
-.files-workspace :deep(.el-table__cell .cell){padding:0 6px}
-</style>
-<style>
-.terminal-dialog .device-files-panel .files-location{--files-location-height:36px;align-items:stretch}
-.terminal-dialog .device-files-panel .files-location .el-input,.terminal-dialog .device-files-panel .files-location .el-input__wrapper{height:var(--files-location-height);min-height:0;box-sizing:border-box}
-.terminal-dialog .device-files-panel .files-location .el-input__inner{height:100%;line-height:normal}
-.terminal-dialog .device-files-panel .files-location .el-button:not(.is-link){height:var(--files-location-height);min-height:0;width:36px;flex:none;padding:6px}
-@media(max-height:500px) and (max-width:600px){.terminal-dialog .device-files-panel .files-location{--files-location-height:28px}.terminal-dialog .device-files-panel .files-location .el-button{width:24px}}
-</style>
-<style>
-/* 짧은 목록 조회마다 패널 전체가 흐려졌다 밝아지는 현상을 방지한다. 중복 작업은 disabled와 busy 검사로 막는다. */
-.terminal-dialog .device-files-panel .files-workspace.is-busy .el-button.is-disabled{opacity:1;transition:none}
-.terminal-dialog .device-files-panel .files-workspace.is-busy .el-button.is-link.is-disabled{color:var(--el-text-color-regular)}
-.terminal-dialog .device-files-panel .files-workspace.is-busy .el-button.is-disabled{cursor:wait}
-.terminal-dialog .device-files-panel .el-table__body{border-collapse:separate;border-spacing:0 4px}
-.terminal-dialog .device-files-panel .el-table__body td.el-table__cell{height:32px;padding:3px 0;border-top:1px solid var(--el-border-color);border-bottom:1px solid var(--el-border-color)}
-.terminal-dialog .device-files-panel .el-table__body td.el-table__cell:first-child{border-radius:5px 0 0 5px}.terminal-dialog .device-files-panel .el-table__body td.el-table__cell:last-child{border-right:1px solid var(--el-border-color);border-radius:0 5px 5px 0}
-.terminal-dialog .device-files-panel .el-table__header th.el-table__cell{height:28px;padding:2px 0}
-.terminal-dialog .device-files-panel .el-table .cell{line-height:22px}.terminal-dialog .device-files-panel .el-table .el-button.is-link{padding:0;height:22px;min-height:22px;line-height:22px}
-</style>
-<style scoped>
-/* 높이가 짧은 확대 화면에서도 경로·검색·목록·하단 상태를 한 패널에 맞춘다. */
-@media(max-height:500px){.device-files-panel{padding:6px}.device-files-panel .files-heading{margin-bottom:4px}.device-files-panel .files-location{margin:4px 0}.device-files-panel .files-filter{margin-bottom:4px}.device-files-panel .files-summary{padding-top:4px}.device-files-panel .files-toolbar{margin-bottom:0}}
-@media(max-height:500px) and (max-width:600px){
-  .device-files-panel .files-heading{height:24px;font-size:11px}.device-files-panel .files-heading .el-button{height:24px!important;padding:3px}
-  .device-files-panel .files-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:'tools tools' 'path search' 'notice notice' 'table table' 'more more' 'progress progress' 'summary summary';grid-template-rows:auto auto auto minmax(0,1fr) auto auto auto;column-gap:4px}
-  .device-files-panel .files-toolbar{grid-area:tools;padding-bottom:4px}.device-files-panel .files-toolbar .el-button{height:24px!important;width:24px;padding:3px}
-  .device-files-panel .files-location{grid-area:path;margin:0 0 4px;min-width:0}.device-files-panel .files-location .el-button{height:28px!important;width:24px;padding:3px}
-  .device-files-panel .files-filter{grid-area:search;min-width:0;height:28px;margin:0 0 4px}.device-files-panel .files-location :deep(.el-input__wrapper),.device-files-panel .files-filter :deep(.el-input__wrapper){min-height:28px;height:28px;padding:0 5px;box-sizing:border-box}
-  .device-files-panel .files-readonly{grid-area:notice;margin-bottom:2px;font-size:10px}.device-files-panel .files-workspace>.el-table{grid-area:table;height:100%;min-height:0}.device-files-panel .files-workspace>.el-button{grid-area:more;height:24px}.device-files-panel .files-progress{grid-area:progress}.device-files-panel .files-summary{grid-area:summary;padding-top:2px;font-size:10px}
-}
-</style>
-<style scoped>
-.files-workspace :deep(.el-table){user-select:none;-webkit-user-select:none}
-</style>
-<style scoped>
-.device-files-panel{background:var(--el-bg-color);color:var(--el-text-color-regular)}.files-filter{flex:none;margin-bottom:8px}.files-entry{max-width:100%;font-size:12px;font-weight:400;color:var(--el-text-color-regular)}.files-entry :deep(span){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.files-entry.is-folder{font-weight:600}.files-entry.is-folder :deep(.el-icon){color:var(--el-color-primary);font-size:17px}.files-entry:not(.is-folder) :deep(.el-icon){color:var(--el-text-color-secondary);font-size:15px}.files-blocked{display:flex;align-items:center;gap:5px;color:var(--el-text-color-secondary)}.files-heading{margin-bottom:10px}.files-toolbar{margin-bottom:2px}.files-summary{padding-top:8px;border-top:1px solid var(--el-border-color);color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table){--el-table-bg-color:var(--el-bg-color);--el-table-tr-bg-color:var(--el-bg-color);--el-table-header-bg-color:var(--el-bg-color);--el-table-header-text-color:var(--el-text-color-secondary);--el-table-text-color:var(--el-text-color-regular);--el-table-border-color:var(--el-border-color);--el-table-row-hover-bg-color:var(--el-fill-color-light);--el-table-current-row-bg-color:var(--el-fill-color)}.files-workspace :deep(.el-table td){padding:6px 0}.files-workspace :deep(.el-table tr.is-selected td){background:var(--el-fill-color)}.files-workspace :deep(.el-table .cell){padding:0 6px}.files-workspace :deep(.el-table__body tr){cursor:default}.files-workspace :deep(.el-table .sort-caret.ascending){border-bottom-color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table .sort-caret.descending){border-top-color:var(--el-text-color-secondary)}.files-workspace :deep(.el-table .ascending .sort-caret.ascending){border-bottom-color:var(--el-color-primary)}.files-workspace :deep(.el-table .descending .sort-caret.descending){border-top-color:var(--el-color-primary)}
-</style>
-
-<style>
-/* Windows 파일 패널과 같은 컴팩트 목록 규격을 사용한다. */
-.terminal-dialog .device-files-panel{--file-row-height:38px;--file-action-size:30px;padding:16px;font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif}
-.terminal-dialog .device-files-panel .files-workspace{border:0;border-radius:0}
-.terminal-dialog .device-files-panel .files-workspace.is-dragging{outline:2px dashed var(--el-color-primary);outline-offset:-2px}
-.terminal-dialog .device-files-panel .files-entry{font-size:12px;font-weight:400}
-.terminal-dialog .device-files-panel .files-entry .el-icon{font-size:16px}
-.terminal-dialog .device-files-panel .files-location input{font-family:inherit}
-.terminal-dialog .device-files-panel .files-workspace .el-table__body{border-spacing:0}
-.terminal-dialog .device-files-panel .files-workspace .el-table__body td.el-table__cell{height:var(--file-row-height);padding:3px 0;border-top:0;border-left:0;border-right:0;border-bottom:1px solid var(--el-border-color-light);border-radius:0}
-.terminal-dialog .device-files-panel .files-workspace .el-table .cell{padding:0 6px;font-size:12px}
-.terminal-dialog .device-files-panel .files-workspace .el-table .files-row-actions .cell{padding:0 6px}
-.terminal-dialog .device-files-panel .files-workspace .files-row-actions .el-button.is-link{width:var(--file-action-size);height:var(--file-action-size);min-height:var(--file-action-size);padding:5px;border-radius:5px}
-.terminal-dialog .device-files-panel .files-workspace .el-table tr.is-selected td{background:var(--el-color-primary-light-9)}
-.terminal-dialog .device-files-panel .files-recovery{display:flex;align-items:center;gap:8px;padding:8px;margin-bottom:8px;border-radius:5px;background:var(--el-color-danger-light-9);color:var(--el-color-danger);font-size:12px}
-.terminal-dialog .device-files-panel .files-recovery>span{flex:1;min-width:0;overflow-wrap:anywhere}
-.terminal-dialog .device-files-panel .files-location{order:0}
-.terminal-dialog .device-files-panel .files-toolbar{order:1;margin:0 0 10px;gap:3px}
-.terminal-dialog .device-files-panel .files-filter{order:2}
-.terminal-dialog .device-files-panel .files-readonly{order:3}
-.terminal-dialog .device-files-panel .files-workspace>.el-table{order:4}
-.terminal-dialog .device-files-panel .files-workspace>.el-button{order:5}
-.terminal-dialog .device-files-panel .files-progress{order:6}
-.terminal-dialog .device-files-panel .files-summary{order:7}
-.terminal-dialog .device-files-panel .files-toolbar>.el-button,.terminal-dialog .device-files-panel .files-row-actions .el-button{color:var(--el-text-color-secondary);background:transparent;border-color:transparent}
-.terminal-dialog .device-files-panel .files-toolbar>.el-button:not(.is-disabled):hover,.terminal-dialog .device-files-panel .files-row-actions .el-button:not(.is-disabled):hover{color:var(--el-color-primary);background:var(--el-color-primary-light-9)}
-.terminal-dialog .device-files-panel .files-toolbar>.files-upload{margin-left:auto;width:auto;padding:6px 9px;border:1px solid var(--el-color-primary-light-7);color:var(--el-color-primary)}
-.terminal-dialog .device-files-panel .files-workspace .files-entry.el-button.is-link{--el-button-text-color:var(--el-text-color-regular);color:var(--el-text-color-regular)}
-.terminal-dialog .device-files-panel .files-workspace .files-row-actions .el-button.is-link{--el-button-text-color:var(--el-text-color-secondary);color:var(--el-text-color-secondary)}
 </style>

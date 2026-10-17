@@ -92,6 +92,16 @@ try {
     const divider=frame.getByRole('separator',{name:'파일 패널 너비 조절'});await divider.press('ArrowLeft');assert.equal(await divider.getAttribute('aria-valuenow'),'420');await divider.press('ArrowRight');assert.equal(await divider.getAttribute('aria-valuenow'),'400')
     await frame.waitForFunction(()=>document.querySelector('.files-location input')&&!document.querySelector('.files-location input').disabled)
     await frame.locator('.files-workspace').waitFor({state:'visible'})
+    const commonFileAppearance=await frame.evaluate(()=>{const panel=document.querySelector('.device-files-panel'),base=panel.getBoundingClientRect();return Object.fromEntries(Object.entries({path:'.files-location',tools:'.files-toolbar',search:'.files-filter',header:'.el-table'}).map(([key,selector])=>[key,panel.querySelector(selector).getBoundingClientRect().top-base.top]))})
+    await writeFile(new URL('file-appearance.json',artifacts),JSON.stringify(commonFileAppearance,null,2))
+    const beforeLoading=await frame.locator('.file-list-stage').boundingBox()
+    await frame.evaluate(()=>{const send=WebSocket.prototype.send;WebSocket.prototype.send=function(value){WebSocket.prototype.send=send;setTimeout(()=>send.call(this,value),900)}})
+    await frame.locator('.files-toolbar button').nth(2).click();await frame.locator('.file-list-loading').waitFor({state:'visible'})
+    assert.deepEqual(await frame.locator('.file-list-stage').boundingBox(),beforeLoading,'터미널 로딩 중 목록 영역 이동 금지')
+    const spinner=await frame.locator('.file-loading-spinner').boundingBox();assert.ok(Math.abs(spinner.x+spinner.width/2-beforeLoading.x-beforeLoading.width/2)<1&&Math.abs(spinner.y+spinner.height/2-beforeLoading.y-beforeLoading.height/2)<1,'터미널 목록 중앙 로딩')
+    await page.screenshot({path:new URL('files-loading.png',artifacts).pathname.replace(/^\/([A-Za-z]:)/,'$1'),fullPage:true})
+    await frame.locator('.file-list-loading').waitFor({state:'hidden'});assert.deepEqual(await frame.locator('.file-list-stage').boundingBox(),beforeLoading)
+
     for(const theme of ['light','dark'])for(const width of [1440,768,390]){
       await page.setViewportSize({width,height:900});await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme)
       await frame.locator('.files-location input').focus();await page.waitForTimeout(150)
