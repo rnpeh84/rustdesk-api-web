@@ -94,6 +94,9 @@ try {
     await frame.locator('.files-workspace').waitFor({state:'visible'})
     const commonFileAppearance=await frame.evaluate(()=>{const panel=document.querySelector('.device-files-panel'),base=panel.getBoundingClientRect();return Object.fromEntries(Object.entries({path:'.files-location',tools:'.files-toolbar',search:'.files-filter',header:'.el-table'}).map(([key,selector])=>[key,panel.querySelector(selector).getBoundingClientRect().top-base.top]))})
     await writeFile(new URL('file-appearance.json',artifacts),JSON.stringify(commonFileAppearance,null,2))
+    const commonFileColumns=await frame.evaluate(()=>{const panel=document.querySelector('.device-files-panel').getBoundingClientRect(),icon=document.querySelector('.files-entry.is-folder .el-icon').getBoundingClientRect(),more=document.querySelector('.files-more button');return {iconLeft:icon.left-panel.left,moreRight:panel.right-more.getBoundingClientRect().right,actionColor:getComputedStyle(more.querySelector('.el-icon')).color}})
+    assert.equal(commonFileColumns.actionColor,await frame.locator('.files-entry.is-folder .el-icon').first().evaluate(icon=>getComputedStyle(icon).color));await writeFile(new URL('file-columns.json',artifacts),JSON.stringify(commonFileColumns,null,2))
+
     const beforeLoading=await frame.locator('.file-list-stage').boundingBox()
     await frame.evaluate(()=>{const send=WebSocket.prototype.send;WebSocket.prototype.send=function(value){WebSocket.prototype.send=send;setTimeout(()=>send.call(this,value),900)}})
     await frame.locator('.files-toolbar button').nth(2).click();await frame.locator('.file-list-loading').waitFor({state:'visible'})

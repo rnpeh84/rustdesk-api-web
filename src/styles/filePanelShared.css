@@ -95,3 +95,11 @@
 .file-panel-ui .file-loading-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .file-panel-ui #panel-files #file-browser>.file-list-stage{flex:1;min-height:0}
 .file-panel-ui .file-list-stage>.el-table{font-size:12px}
+/* 콘솔 전역 셀 여백과 네이티브 스크롤 레일 차이를 공통 열 기준에 맞춘다. */
+.file-panel-ui .files-workspace>.file-list-stage{padding-right:14px;box-sizing:border-box}
+.file-panel-ui .files-workspace .el-table .cell{padding:0 6px}
+.file-panel-ui .files-workspace .el-table .files-download .cell{padding:0 4px}
+.file-panel-ui .files-workspace .el-table .files-more .cell{padding:0 7px}
+.file-panel-ui .file-row-actions>.icon-button,.file-panel-ui .files-workspace .files-row-actions .el-button.is-link{color:var(--file-primary)}
+.file-panel-ui .files-workspace .files-row-actions .el-icon{color:inherit}
+.file-panel-ui #file-list .file-row-actions>.icon-button{color:var(--file-primary)}
